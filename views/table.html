@@ -1,0 +1,98 @@
+<div id="seqBox" layout="column" >
+  <!-- Responsive table starts here -->
+  <!-- For correct display on small screens you must add 'data-title' to each 'td' in your table -->
+
+  <md-card>
+      <md-card-title>
+        <md-card-title-text>
+          <span class="md-headline">Select Parameters</span>
+        </md-card-title-text>
+      </md-card-title>
+      <md-card-content>
+        <div layout="row">
+          <form name="quick">
+            <md-input-container>
+              <label>Start Position</label>
+              <input  ng-model="sPos" required>
+            </md-input-container>
+
+            <md-input-container>
+              <label>End position</label>
+              <input  ng-model="ePos" required>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Reference</label>
+              <input type="text" ng-model="ref" required>
+            </md-input-container>
+
+            <md-input-container>
+              <label>Alternate</label>
+              <input type="text" ng-model="alt" required>
+            </md-input-container>
+          </form>
+        </div>
+        <div ng-show="isVisible">
+          <div layout="row">
+            <form name="detail">
+              <md-input-container>
+                <label>Start min</label>
+                <input  ng-model="sMin" >
+              </md-input-container>
+
+              <md-input-container>
+                <label>Start Max</label>
+                <input  ng-model="sMax">
+              </md-input-container>
+
+              <md-input-container>
+                <label>End min</label>
+                <input  ng-model="eMin" >
+              </md-input-container>
+
+              <md-input-container>
+                <label>End Max</label>
+                <input  ng-model="eMax">
+              </md-input-container>
+
+              <md-input-container>
+                <label>Variant Type</label>
+                <input type="text" ng-model="VarType" >
+              </md-input-container>
+
+              <md-input-container>
+                <label>Dataset Ids</label>
+                <input type="text" ng-model="dIDs">
+              </md-input-container>
+            </form>
+          </div>
+        </div>
+        <div layout="row">
+        <md-button ng-disabled="quick.$invalid" class="md-raised md-primary" ng-click="query()" >Query</md-button>
+        <md-button ng-disabled="false" class="md-raised md-primary" ng-click="ShowHide()">Advance Parameters</md-button>
+        </div>
+
+      </md-card-content>
+    </md-card>
+
+  <br></br>
+  <table class=" picornaTable sortable table  table-bordered" id="t01" fixed-header style="width:90%">
+      <thead>
+          <tr>
+              <th>ID</th>
+              <th>Descriptoin</th>
+              <th>Variant count</th>
+              <th>Call Count</th>
+              <th >Sample Count</th>
+              <th>ABC</th>
+              <th>SBC</th>
+              <th>ABC</th>
+              <th>ABC</th>
+          </tr>
+      </thead>
+      <tbody>
+
+      </tbody>
+    <table>
+
+</div>
