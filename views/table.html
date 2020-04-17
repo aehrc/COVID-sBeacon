@@ -18,7 +18,7 @@
 
             <md-input-container>
               <label>End position</label>
-              <input  ng-model="ePos" required>
+              <input  ng-model="ePos">
             </md-input-container>
 
             <md-input-container>
@@ -69,30 +69,41 @@
         </div>
         <div layout="row">
         <md-button ng-disabled="quick.$invalid" class="md-raised md-primary" ng-click="query()" >Query</md-button>
-        <md-button ng-disabled="false" class="md-raised md-primary" ng-click="ShowHide()">Advance Parameters</md-button>
+        <md-button ng-disabled="false" class="md-raised md-primary" ng-click="ShowHide()">Advanced Parameters</md-button>
         </div>
 
       </md-card-content>
     </md-card>
 
   <br></br>
-  <table class=" picornaTable sortable table  table-bordered" id="t01" fixed-header style="width:90%">
-      <thead>
-          <tr>
-              <th>ID</th>
-              <th>Descriptoin</th>
-              <th>Variant count</th>
-              <th>Call Count</th>
-              <th >Sample Count</th>
-              <th>ABC</th>
-              <th>SBC</th>
-              <th>ABC</th>
-              <th>ABC</th>
-          </tr>
-      </thead>
-      <tbody>
+  <md-card>
+    <md-card-content>
+      <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header style="width:100%; padding:10px;">
+          <thead>
+              <tr>
+                  <th>Dataset ID</th>
+                  <th>Description</th>
+                  <th>Variant count</th>
+                  <th>Call Count</th>
+                  <th>Sample Count</th>
+                  <th>Frequency</th>
+                  <th>SBC</th>
+                  <th>ABC</th>
+                  <th>ABC</th>
+              </tr>
+          </thead>
+          <tbody>
+            <tr ng-repeat="row in hits"   id="sameStrip">
+              <td>{{row.datasetId}}</td>
+              <td></td>
+              <td>{{row.variantCount}}</td>
+              <td>{{row.callCount}}</td>
+              <td>{{row.sampleCount}}</td>
+              <td>{{row.frequency}}</td>
+            </tr>
 
-      </tbody>
-    <table>
-
+          </tbody>
+        <table>
+      </md-card-content>
+    </md-card>
 </div>
