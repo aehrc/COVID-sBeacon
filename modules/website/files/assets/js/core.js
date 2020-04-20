@@ -32,7 +32,7 @@ covidBeacon.controller('beacon', function($scope, $http) {
     $scope.query = function(){
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       var data = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref,"alternateBases":$scope.alt, "start":$scope.sPos,"end":$scope.ePos};
-      var url = "https://dsug72ummg.execute-api.ap-southeast-2.amazonaws.com/prod/query";
+      var url = window.beacon_api_url + "/query";
 
       $http({method: 'GET', url: url,params:data}).then(function successCallback(resp) {
         var hits = resp.data;
