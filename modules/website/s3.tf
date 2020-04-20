@@ -36,7 +36,6 @@ resource aws_s3_bucket_notification refreshCloudfront {
 }
 
 resource aws_s3_bucket_object website_config_file {
-  for_each = fileset("${path.module}/website", "**")
   bucket = aws_s3_bucket.website_bucket.id
   content_type = local.content_types[regex("[^.]*$", local.config_file)]
   key = local.config_file
