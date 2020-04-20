@@ -15,7 +15,7 @@ locals {
 }
 
 resource aws_s3_bucket website_bucket {
-  bucket-prefix = "covid19-beacon-website"
+  bucket_prefix = "covid19-beacon-website"
 
   versioning {
     enabled = true

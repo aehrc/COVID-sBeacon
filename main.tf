@@ -8,7 +8,7 @@ provider aws {
 }
 
 module beacon_api {
-  source = "modules/api"
+  source = "./modules/api"
   beacon-id = var.beacon-id
   beacon-name = var.beacon-name
   organisation-id = var.organisation-id
@@ -16,7 +16,7 @@ module beacon_api {
 }
 
 module beacon_website {
-  source = "modules/website"
+  source = "./modules/website"
   beacon_api_url = module.beacon_api.api_url
   max_web_requests_per_ip_in_five_minutes = var.max_website_requests_per_ip_in_five_minutes
 
