@@ -85,20 +85,15 @@
           <thead>
               <tr>
                   <th>Dataset ID</th>
-                  <th>Description</th>
                   <th>Variant count</th>
                   <th>Call Count</th>
                   <th>Sample Count</th>
                   <th>Frequency</th>
-                  <th>SBC</th>
-                  <th>ABC</th>
-                  <th>ABC</th>
               </tr>
           </thead>
           <tbody>
             <tr ng-repeat="row in hits"   id="sameStrip">
               <td>{{row.datasetId}}</td>
-              <td></td>
               <td>{{row.variantCount}}</td>
               <td>{{row.callCount}}</td>
               <td>{{row.sampleCount}}</td>
