@@ -37,7 +37,7 @@ covidBeacon.controller('beacon', function($scope, $http) {
         $scope.ePos = null;
         queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref,"alternateBases":$scope.alt, "startMin":$scope.sMin,"startMax":$scope.sMax,"endMin":$scope.eMin,"endMax":$scope.eMax,"variantType":$scope.VarType};
       }else{
-        var queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref,"alternateBases":$scope.alt, "start":$scope.sPos,"end":$scope.ePos,"variantType":$scope.VarType};
+        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref,"alternateBases":$scope.alt, "start":$scope.sPos,"end":$scope.ePos,"variantType":$scope.VarType};
       }
       var url = "https://dsug72ummg.execute-api.ap-southeast-2.amazonaws.com/prod/query";
       console.log(queryData);
