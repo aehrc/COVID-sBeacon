@@ -17,8 +17,7 @@ module beacon_api {
 
 module beacon_website {
   source = "./modules/website"
-//  beacon_api_url = module.beacon_api.api_url
-  beacon_api_url = "https://dsug72ummg.execute-api.ap-southeast-2.amazonaws.com/prod"
+  beacon_api_url = module.beacon_api.api_url
   max_web_requests_per_ip_in_five_minutes = var.max_website_requests_per_ip_in_five_minutes
 
   providers = {
