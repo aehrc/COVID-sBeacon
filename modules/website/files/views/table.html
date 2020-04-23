@@ -13,22 +13,30 @@
           <form name="quick">
             <md-input-container ng-show="sMin == null && sMax == null && eMin == null && eMax == null">
               <label>Start Position</label>
-              <input  ng-model="sPos" ng-required="!sMin">
+              <div data-tip="Precise start coordinate position, allele locus (0-based, inclusive).">
+                <input placeholder="8781" ng-model="sPos" ng-required="!sMin">
+              </div>
             </md-input-container>
 
             <md-input-container>
               <label>End position</label>
-              <input  ng-model="ePos">
+              <div data-tip="Precise end coordinate (0-based, exclusive).">
+                <input placeholder="8781" ng-model="ePos">
+              </div>
             </md-input-container>
 
             <md-input-container>
               <label>Reference</label>
-              <input type="text" ng-model="ref" ng-required="true">
+              <div data-tip="Reference bases for this variant (starting from start).">
+                <input  type="text" placeholder="C" ng-model="ref" ng-required="true">
+              </div>
             </md-input-container>
 
             <md-input-container>
               <label>Alternate</label>
-              <input type="text" ng-model="alt"  ng-required="true">
+              <div data-tip="The bases that appear instead of the reference bases.">
+                <input type="text" placeholder="T" ng-model="alt"  ng-required="true">
+              </div>
             </md-input-container>
           </form>
         </div>
@@ -37,32 +45,44 @@
             <form name="detail">
               <md-input-container>
                 <label>Start min</label>
-                <input  ng-model="sMin" ng-required="!sPos">
+                <div data-tip="for querying imprecise positions (e.g. identifying all structural variants starting anywhere between startMin <-> startMax, and ending anywhere between endMin <-> endMax">
+                  <input  ng-model="sMin" ng-required="!sPos">
+                </div>
               </md-input-container>
 
               <md-input-container>
                 <label>Start Max</label>
-                <input  ng-model="sMax" ng-required="!sPos">
+                <div data-tip="Maximum start coordinate">
+                  <input  ng-model="sMax" ng-required="!sPos">
+                </div>
               </md-input-container>
 
               <md-input-container>
                 <label>End min</label>
-                <input  ng-model="eMin" ng-required="!sPos">
+                <div data-tip="Minimum end coordinate">
+                  <input  ng-model="eMin" ng-required="!sPos">
+                </div>
               </md-input-container>
 
               <md-input-container>
                 <label>End Max</label>
-                <input  ng-model="eMax" ng-required="!sPos">
+                <div data-tip="Maximum end coordinate">
+                  <input  ng-model="eMax" ng-required="!sPos">
+                </div>
               </md-input-container>
 
               <md-input-container>
                 <label>Variant Type</label>
-                <input type="text" ng-model="VarType" >
+                <div data-tip="The variantType is used to denote e.g. structural variants. Accepted Values 'INS','DUP','DEL','INV'">
+                  <input type="text" ng-model="VarType" >
+                </div>
               </md-input-container>
 
               <md-input-container>
                 <label>Dataset Ids</label>
-                <input type="text" ng-model="dIDs">
+                <div data-tip="Identifiers of datasets, as defined in BeaconDataset. ">
+                  <input type="text" ng-model="dIDs">
+                </div>
               </md-input-container>
             </form>
           </div>
@@ -83,20 +103,24 @@
     <md-card-content ng-show="hits != null">
       <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header style="width:100%; padding:10px;"  >
           <thead>
-              <tr>
-                  <th>Dataset ID</th>
+              <tr> 
+                  <th title="Dataset or Clade name ">Dataset name</th>
+                  <th>Description</th>
                   <th>Variant count</th>
                   <th>Call Count</th>
-                  <th>Sample Count</th>
+                  <th title="Percentage of sample that contains the mutation.">Sample Coverage</th>
+                  <th title="Total number of sample in the dataset.">Sample Count</th>
                   <th>Frequency</th>
               </tr>
           </thead>
           <tbody>
             <tr ng-repeat="row in hits"   id="sameStrip">
-              <td>{{row.datasetId}}</td>
+              <td>{{row.name}}</td>
+              <td>{{row.description}}</td>
               <td>{{row.variantCount}}</td>
               <td>{{row.callCount}}</td>
-              <td>{{row.sampleCount}}</td>
+              <td>{{(row.sampleCount/row.totalSampleCount)*100 | number}}</td>
+              <td>{{row.totalSampleCount}}</td>
               <td>{{row.frequency}}</td>
             </tr>
 

@@ -15,38 +15,55 @@ var covidBeacon = angular.module('covidBeacon', ['ngMaterial','ngRoute'])
 }]);
 
 
-covidBeacon.controller('beacon', function($scope, $http) {
+covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
-    $scope.sPos;
-    $scope.ePos;
-    $scope.VarType;
+    var rootUrl = window.beacon_api_url;
+    $scope.sPos, $scope.ePos, $scope.VarType;
     $scope.ref = $scope.alt ="";
     $scope.isVisible = false;
     $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
     var queryData = "";
+    $scope.rootQuery = [];
+    function successCallback(response) {
+      return response.data.datasets
+    }
+    $scope.rootQuery = $http.get(rootUrl).then(successCallback);
 
 
     $scope.ShowHide = function(){
-          console.log("clicker");
             $scope.isVisible = !$scope.isVisible;
     }
+
     $scope.query = function(){
+      var url = rootUrl+ "/query";
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
         $scope.sPos = null;
         $scope.ePos = null;
-        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref,"alternateBases":$scope.alt, "startMin":$scope.sMin,"startMax":$scope.sMax,"endMin":$scope.eMin,"endMax":$scope.eMax,"variantType":$scope.VarType};
+        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin,"startMax":$scope.sMax,"endMin":$scope.eMin,"endMax":$scope.eMax,"variantType":$scope.VarType};
       }else{
-        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref,"alternateBases":$scope.alt, "start":$scope.sPos,"end":$scope.ePos,"variantType":$scope.VarType};
+        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos,"end":$scope.ePos,"variantType":$scope.VarType};
       }
-      var url = window.beacon_api_url + "/query";
+
       $http({method: 'GET', url: url,params:queryData}).then(function successCallback(resp) {
         var hits = resp.data;
         console.log(hits);
+        $scope.hits = [];
         if( hits.exists == true){
-          $scope.hits = hits.datasetAlleleResponses;
-          $scope.warning =null;
-          console.log($scope.hits);
+          $q.all([$scope.rootQuery]).then(function(data){
+            var DatArray = data[0];
+            angular.forEach(hits.datasetAlleleResponses, function(row){
+              var filterObj = DatArray.filter(function(e) {
+                return e.id == row.datasetId;
+              });
+              row['totalSampleCount'] = filterObj[0].sampleCount;
+              row['description']= filterObj[0].description;
+              row['name']= filterObj[0].name
+              this.push(row);
+            }, $scope.hits);
+            console.log($scope.hits);
+          });
+
         }else if(hits.error == true){
           $scope.warning = hits.error.errorMessage;
           $scope.hits = null;
@@ -63,9 +80,5 @@ covidBeacon.controller('beacon', function($scope, $http) {
 
 
     }
-    /*$http.get('http://rest-service.guides.spring.io/greeting').
-        then(function(response) {
-            $scope.greeting = response.data;
-            console.log($scope.greeting);
-        });*/
+
 });
