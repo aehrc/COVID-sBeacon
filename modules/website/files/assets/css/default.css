@@ -1930,10 +1930,18 @@ ul.contact li a.icon-rss:before
 /* Header                                                                        */
 /*********************************************************************************/
 
+@media only screen and (max-width: 767px) {
+	#header-wrapper
+	{
+		overflow: hidden;
+		background: url(images/header.jpg) no-repeat right ;
+		background-size: cover;
+	}
+}
 #header-wrapper
 {
 	overflow: hidden;
-	background: url(images/header.jpg) no-repeat right bottom;
+	background: url(images/header.jpg) no-repeat right ;
 	background-size: contain;
 }
 
@@ -2224,7 +2232,7 @@ ul.contact li a.icon-rss:before
 #mc_embed_signup{background:#fff; clear:left; font:14px Helvetica,Arial,sans-serif;  }
 
 table#t01 {
-  width:100%;
+  width:95%;
 	padding:10px;
 }
 
