@@ -119,9 +119,9 @@
               <td>{{row.description}}</td>
               <td>{{row.variantCount}}</td>
               <td>{{row.callCount}}</td>
-              <td>{{(row.sampleCount/row.totalSampleCount)*100 | number}}</td>
+              <td>{{(row.sampleCount/row.totalSampleCount)*100 | number}} %</td>
               <td>{{row.totalSampleCount}}</td>
-              <td>{{row.frequency}}</td>
+              <td>{{(row.frequency)*100 | number}} %</td>
             </tr>
 
           </tbody>
