@@ -1,28 +1,29 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>Covid19 Beacon</title>
 <meta name="keywords" content="" />
 <meta name="description" content="" />
-<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,300,400,600,700,900" rel="stylesheet" />
-<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-<link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.12/angular-material.min.css">
+
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src 'self' *.execute-api.ap-southeast-2.amazonaws.com ;  font-src 'self'; img-src 'self'; object-src 'self'; script-src 'self' ; style-src 'self' 'unsafe-inline' ">
+
+<script type="text/javascript" src="assets/js/jquery-1.11.2.min.js"></script>
+<!--<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.js" nonce="2687258487"></script>-->
+<script type="text/javascript" src="assets/js/angular.min.js" ></script>
+<script type="text/javascript" src="assets/js/angular-animate.min.js"></script>
+<script type="text/javascript" src="assets/js/angular-aria.min.js"></script>
+<script type="text/javascript" src="assets/js/angular-messages.min.js"></script>
+<script type="text/javascript" src="assets/js/angular-route.js"></script>
+<script type="text/javascript" src="assets/js/angular-material.min.js" ></script>
+<!--<script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.12/angular-material.min.js" nonce="2687258487"></script>-->
+<script type="text/javascript" src="assets/js/config.js"></script>
+<script type="text/javascript" src="assets/js/core.js"></script>
+
+<link href="assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" media="all" />
+<link href="assets/css/angular-material.min.css" rel="stylesheet" type="text/css" media="all" />
 <link href="assets/css/default.css" rel="stylesheet" type="text/css" media="all" />
-<script type="text/javascript" src="https://code.jquery.com/jquery-1.7.1.min.js"></script>
-
-
-<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-animate.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-aria.min.js"></script>
-  <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.7.6/angular-messages.min.js"></script>
-	<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.7/angular-route.js"></script>
-<script src="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.12/angular-material.min.js"></script>
-<script src="assets/js/config.js"></script>
-<script src="assets/js/core.js"></script>
 </head>
 
-<body ng-app="covidBeacon">
+<body ng-app="covidBeacon" ng-csp>
 
 <div id="header-wrapper">
 	<div id="header" class="container">
@@ -31,8 +32,8 @@
 		</div>
 		<div id="menu"> <!--#unlock these comments to add menu items.-->
 			<ul>
-				<li class="current_page_item"><a href="#" accesskey="1" title="">Homepage</a></li>
-				<li><a href="#/contact" accesskey="2" title="">Contact Us</a></li>
+				<!--<li class="current_page_item"><a href="#" accesskey="1" title="">Homepage</a></li>
+				<li><a href="#/contact" accesskey="2" title="">Contact Us</a></li>-->
 			</ul>
 		</div>
 	</div>
