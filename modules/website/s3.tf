@@ -6,6 +6,7 @@ locals {
     "eot" = "application/vnd.ms-fontobject"
     "html" = "text/html; charset=utf-8"
     "jpg" = "image/jpeg"
+    "gif" = "image/gif"
     "js" = "application/javascript"
     "otf" = "font/otf"
     "svg" = "image/svg"

@@ -20,7 +20,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     var rootUrl = window.beacon_api_url;
     $scope.sPos, $scope.ePos, $scope.VarType;
     $scope.ref = $scope.alt ="";
-    $scope.isVisible = false;
+    $scope.isVisible = $scope.loading =  false;
     $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
     var queryData = "";
     $scope.rootQuery = [];
@@ -35,6 +35,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     }
 
     $scope.query = function(){
+      $scope.loading = true;
       var url = rootUrl+ "/query";
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
@@ -62,15 +63,18 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
               this.push(row);
             }, $scope.hits);
             console.log($scope.hits);
+            $scope.loading = false;
           });
 
         }else if(hits.error == true){
           $scope.warning = hits.error.errorMessage;
           $scope.hits = null;
+          $scope.loading = false;
         }else{
           $scope.hits = null;
           $scope.warning = "No hits matching the search criteria";
           console.log($scope.warning );
+          $scope.loading = false;
         }
 
 

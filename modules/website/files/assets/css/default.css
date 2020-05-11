@@ -1572,7 +1572,23 @@ p
 strong
 {
 }
+.spinner-container {
+    height: 50%;
+    width: 100%;
 
+}
+#spinner { /* body tag not necessary actually */
+   display: block;
+   height: 100%;
+   width: 100%;
+   background: rgba(255, 255, 255, .4) url(images/spinner.gif) center center no-repeat;
+   background-size: 100px;
+   position: fixed;
+   top: 0;
+   left: 0;
+   z-index: 9999;
+}
+body.spinnerOn main.content { position: static;}
 a
 {
 	color: #222222;
