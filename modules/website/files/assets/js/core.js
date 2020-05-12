@@ -44,24 +44,27 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       var url = rootUrl+ "/query";
 
       if( $scope.inputText != null){
-        var regex = /^(\d+)(.+)/;
-        var text = $scope.inputText.replace(/\,/g, '')
-        var match = regex.exec(text);
-        console.log(match[1]);
-        console.log(parseInt(match[1], 10));
-        if(match[1] == null){
+        try {
+          var regex = /^(\d+)(.+)/;
+          var text = $scope.inputText.replace(/\,/g, '')
+          var match = regex.exec(text);
+          $scope.sPos = match[1];
+        }
+        catch(err) {
           $scope.warning = "Incorrect search formatting - Please enter valid position.";
           $scope.loading = false;
           return;
         }
+
+
         if((match[2].split(">").length !== 2)){
           $scope.warning = "Incorrect search formatting - Separate REF and ALT with '>'. ";
           $scope.loading = false;
           return;
         }
-        $scope.sPos = match[1];
         $scope.ref = match[2].split(">")[0].trim();
         $scope.alt = match[2].split(">")[1].trim();
+
 
         console.log($scope.sPos);
         console.log($scope.ref);
