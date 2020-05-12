@@ -18,34 +18,67 @@ var covidBeacon = angular.module('covidBeacon', ['ngMaterial','ngRoute'])
 covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
     var rootUrl = window.beacon_api_url;
-    $scope.sPos, $scope.ePos, $scope.VarType;
+    $scope.sPos,$scope.ePos, $scope.VarType;
     $scope.ref = $scope.alt ="";
     $scope.isVisible = $scope.loading =  false;
-    $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
+    $scope.inputText = $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
     var queryData = "";
     $scope.rootQuery = [];
     function successCallback(response) {
       return response.data.datasets
     }
+
     $scope.rootQuery = $http.get(rootUrl).then(successCallback);
+    console.log($scope.rootQuery);
 
 
     $scope.ShowHide = function(){
             $scope.isVisible = !$scope.isVisible;
     }
+    $scope.refresh = function(){
+      location.reload(false);
+    }
 
     $scope.query = function(){
       $scope.loading = true;
       var url = rootUrl+ "/query";
+
+      if( $scope.inputText != null){
+        var regex = /^(\d+)(.+)/;
+        var text = $scope.inputText.replace(/\,/g, '')
+        var match = regex.exec(text);
+        console.log(match[1]);
+        console.log(parseInt(match[1], 10));
+        if(match[1] == null){
+          $scope.warning = "Incorrect search formatting - Please enter valid position.";
+          $scope.loading = false;
+          return;
+        }
+        if((match[2].split(">").length !== 2)){
+          $scope.warning = "Incorrect search formatting - Separate REF and ALT with '>'. ";
+          $scope.loading = false;
+          return;
+        }
+        $scope.sPos = match[1];
+        $scope.ref = match[2].split(">")[0].trim();
+        $scope.alt = match[2].split(">")[1].trim();
+
+        console.log($scope.sPos);
+        console.log($scope.ref);
+        console.log($scope.alt);
+      }
+
+
+
+
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
-        $scope.sPos = null;
-        $scope.ePos = null;
+        $scope.inputText= null;
         queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin,"startMax":$scope.sMax,"endMin":$scope.eMin,"endMax":$scope.eMax,"variantType":$scope.VarType};
       }else{
         queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos,"end":$scope.ePos,"variantType":$scope.VarType};
       }
-
+      console.log(url,queryData);
       $http({method: 'GET', url: url,params:queryData}).then(function successCallback(resp) {
         var hits = resp.data;
         console.log(hits);
@@ -62,6 +95,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
               row['name']= filterObj[0].name
               this.push(row);
             }, $scope.hits);
+
             console.log($scope.hits);
             $scope.loading = false;
           });

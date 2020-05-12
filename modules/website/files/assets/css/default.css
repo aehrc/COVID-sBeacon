@@ -1671,6 +1671,10 @@ hr
 	position: relative;
 }
 
+#search {
+	width: 200%;
+}
+
 [data-tip] {
 	position:relative;
 
