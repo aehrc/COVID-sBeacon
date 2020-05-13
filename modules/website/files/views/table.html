@@ -5,7 +5,7 @@
   <md-card>
       <md-card-title>
         <md-card-title-text>
-          <span class="md-headline">Search</span>
+          <span class="md-headline">Search engine for SARS-CoV-2 mutations </span>
         </md-card-title-text>
       </md-card-title>
       <md-card-content>
@@ -82,7 +82,7 @@
           </div>
         </div>
         <div layout="row">
-        <md-button ng-disabled="quick.$invalid || detail.$invalid " class="md-raised md-primary"  ng-click="query()" >Query</md-button>
+        <md-button ng-disabled="quick.$invalid || detail.$invalid " class="md-raised md-primary"  ng-click="query()" >Search</md-button>
         <md-button ng-disabled="false" class="md-raised md-primary" ng-click="ShowHide()">Advanced Parameters</md-button>
         <md-button class="md-raised md-primary" ng-click="refresh()">Reset</md-button>
         </div>
@@ -102,7 +102,7 @@
       <span> {{warning}}</span>
     </md-card-content>
     <md-card-content ng-show="hits != null">
-      <div class="table-responsive">
+      <div class="table-responsive-md">
         <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header>
             <thead>
                 <tr>

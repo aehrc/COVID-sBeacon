@@ -1526,8 +1526,8 @@ html, body
 
 body
 {
-	margin: 0;
-	padding: 0;
+	margin: 0px auto;
+	padding: 0px auto;
 	background: #2F2F2F url(images/bg02.jpg) repeat;
 	font-family: 'Source Sans Pro', sans-serif;
 	font-size: 12pt;
@@ -1654,6 +1654,13 @@ hr
 {	width : 60%;
 	position: relative;
 	top: -2em;
+	text-align: justify;
+	font-weight: 500;
+	font-size: 1em;
+	color: #8E8E8E;
+	font: 16px Arial;
+}
+.aboutText{
 	text-align: justify;
 	font-weight: 500;
 	font-size: 1em;
@@ -1893,10 +1900,11 @@ ul.contact li a.icon-rss:before
 
 .wrapper-style1
 {
-	overflow: hidden;
+	height: auto;
+	min-height: 70%;
 	width: 95%;
 	margin: 0px auto;
-	padding: 5em 0em 3em 0em;
+	padding: 3em 0em 3em 0em;
 }
 
 .container
@@ -1945,22 +1953,61 @@ ul.contact li a.icon-rss:before
 	margin: 0 auto;
 	width: auto;
 }
-
+#sBeacon_logo{
+	object-fit: contain;
+	width: 15%;
+	height: 15%;
+	background: #ffffff;
+	display: block;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 1em 1em 1em 1em;
+}
 /*********************************************************************************/
 /* Header                                                                        */
 /*********************************************************************************/
 
-@media only screen and (max-width: 767px) {
-	#header-wrapper
-	{
-		overflow: hidden;
-		background: url(images/header.jpg) no-repeat right ;
-		background-size: cover;
-	}
+@media only screen and (max-width: 1024px) {
+ 	body #header-wrapper {
+	 overflow: auto;
+	 background: url(images/mobile.png) no-repeat right ;
+	 background-size: contain;
+  }
+	body #header {
+		position: relative;
+		height: 13em;
+	 }
+
+}
+
+@media only screen and (max-width: 767px)
+{
+	body #header-wrapper {
+	 overflow: auto;
+	 background: url(images/mobile.png) no-repeat right ;
+	 background-size: contain;
+  }
+	body #header {
+		position: relative;
+		height: 13em;
+	 }
+}
+
+@media only screen and (max-width: 479px)
+{
+	body #header-wrapper {
+	 overflow: auto;
+	 background: url(images/mobile.png) no-repeat right ;
+	 background-size: contain;
+  }
+	body #header {
+		position: relative;
+		height: 13em;
+	 }
 }
 #header-wrapper
 {
-	overflow: hidden;
+	overflow: auto;
 	background: url(images/header.jpg) no-repeat right ;
 	background-size: contain;
 }
@@ -2107,11 +2154,14 @@ ul.contact li a.icon-rss:before
 
 #footer
 {
+
+  height:10%;
 	overflow: hidden;
-	padding: 5em 0em;
+	background: #2F2F2F url(images/bg02.jpg) repeat;
+	padding: 20px 1px;
 	text-align: center;
-	text-transform: uppercase;
 	color: #6F6F6F;
+
 }
 
 #footer h2
@@ -2125,7 +2175,7 @@ ul.contact li a.icon-rss:before
 #footer .byline
 {
 
-	padding-bottom: 1.50em;
+	padding-bottom: 2.50em;
 	letter-spacing: 0.10em;
 }
 

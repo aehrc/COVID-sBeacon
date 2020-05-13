@@ -5,8 +5,8 @@ var covidBeacon = angular.module('covidBeacon', ['ngMaterial','ngRoute'])
           templateUrl: 'views/table.html',
           controller: 'beacon',
       });
-      $routeProvider.when('/contact/', {
-          templateUrl: 'views/contact.html',
+      $routeProvider.when('/about/', {
+          templateUrl: 'views/about.html',
       });
       $routeProvider.otherwise({
       templateUrl: 'views/table.html',

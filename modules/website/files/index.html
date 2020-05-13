@@ -1,5 +1,9 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+<meta name="viewport" content="width=device-width,initial-scale=0.70,maximum-scale=0.80,maximum-scale=0.65">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="HandheldFriendly" content="true">
 <!-- Primary Meta Tags -->
 <title>Covid19 Beacon</title>
 <meta name="title" content="Covid19 Beacon">
@@ -38,7 +42,7 @@
 <script type="text/javascript" src="assets/js/core.js"></script>
 </head>
 
-<body ng-app="covidBeacon" ng-csp>
+<body ng-app="covidBeacon" >
 
 <div id="header-wrapper">
 	<div id="header" class="container">
@@ -47,14 +51,15 @@
 		</div>
 		<div id="menu"> <!--#unlock these comments to add menu items.-->
 			<ul>
-				<!--<li class="current_page_item"><a href="#" accesskey="1" title="">Homepage</a></li>
-				<li><a href="#/contact" accesskey="2" title="">Contact Us</a></li>-->
+				<li><a href="#" accesskey="1" title="">Home</a></li>
+				<li><a href="#/about" accesskey="2" title="">About</a></li>
+				<li><a href="https://bioinformatics.csiro.au/covid-19-sbeacon/" target="_blank" accesskey="3" title="">Methods</a></li>
 			</ul>
 		</div>
 	</div>
 </div>
 <div id="wrapper">
-	<div id="welcome" class="wrapper-style1">
+	<div  class="wrapper-style1">
       <div ng-controller="beacon">
         <div ng-view></div>
       </div>
@@ -62,7 +67,8 @@
 	</div>
 </div>
 
-<div id="footer" class="container">
+<div id="footer" >
+	<p class="byline">The COVID-19 Beacon is a collaborative endeavour between Transformational Bioinformatics group at CSIRO, Australia and Vinod Scaria group at the CSIR-IGIB, India.</p>
 
 </div>
 
