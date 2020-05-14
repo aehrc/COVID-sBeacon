@@ -22,7 +22,7 @@ INCLUDE_DATASETS_VALUES = {
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 
-base_pattern = re.compile('[ACGT]+|N')
+base_pattern = re.compile('[ACGTUMRWSYKVHDBN]+')
 
 dynamodb = boto3.client('dynamodb')
 aws_lambda = boto3.client('lambda')
@@ -203,7 +203,7 @@ def validate_request(parameters):
     if not isinstance(reference_name, str):
         return "referenceBases must be a string"
     if not base_pattern.fullmatch(reference_bases):
-        return "referenceBases must be either [ACGT]* or N"
+        return "referenceBases must be a sequence of IUPAC ambiguity codes, i.e. [ACGTUMRWSYKVHDBN]*"
 
     try:
         assembly_id = parameters['assemblyId']
@@ -272,7 +272,7 @@ def validate_request(parameters):
         if not isinstance(alternate_bases, str):
             return "alternateBases must be a string"
         if not base_pattern.fullmatch(alternate_bases):
-            return "alternateBases must be either [ACGT]* or N"
+            return "alternateBases must be a sequence of IUPAC ambiguity codes, i.e. [ACGTUMRWSYKVHDBN]*"
 
     variant_type = parameters.get('variantType')
     if variant_type is None:
