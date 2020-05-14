@@ -178,6 +178,7 @@ def query_datasets(parameters):
         exists = exists or response['exists']
         if response.pop('include'):
             dataset_responses.append(response)
+    dataset_responses.sort(key=lambda r: r['datasetId'])
     response_dict.update({
         'exists': exists,
         'datasetAlleleResponses': dataset_responses or None,
