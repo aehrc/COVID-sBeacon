@@ -5,13 +5,67 @@ import subprocess
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 
-BASES = [
-    'A',
-    'C',
-    'G',
-    'T',
-    'N',
-]
+IUPAC_AMBIGUITY_CODES = {
+    'A': [
+        'A',
+        'M',
+        'R',
+        'W',
+        'V',
+        'H',
+        'D',
+        'N',
+    ],
+    'C': [
+        'C',
+        'M',
+        'S',
+        'Y',
+        'V',
+        'H',
+        'B',
+        'N',
+    ],
+    'G': [
+        'G',
+        'R',
+        'S',
+        'K',
+        'V',
+        'D',
+        'B',
+        'N',
+    ],
+    'T': [
+        'T',
+        'U',
+        'W',
+        'Y',
+        'K',
+        'H',
+        'D',
+        'B',
+        'N',
+    ],
+    'N': [
+        'A',
+        'C',
+        'G',
+        'T',
+        'U',
+        'M',
+        'R',
+        'W',
+        'S',
+        'Y',
+        'K',
+        'V',
+        'H',
+        'D',
+        'B',
+        'N',
+    ]
+}
 
 all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
@@ -36,6 +90,14 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     call_count = 0
     all_alleles_count = 0
     sample_indexes = []
+    alternate_matches = {''}
+    if alternate_bases is not None:
+        for base in alternate_bases:
+            next_alternate_matches = set()
+            for alternate_match in alternate_matches:
+                for iupac_code in IUPAC_AMBIGUITY_CODES[base]:
+                    next_alternate_matches.add(alternate_match + iupac_code)
+            alternate_matches = next_alternate_matches
     for line in query_process.stdout:
         try:
             (position, reference, all_alts, info_str,
@@ -99,12 +161,8 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
                 hit_indexes = [i for i, alt in enumerate(alts)
                                if alt.startswith(v_prefix)]
         else:
-            if alternate_bases == 'N':
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if alt.upper() in BASES]
-            else:
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if alt.upper() == alternate_bases]
+            hit_indexes = [i for i, alt in enumerate(alts)
+                           if alt.upper() in alternate_matches]
         if not hit_indexes:
             continue
 
