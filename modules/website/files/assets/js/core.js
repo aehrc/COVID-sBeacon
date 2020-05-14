@@ -117,6 +117,9 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
       }, function errorCallback(resp) {
           console.log("Error: " + JSON.stringify(resp));
+          $scope.warning = resp.data.error.errorMessage;
+          $scope.hits = null;
+          $scope.loading = false;
       });
 
 
