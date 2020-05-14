@@ -87,6 +87,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         console.log(hits);
         $scope.hits = [];
         if( hits.exists == true){
+          $scope.warning = null;
           $q.all([$scope.rootQuery]).then(function(data){
             var DatArray = data[0];
             angular.forEach(hits.datasetAlleleResponses, function(row){
