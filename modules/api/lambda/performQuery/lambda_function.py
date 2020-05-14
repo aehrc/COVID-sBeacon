@@ -4,17 +4,95 @@ import re
 import subprocess
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
+IUPAC_AMBIGUITY_CODES = {
+    'A': {
+        'A',
+    },
+    'C': {
+        'C',
+    },
+    'G': {
+        'G',
+    },
+    'T': {
+        'T',
+    },
+    'U': {
+        'T',
+    },
+    'M': {
+        'A',
+        'C',
+    },
+    'R': {
+        'A',
+        'G',
+    },
+    'W': {
+        'A',
+        'T'
+    },
+    'S': {
+        'C',
+        'G',
+    },
+    'Y': {
+        'C',
+        'T',
+    },
+    'K': {
+        'T',
+        'G',
+    },
+    'V': {
+        'A',
+        'C',
+        'G',
+    },
+    'H': {
+        'A',
+        'C',
+        'T',
+    },
+    'D': {
+        'T',
+        'A',
+        'G',
+    },
+    'B': {
+        'T',
+        'C',
+        'G',
+    },
+    'N': {
+        'T',
+        'A',
+        'C',
+        'G',
+    },
+}
 
-BASES = [
-    'A',
-    'C',
-    'G',
-    'T',
-    'N',
-]
+IUPAC_MATCHES = {
+    code1: {
+        code2 for code2, bases2 in IUPAC_AMBIGUITY_CODES.items()
+        if bases1 & bases2
+    } for code1, bases1 in IUPAC_AMBIGUITY_CODES.items()
+}
 
 all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
+
+
+def get_possible_codes(code):
+    possible_codes = {''}
+    if code is not None:
+        for base in code:
+            next_possible_codes = set()
+            for possible_code in possible_codes:
+                for iupac_code in IUPAC_MATCHES[base]:
+                    next_possible_codes.add(possible_code + iupac_code)
+            possible_codes = next_possible_codes
+    return possible_codes
 
 
 def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
@@ -30,12 +108,14 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     v_prefix = '<{}'.format(variant_type)
     first_bp = int(region[region.find(':')+1: region.find('-')])
     last_bp = int(region[region.find('-')+1:])
-    approx = reference_bases == 'N'
+    approx = reference_bases == 'N' and variant_type
     exists = False
     variants = []
     call_count = 0
     all_alleles_count = 0
     sample_indexes = []
+    reference_matches = get_possible_codes(reference_bases)
+    alternate_matches = get_possible_codes(alternate_bases)
     for line in query_process.stdout:
         try:
             (position, reference, all_alts, info_str,
@@ -54,7 +134,7 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
         if not end_min <= pos + ref_length - 1 <= end_max:
             continue
 
-        if not approx and reference.upper() != reference_bases:
+        if not approx and reference.upper() not in reference_matches:
             continue
 
         alts = all_alts.split(',')
@@ -99,12 +179,8 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
                 hit_indexes = [i for i, alt in enumerate(alts)
                                if alt.startswith(v_prefix)]
         else:
-            if alternate_bases == 'N':
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if alt.upper() in BASES]
-            else:
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if alt.upper() == alternate_bases]
+            hit_indexes = [i for i, alt in enumerate(alts)
+                           if alt.upper() in alternate_matches]
         if not hit_indexes:
             continue
 

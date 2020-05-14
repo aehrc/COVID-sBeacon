@@ -9,6 +9,7 @@ locals {
     "gif" = "image/gif"
     "js" = "application/javascript"
     "otf" = "font/otf"
+    "png" = "image/png"
     "svg" = "image/svg"
     "ttf" = "font/ttf"
     "woff" = "font/woff"
