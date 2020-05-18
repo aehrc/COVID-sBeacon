@@ -15,6 +15,8 @@ s3_client = boto3.client('s3')
 
 
 def get_annotations(annotation_location, variants):
+    annotations = []
+    covered_variants = set()
     if annotation_location:
         delim_index = annotation_location.find('/', 5)
         bucket = annotation_location[5:delim_index]
@@ -28,18 +30,17 @@ def get_annotations(annotation_location, variants):
         print(f"Received response: {json.dumps(response, default=str)}")
         iterator = (row.decode('utf-8') for row in response['Body'].iter_lines())
         reader = csv.DictReader(iterator, delimiter='\t')
-        annotations = {
-            row.pop('Variant'): row
-            for row in reader
-            if row['Variant'] in variants
+        for row in reader:
+            if row['Variant'] in variants:
+                annotations.append(row)
+                covered_variants.add(row['Variant'])
+    annotations += [
+        {
+            'Variant': variant,
         }
-    else:
-        annotations = {}
-    annotations.update({
-        variant: {}
         for variant in variants
-        if variant not in annotations
-    })
+        if variant not in covered_variants
+    ]
     return annotations
 
 
