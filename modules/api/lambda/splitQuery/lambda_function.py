@@ -2,6 +2,7 @@ import csv
 import json
 import os
 import queue
+import re
 import threading
 
 import boto3
@@ -41,6 +42,7 @@ def get_annotations(annotation_location, variants):
         for variant in variants
         if variant not in covered_variants
     ]
+    annotations.sort(key=variant_key)
     return annotations
 
 
@@ -153,6 +155,12 @@ def split_query(dataset_id, reference_bases, region_start,
             'exists': exists,
         }
     return response_dict
+
+
+def variant_key(variant_dict):
+    variant = variant_dict['Variant']
+    match = re.match('([0-9]+)', variant)
+    return int(match.group()), variant[:match.end()]
 
 
 def lambda_handler(event, context):
