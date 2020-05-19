@@ -1,6 +1,8 @@
+import csv
 import json
 import os
 import queue
+import re
 import threading
 
 import boto3
@@ -10,6 +12,38 @@ SPLIT_SIZE = 1000000
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 
 aws_lambda = boto3.client('lambda')
+s3_client = boto3.client('s3')
+
+
+def get_annotations(annotation_location, variants):
+    annotations = []
+    covered_variants = set()
+    if annotation_location:
+        delim_index = annotation_location.find('/', 5)
+        bucket = annotation_location[5:delim_index]
+        key = annotation_location[delim_index+1:]
+        kwargs = {
+            'Bucket': bucket,
+            'Key': key,
+        }
+        print(f"Calling s3.get_object with kwargs: {json.dumps(kwargs)}")
+        response = s3_client.get_object(**kwargs)
+        print(f"Received response: {json.dumps(response, default=str)}")
+        iterator = (row.decode('utf-8') for row in response['Body'].iter_lines())
+        reader = csv.DictReader(iterator, delimiter='\t')
+        for row in reader:
+            if row['Variant'] in variants:
+                annotations.append(row)
+                covered_variants.add(row['Variant'])
+    annotations += [
+        {
+            'Variant': variant,
+        }
+        for variant in variants
+        if variant not in covered_variants
+    ]
+    annotations.sort(key=variant_key)
+    return annotations
 
 
 def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
@@ -42,7 +76,7 @@ def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
 
 def split_query(dataset_id, reference_bases, region_start,
                 region_end, end_min, end_max, alternate_bases, variant_type,
-                include_datasets, vcf_locations):
+                include_datasets, vcf_locations, annotation_location):
     responses = queue.Queue()
     check_all = include_datasets in ('HIT', 'ALL')
     kwargs = {
@@ -108,7 +142,11 @@ def split_query(dataset_id, reference_bases, region_start,
                                for samples in vcf_samples.values()),
             'note': None,
             'externalUrl': None,
-            'info': None,
+            'info': {
+                'variants': json.dumps(
+                    get_annotations(annotation_location, variants)
+                ),
+            },
             'error': None,
         }
     else:
@@ -117,6 +155,12 @@ def split_query(dataset_id, reference_bases, region_start,
             'exists': exists,
         }
     return response_dict
+
+
+def variant_key(variant_dict):
+    variant = variant_dict['Variant']
+    match = re.match('([0-9]+)', variant)
+    return int(match.group()), variant[:match.end()]
 
 
 def lambda_handler(event, context):
@@ -131,6 +175,7 @@ def lambda_handler(event, context):
     variant_type = event['variant_type']
     include_datasets = event['include_datasets']
     vcf_locations = event['vcf_locations']
+    annotation_location = event['annotation_location']
     response = split_query(
         dataset_id=dataset_id,
         reference_bases=reference_bases,
@@ -142,6 +187,7 @@ def lambda_handler(event, context):
         variant_type=variant_type,
         include_datasets=include_datasets,
         vcf_locations=vcf_locations,
+        annotation_location=annotation_location,
     )
     print('Returning response: {}'.format(json.dumps(response)))
     return response

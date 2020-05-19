@@ -33,7 +33,7 @@ def get_datasets(assembly_id, dataset_ids):
     kwargs = {
         'TableName': 'Datasets',
         'IndexName': 'assembly_index',
-        'ProjectionExpression': 'id,vcfLocations',
+        'ProjectionExpression': 'id,vcfLocations,annotationLocation',
         'KeyConditionExpression': 'assemblyId = :assemblyId',
         'ExpressionAttributeValues': {
             ':assemblyId': {'S': assembly_id}
@@ -65,7 +65,7 @@ def get_vcf_chromosome_map(datasets, chromosome):
     return vcf_chromosome_map
 
 
-def perform_query(dataset_id, vcf_locations, reference_bases, region_start,
+def perform_query(dataset_id, vcf_locations, annotation_location, reference_bases, region_start,
                   region_end, end_min, end_max, alternate_bases, variant_type,
                   include_datasets, responses):
 
@@ -80,6 +80,7 @@ def perform_query(dataset_id, vcf_locations, reference_bases, region_start,
         'variant_type': variant_type,
         'include_datasets': include_datasets,
         'vcf_locations': vcf_locations,
+        'annotation_location': annotation_location,
     })
     print("Invoking {lambda_name} with payload: {payload}".format(
         lambda_name=SPLIT_QUERY, payload=payload))
@@ -152,6 +153,7 @@ def query_datasets(parameters):
                              kwargs={
                                  'dataset_id': dataset_id,
                                  'vcf_locations': vcf_locations,
+                                 'annotation_location': dataset.get('annotationLocation', {'S': None})['S'],
                                  'reference_bases': reference_bases,
                                  'region_start': region_start,
                                  'region_end': region_end,

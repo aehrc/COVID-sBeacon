@@ -205,6 +205,13 @@ data aws_iam_policy_document lambda-splitQuery {
     ]
     resources = [module.lambda-performQuery.function_arn]
   }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["*"]
+  }
 }
 
 

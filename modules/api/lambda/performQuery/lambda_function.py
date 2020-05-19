@@ -203,7 +203,7 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             alt_counts = all_alt_counts.split(',')
             call_counts = [int(alt_counts[i]) for i in hit_indexes]
             variants += [
-                reference + position + alts[i]
+                position + reference + '>' + alts[i]
                 for i in hit_indexes if alt_counts[i] != "0"
             ]
             call_count += sum(call_counts)
@@ -212,7 +212,7 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             all_calls = get_all_calls(genotypes)
             hit_set = set(str(i+1) for i in hit_indexes)
             variants += [
-                reference + position + alts[int(i)-1]
+                position + reference + '>' + alts[int(i)-1]
                 for i in set(all_calls) & hit_set
             ]
             call_count += sum(1 for call in all_calls if call in hit_set)

@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+import re
 import subprocess
 
 import boto3
@@ -155,6 +156,12 @@ def update_dataset(attributes):
     }
     expression_attribute_names = {}
 
+    if 'annotationLocation' in attributes:
+        update_set_expressions.append('annotationLocation=:annotationLocation')
+        expression_attribute_values[':annotationLocation'] = {
+            'S': attributes['annotationLocation'],
+        }
+
     if 'name' in attributes:
         update_set_expressions.append('#name=:name')
         expression_attribute_names['#name'] = 'name'
@@ -252,6 +259,14 @@ def validate_request(parameters, new):
             return 'Each element in vcfLocations must be a string'
     elif new:
         return missing_parameter('vcfLocations')
+
+    if 'annotationLocation' in parameters:
+        annotation_location = parameters['annotationLocation']
+        if isinstance(annotation_location, str):
+            if not re.match('^s3://[^/]+/.*[^/]$', annotation_location):
+                return 'annotationLocation must be an s3 location, prefixed with s3://'
+        elif annotation_location is not None:
+            return 'annotationLocation must be a string or null'
 
     description = parameters.get('description')
     if not isinstance(description, str) and description is not None:
