@@ -33,7 +33,11 @@ def get_annotations(annotation_location, variants):
         reader = csv.DictReader(iterator, delimiter='\t')
         for row in reader:
             if row['Variant'] in variants:
-                annotations.append(row)
+                annotations.append({
+                    metadata: value
+                    for metadata, value in row.items()
+                    if value not in {'.', ''}
+                })
                 covered_variants.add(row['Variant'])
     annotations += [
         {
@@ -143,9 +147,7 @@ def split_query(dataset_id, reference_bases, region_start,
             'note': None,
             'externalUrl': None,
             'info': {
-                'variants': json.dumps(
-                    get_annotations(annotation_location, variants)
-                ),
+                'variants': get_annotations(annotation_location, variants),
             },
             'error': None,
         }
