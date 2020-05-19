@@ -116,7 +116,7 @@
                 </tr>
             </thead>
             <tbody>
-              <tr ng-repeat="row in hits"   id="sameStrip">
+              <tr ng-repeat-start="row in hits"  ng-click="main.activeRow = !main.activeRow" id="sameStrip">
                 <td>{{row.name}}</td>
                 <td>{{row.description}}</td>
                 <td>{{row.variantCount}}</td>
@@ -125,6 +125,31 @@
                 <td>{{row.totalSampleCount}}</td>
                 <td>{{(row.frequency)*100 | number}} %</td>
               </tr>
+              <tr ng-show="main.activeRow" ng-repeat-end="">
+                <td colspan=7>
+                  <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header ng-show="main.activeRow">
+                      <thead>
+                          <tr>
+                            <th> Variant</th>
+                            <th> PhyoP44wayCoV score</th>
+                            <th> PhastCons44wayCoV score</th>
+                            <th> SIFT score</th>
+                          </tr>
+                      </thead>
+                      <tbody>
+                        <tr ng-repeat="var in row.info.variants track by $index">
+
+                            <td>{{var.Variant}}</td>
+                            <td> <span ng-if="var.PhyoP44wayCoV_score"> {{var.PhyoP44wayCoV_score }} </span> <span ng-if="!var.PhyoP44wayCoV_score"> - </span></td>
+                            <td><span ng-if="var.PhastCons44wayCoV_score"> {{var.PhastCons44wayCoV_score }} </span><span ng-if="!var.PhastCons44wayCoV_score"> - </span></td>
+                            <td><span ng-if="var.SIFT_score"> {{var.SIFT_score }} </span><span ng-if="!var.SIFT_score"> - </span></td>
+
+                        </tr>
+                      </tbody>
+                  </table>
+                  </td>
+              </tr>
+
 
             </tbody>
           <table>

@@ -20,7 +20,8 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     var rootUrl = window.beacon_api_url;
     $scope.sPos,$scope.ePos, $scope.VarType;
     $scope.ref = $scope.alt ="";
-    $scope.isVisible = $scope.loading =  false;
+    $scope.isVisible = $scope.loading = $scope.reverseSort=  false;
+    $scope.orderByField = 'name';
     $scope.inputText = $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
     var queryData = "";
     $scope.rootQuery = [];
