@@ -106,6 +106,7 @@
         <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header>
             <thead>
                 <tr>
+                    <th></th>
                     <th title="Dataset or Clade name ">Dataset name</th>
                     <th>Description</th>
                     <th>Variant count</th>
@@ -117,6 +118,10 @@
             </thead>
             <tbody>
               <tr ng-repeat-start="row in hits"  ng-click="main.activeRow = !main.activeRow" id="sameStrip">
+                <td>
+                  <button ng-if="main.activeRow" >-</button>
+                  <button ng-if="!main.activeRow" >+</button>
+                </td>
                 <td>{{row.name}}</td>
                 <td>{{row.description}}</td>
                 <td>{{row.variantCount}}</td>
