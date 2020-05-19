@@ -143,9 +143,7 @@ def split_query(dataset_id, reference_bases, region_start,
             'note': None,
             'externalUrl': None,
             'info': {
-                'variants': json.dumps(
-                    get_annotations(annotation_location, variants)
-                ),
+                'variants': get_annotations(annotation_location, variants),
             },
             'error': None,
         }
