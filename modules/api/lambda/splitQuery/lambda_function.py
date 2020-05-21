@@ -1,3 +1,4 @@
+from collections import defaultdict
 import csv
 import json
 import os
@@ -110,9 +111,9 @@ def split_query(dataset_id, reference_bases, region_start,
     num_threads = len(threads)
     processed = 0
     all_alleles_count = 0
-    variants = set()
+    variants = defaultdict(lambda: defaultdict(set))
     call_count = 0
-    vcf_samples = {}
+    vcf_samples = defaultdict(set)
     exists = False
     while processed < num_threads and (check_all or not exists):
         response = responses.get()
@@ -125,15 +126,19 @@ def split_query(dataset_id, reference_bases, region_start,
             exists = True
             if check_all:
                 all_alleles_count += response['all_alleles_count']
-                variants.update(response['variants'])
                 call_count += response['call_count']
                 vcf_location = response['vcf_location']
-                if vcf_location in vcf_samples:
-                    vcf_samples[vcf_location].update(response['samples'])
-                else:
-                    vcf_samples[vcf_location] = set(response['samples'])
+                for variant, samples in response['variant_samples'].items():
+                    variants[variant][vcf_location].update(samples)
+                    vcf_samples[vcf_location].update(samples)
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
+        annotations = get_annotations(annotation_location, variants.keys())
+        for annotation in annotations:
+            annotation['sampleCount'] = sum(
+                len(s)
+                for s in variants[annotation['Variant']].values()
+            )
         response_dict = {
             'include': True,
             'datasetId': dataset_id,
@@ -147,7 +152,7 @@ def split_query(dataset_id, reference_bases, region_start,
             'note': None,
             'externalUrl': None,
             'info': {
-                'variants': get_annotations(annotation_location, variants),
+                'variants': annotations,
             },
             'error': None,
         }

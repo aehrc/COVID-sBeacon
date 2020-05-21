@@ -110,10 +110,9 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     last_bp = int(region[region.find('-')+1:])
     approx = reference_bases == 'N' and variant_type
     exists = False
-    variants = []
+    variant_samples = {}
     call_count = 0
     all_alleles_count = 0
-    sample_indexes = []
     reference_matches = get_possible_codes(reference_bases)
     alternate_matches = get_possible_codes(alternate_bases)
     for line in query_process.stdout:
@@ -202,29 +201,26 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
         if all_alt_counts is not None:
             alt_counts = all_alt_counts.split(',')
             call_counts = [int(alt_counts[i]) for i in hit_indexes]
-            variants += [
-                position + reference + '>' + alts[i]
-                for i in hit_indexes if alt_counts[i] != "0"
-            ]
             call_count += sum(call_counts)
         else:
             # Much slower, but doesn't require INFO/AC
             all_calls = get_all_calls(genotypes)
             hit_set = set(str(i+1) for i in hit_indexes)
-            variants += [
-                position + reference + '>' + alts[int(i)-1]
-                for i in set(all_calls) & hit_set
-            ]
             call_count += sum(1 for call in all_calls if call in hit_set)
         if call_count:
             if not exists:
                 exists = True
                 if not include_details:
                     break
-            hit_string = '|'.join(str(i+1) for i in hit_indexes)
-            pattern = re.compile(f'(^|[|/])({hit_string})([|/]|$)')
-            sample_indexes += [i for i, gt in enumerate(genotypes.split(','))
-                               if pattern.search(gt)]
+            for hit in hit_indexes:
+                pattern = re.compile(f'(^|[|/]){hit+1}([|/]|$)')
+                sample_indices = [
+                    i for i, gt in enumerate(genotypes.split(','))
+                    if pattern.search(gt)
+                ]
+                if sample_indices:
+                    variant_name = position + reference + '>' + alts[hit]
+                    variant_samples[variant_name] = sample_indices
         # Used for calculating frequency. This will be a misleading value if the
         #  alleles are spread over multiple vcf records. Ideally we should
         #  return a dictionary for each matching record/allele, but for now the
@@ -239,13 +235,11 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
                 all_calls = get_all_calls(genotypes)
             all_alleles_count += len(all_calls)
     query_process.stdout.close()
-    samples = list(set(sample_indexes))
     return {
         'exists': exists,
         'all_alleles_count': all_alleles_count,
-        'variants': variants,
+        'variant_samples': variant_samples,
         'call_count': call_count,
-        'samples': samples,
     }
 
 
