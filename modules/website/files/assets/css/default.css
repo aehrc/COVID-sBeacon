@@ -1681,6 +1681,20 @@ hr
 #search {
 	width: 200%;
 }
+#popSearch{
+	margin-right: 10px;
+}
+.tableTooltip {
+    display: none;
+    position: absolute;
+    background: #ffe;
+    border: 1px solid #eed;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+:hover + .tableTooltip {
+    display: block;
+}
 
 [data-tip] {
 	position:relative;

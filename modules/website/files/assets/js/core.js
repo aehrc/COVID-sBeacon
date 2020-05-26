@@ -20,9 +20,11 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     var rootUrl = window.beacon_api_url;
     $scope.sPos, $scope.VarType;
     $scope.ref = $scope.alt ="";
-    $scope.isVisible = $scope.loading = $scope.reverseSort=  false;
+    $scope.isVisible = $scope.loading = $scope.sortReverse = $scope.subSortReverse =  false;
     $scope.orderByField = 'name';
     $scope.inputText = $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
+    $scope.sortType     = 'name';
+    $scope.subSortType     = 'Variant';
     var queryData = "";
     $scope.rootQuery = [];
     function successCallback(response) {
@@ -38,6 +40,16 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     }
     $scope.refresh = function(){
       location.reload(false);
+    }
+    $scope.search = function(searches){
+      console.log(searches);
+      if(searches == 'D614G'){
+        /*$scope.sPos = 23403;
+        $scope.ref = "A";
+        $scope.alt = "G";*/
+        $scope.inputText= "23403A>G";
+        $scope.query();
+      }
     }
 
     $scope.query = function(){
@@ -97,7 +109,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
               });
               row['totalSampleCount'] = filterObj[0].sampleCount;
               row['description']= filterObj[0].description;
-              row['name']= filterObj[0].name
+              row['name']= filterObj[0].name;
               this.push(row);
             }, $scope.hits);
 
