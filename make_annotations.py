@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import csv
+import glob
 import sys
 
 KEY_FIELD = 'Variant'
@@ -40,7 +41,10 @@ if __name__ == '__main__':
     variants = {}
     fields = [KEY_FIELD]
     for filepath in sys.argv[1:]:
-        incorporate_file(variants, fields, filepath)
+        # get all .vcf and .txt annotation files
+        for file_name in (glob.glob(filepath + '/*.vcf')
+                          + glob.glob(filepath + '/*.txt')):
+            incorporate_file(variants, fields, file_name)
     writer = csv.DictWriter(sys.stdout, fields, delimiter='\t', restval='.')
     writer.writeheader()
     writer.writerows(variants.values())
