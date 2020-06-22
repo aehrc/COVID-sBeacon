@@ -9,8 +9,8 @@ import threading
 import boto3
 
 
-SPLIT_SIZE = 1000000
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
+SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
 
 aws_lambda = boto3.client('lambda')
 s3_client = boto3.client('s3')
