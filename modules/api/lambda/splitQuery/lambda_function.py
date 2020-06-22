@@ -140,14 +140,15 @@ def split_query(dataset, reference_bases, region_start, region_end,
         for annotation in annotations:
             variant_code = annotation.pop('Variant')
             pos, ref, alt = variant_pattern.fullmatch(variant_code).groups()
+            variant_sample_count = sum(
+                len(s) for s in variants[variant_code].values()
+            )
             annotation.update({
                 'pos': int(pos),
                 'ref': ref,
                 'alt': alt,
-                'sampleCount': sum(
-                    len(s)
-                    for s in variants[variant_code].values()
-                ),
+                'sampleCount': variant_sample_count,
+                'frequency': variant_sample_count / dataset_sample_count,
             })
         annotations.sort(key=itemgetter('pos'))
         sample_count = sum(len(samples)
