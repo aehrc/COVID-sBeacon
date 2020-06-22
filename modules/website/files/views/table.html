@@ -130,18 +130,18 @@
                     <th></th>
 
                     <th>
-                    <a href="#" ng-click="sortType = 'name'; sortReverse = !sortReverse">
+                    <a href="#" ng-click="sortType = 'info.name'; sortReverse = !sortReverse">
                       Dataset name
-                      <span ng-show="sortType == 'name' && !sortReverse" class="fa fa-caret-down"></span>
-                      <span ng-show="sortType == 'name' && sortReverse" class="fa fa-caret-up"></span>
-                      <span ng-show="sortType != 'name'" class="fa fa-sort"></span>
+                      <span ng-show="sortType == 'info.name' && !sortReverse" class="fa fa-caret-down"></span>
+                      <span ng-show="sortType == 'info.name' && sortReverse" class="fa fa-caret-up"></span>
+                      <span ng-show="sortType != 'info.name'" class="fa fa-sort"></span>
                     </a><span class="tableTooltip">Dataset or clade name</span></th>
                     <th>
-                    <a href="#" ng-click="sortType = 'description'; sortReverse = !sortReverse">
+                    <a href="#" ng-click="sortType = 'info.description'; sortReverse = !sortReverse">
                       Description
-                      <span ng-show="sortType == 'description' && !sortReverse" class="fa fa-caret-down"></span>
-                      <span ng-show="sortType == 'description' && sortReverse" class="fa fa-caret-up"></span>
-                      <span ng-show="sortType != 'description'" class="fa fa-sort"></span>
+                      <span ng-show="sortType == 'info.description' && !sortReverse" class="fa fa-caret-down"></span>
+                      <span ng-show="sortType == 'info.description' && sortReverse" class="fa fa-caret-up"></span>
+                      <span ng-show="sortType != 'info.description'" class="fa fa-sort"></span>
                     </a></th>
                     <th>
                     <a href="#" ng-click="sortType = 'variantCount'; sortReverse = !sortReverse">
@@ -165,11 +165,11 @@
                       <span ng-show="sortType != 'sampleCount'" class="fa fa-sort"></span>
                     </a> <span class="tableTooltip">Samples that contain the mutation.</span></th>
                     <th>
-                    <a href="#" ng-click="sortType = 'totalSampleCount'; sortReverse = !sortReverse">
+                    <a href="#" ng-click="sortType = 'info.datasetSampleCount'; sortReverse = !sortReverse">
                       Total Samples
-                      <span ng-show="sortType == 'totalSampleCount' && !sortReverse" class="fa fa-caret-down"></span>
-                      <span ng-show="sortType == 'totalSampleCount' && sortReverse" class="fa fa-caret-up"></span>
-                      <span ng-show="sortType != 'totalSampleCount'" class="fa fa-sort"></span>
+                      <span ng-show="sortType == 'info.datasetSampleCount' && !sortReverse" class="fa fa-caret-down"></span>
+                      <span ng-show="sortType == 'info.datasetSampleCount' && sortReverse" class="fa fa-caret-up"></span>
+                      <span ng-show="sortType != 'info.datasetSampleCount'" class="fa fa-sort"></span>
                     </a><span class="tableTooltip">Total number of samples in the dataset.</span></th>
                     <th>
                     <a href="#" ng-click="sortType = 'frequency'; sortReverse = !sortReverse">
@@ -186,12 +186,12 @@
                   <button ng-if="main.activeRow" >-</button>
                   <button ng-if="!main.activeRow" >+</button>
                 </td>
-                <td>{{row.name}}</td>
-                <td>{{row.description}}</td>
+                <td>{{row.info.name}}</td>
+                <td>{{row.info.description}}</td>
                 <td>{{row.variantCount}}</td>
                 <td>{{row.callCount}}</td>
                 <td ng-show="sMin">{{row.sampleCount}} </td>
-                <td>{{row.totalSampleCount}}</td>
+                <td>{{row.info.datasetSampleCount}}</td>
                 <td>{{(row.frequency)*100 | number}} %</td>
               </tr>
               <tr ng-show="main.activeRow" ng-repeat-end="">
@@ -200,25 +200,25 @@
                       <thead>
                           <tr>
                             <th>
-                            <a href="#" ng-click="subSortType = 'Variant'; subSortReverse = !subSortReverse">
-                               Variant
-                               <span ng-show="subSortType == 'Variant' && !subSortReverse" class="fa fa-caret-down"></span>
-                               <span ng-show="subSortType == 'Variant' && subSortReverse" class="fa fa-caret-up"></span>
-                               <span ng-show="subSortType != 'Variant'" class="fa fa-sort"></span>
-                            </a><span class="tableTooltip">Variants breakdown including IUPAC codes</span></th>
+                            <a href="#" ng-click="subSortType = 'pos'; subSortReverse = !subSortReverse">
+                               Position
+                               <span ng-show="subSortType == 'pos' && !subSortReverse" class="fa fa-caret-down"></span>
+                               <span ng-show="subSortType == 'pos' && subSortReverse" class="fa fa-caret-up"></span>
+                               <span ng-show="subSortType != 'pos'" class="fa fa-sort"></span>
+                            </a><span class="tableTooltip">Variants Position</span></th>
                             <th>
-                            <a href="#" ng-click="subSortType = 'PhyoP44wayCoV_score'; subSortReverse = !subSortReverse">
-                              PhyoP44wayCoV score
-                              <span ng-show="subSortType == 'PhyoP44wayCoV_score' && !subSortReverse" class="fa fa-caret-down"></span>
-                              <span ng-show="subSortType == 'PhyoP44wayCoV_score' && subSortReverse" class="fa fa-caret-up"></span>
-                              <span ng-show="subSortType != 'PhyoP44wayCoV_score'" class="fa fa-sort"></span>
+                            <a href="#" ng-click="subSortType = 'ref'; subSortReverse = !subSortReverse">
+                               REF
+                              <span ng-show="subSortType == 'ref' && !subSortReverse" class="fa fa-caret-down"></span>
+                              <span ng-show="subSortType == 'ref' && subSortReverse" class="fa fa-caret-up"></span>
+                              <span ng-show="subSortType != 'ref'" class="fa fa-sort"></span>
                             </a></th>
                             <th>
-                            <a href="#" ng-click="subSortType = 'PhastCons44wayCoV_score'; subSortReverse = !subSortReverse">
-                              PhastCons44wayCoV score
-                              <span ng-show="subSortType == 'PhastCons44wayCoV_score' && !subSortReverse" class="fa fa-caret-down"></span>
-                              <span ng-show="subSortType == 'PhastCons44wayCoV_score' && subSortReverse" class="fa fa-caret-up"></span>
-                              <span ng-show="subSortType != 'PhastCons44wayCoV_score'" class="fa fa-sort"></span>
+                            <a href="#" ng-click="subSortType = 'alt'; subSortReverse = !subSortReverse">
+                              ALT
+                              <span ng-show="subSortType == 'alt' && !subSortReverse" class="fa fa-caret-down"></span>
+                              <span ng-show="subSortType == 'alt' && subSortReverse" class="fa fa-caret-up"></span>
+                              <span ng-show="subSortType != 'alt'" class="fa fa-sort"></span>
                             </a></th>
                             <th>
                             <a href="#" ng-click="subSortType = 'SIFT_score'; subSortReverse = !subSortReverse">
@@ -236,22 +236,24 @@
                             </a><span class="tableTooltip">Samples that contain the mutation.</span></th>
                             <th>
                             <a href="#" ng-click="subSortType = 'sampleCount'; subSortReverse = !subSortReverse">
-                              Sample Coverage
+                              Sample Frequency
                               <span ng-show="subSortType == 'sampleCount' && !subSortReverse" class="fa fa-caret-down"></span>
                               <span ng-show="subSortType == 'sampleCount' && subSortReverse" class="fa fa-caret-up"></span>
                               <span ng-show="subSortType != 'sampleCount'" class="fa fa-sort"></span>
-                            </a><span class="tableTooltip">Percent of total samples that contain the variant</span></th>
+                            </a><span class="tableTooltip">Frequency of samples that contain the variant</span></th>
                           </tr>
                       </thead>
                       <tbody>
                         <tr ng-repeat="var in row.info.variants  | orderBy:subSortType:subSortReverse | filter:searchText">
 
-                            <td>{{var.Variant}}</td>
-                            <td> <span ng-if="var.PhyoP44wayCoV_score"> {{var.PhyoP44wayCoV_score }} </span> <span ng-if="!var.PhyoP44wayCoV_score"> - </span></td>
-                            <td><span ng-if="var.PhastCons44wayCoV_score"> {{var.PhastCons44wayCoV_score }} </span><span ng-if="!var.PhastCons44wayCoV_score"> - </span></td>
+                            <td>{{var.pos}}</td>
+                            <td>{{var.ref}}</td>
+                            <td>{{var.alt}}</td>
+                            <!--<td> <span ng-if="var.PhyoP44wayCoV_score"> {{var.PhyoP44wayCoV_score }} </span> <span ng-if="!var.PhyoP44wayCoV_score"> - </span></td>
+                            <td><span ng-if="var.PhastCons44wayCoV_score"> {{var.PhastCons44wayCoV_score }} </span><span ng-if="!var.PhastCons44wayCoV_score"> - </span></td>-->
                             <td><span ng-if="var.SIFT_score"> {{var.SIFT_score }} </span><span ng-if="!var.SIFT_score"> - </span></td>
                             <td>{{var.sampleCount}} </td>
-                            <td>{{(var.sampleCount/row.totalSampleCount)*100 | number}} %</td>
+                            <td>{{(var.frequency)*100 | number}} %</td>
                         </tr>
                       </tbody>
                   </table>

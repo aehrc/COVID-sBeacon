@@ -97,11 +97,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       console.log(url,queryData);
       $http({method: 'GET', url: url,params:queryData}).then(function successCallback(resp) {
         var hits = resp.data;
-        console.log(hits);
+        //console.log(hits);
         $scope.hits = [];
         if( hits.exists == true){
           $scope.warning = null;
-          $q.all([$scope.rootQuery]).then(function(data){
+          $scope.hits =hits.datasetAlleleResponses;
+          /*$q.all([$scope.rootQuery]).then(function(data){
             var DatArray = data[0];
             angular.forEach(hits.datasetAlleleResponses, function(row){
               var filterObj = DatArray.filter(function(e) {
@@ -111,11 +112,11 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
               row['description']= filterObj[0].description;
               row['name']= filterObj[0].name;
               this.push(row);
-            }, $scope.hits);
+            }, $scope.hits);*/
 
             console.log($scope.hits);
             $scope.loading = false;
-          });
+          //});
 
         }else if(hits.error == true){
           $scope.warning = hits.error.errorMessage;
