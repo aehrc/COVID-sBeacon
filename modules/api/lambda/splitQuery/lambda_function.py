@@ -1,6 +1,7 @@
 from collections import defaultdict
 import csv
 import json
+import math
 from operator import itemgetter
 import os
 import queue
@@ -21,6 +22,13 @@ SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
 
 aws_lambda = boto3.client('lambda')
 s3_client = boto3.client('s3')
+
+
+def get_frequency(samples, total_samples):
+    sig_figs = 1 + math.floor(math.log10(samples))
+    raw_frequency = 100 * samples / total_samples
+    first_digit = math.floor(math.log10(raw_frequency))
+    return round(raw_frequency, sig_figs - first_digit - 1)
 
 
 def get_annotations(annotation_location, variants):
@@ -155,7 +163,7 @@ def split_query(dataset, reference_bases, region_start, region_end,
                 'ref': ref,
                 'alt': alt,
                 'sampleCount': variant_sample_count,
-                'frequency': variant_sample_count / dataset_sample_count,
+                'frequency': get_frequency(variant_sample_count, dataset_sample_count),
             })
         annotations.sort(key=itemgetter('pos'))
         sample_count = sum(len(samples)
@@ -165,7 +173,7 @@ def split_query(dataset, reference_bases, region_start, region_end,
             'datasetId': dataset['dataset_id'],
             'exists': exists,
             # Note not allelic frequency, only sample frequency
-            'frequency': sample_count / dataset_sample_count,
+            'frequency': get_frequency(sample_count, dataset_sample_count),
             'variantCount': len(variants),
             'callCount': call_count,
             'sampleCount': sample_count,
