@@ -25,10 +25,12 @@ s3_client = boto3.client('s3')
 
 
 def get_frequency(samples, total_samples):
-    sig_figs = 1 + math.floor(math.log10(samples))
-    raw_frequency = 100 * samples / total_samples
-    first_digit = math.floor(math.log10(raw_frequency))
-    return round(raw_frequency, sig_figs - first_digit - 1)
+    raw_frequency = samples / total_samples
+    decimal_places = math.ceil(math.log10(total_samples)) - 2
+    rounded = round(100 * raw_frequency, decimal_places)
+    if decimal_places <= 0:
+        rounded = int(rounded)
+    return rounded
 
 
 def get_annotations(annotation_location, variants):
