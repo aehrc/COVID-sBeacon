@@ -192,7 +192,7 @@
                 <td>{{row.callCount}}</td>
                 <td ng-show="sMin">{{row.sampleCount}} </td>
                 <td>{{row.info.datasetSampleCount}}</td>
-                <td>{{(row.frequency)*100 | number}} %</td>
+                <td>{{row.frequency}} %</td>
               </tr>
               <tr ng-show="main.activeRow" ng-repeat-end="">
                 <td colspan=7>
@@ -253,7 +253,7 @@
                             <td><span ng-if="var.PhastCons44wayCoV_score"> {{var.PhastCons44wayCoV_score }} </span><span ng-if="!var.PhastCons44wayCoV_score"> - </span></td>-->
                             <td><span ng-if="var.SIFT_score"> {{var.SIFT_score }} </span><span ng-if="!var.SIFT_score"> - </span></td>
                             <td>{{var.sampleCount}} </td>
-                            <td>{{(var.frequency)*100 | number}} %</td>
+                            <td>{{var.frequency}} %</td>
                         </tr>
                       </tbody>
                   </table>
