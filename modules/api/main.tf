@@ -189,7 +189,7 @@ module "lambda-splitQuery" {
   environment = {
     variables = {
       PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
-      SPLIT_SIZE = 1000000
+      SPLIT_SIZE = 2000
     }
   }
 }
