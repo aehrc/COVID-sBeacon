@@ -1,6 +1,7 @@
 from collections import defaultdict
 import csv
 import json
+from operator import itemgetter
 import os
 import queue
 import re
@@ -47,7 +48,6 @@ def get_annotations(annotation_location, variants):
         for variant in variants
         if variant not in covered_variants
     ]
-    annotations.sort(key=variant_key)
     return annotations
 
 
@@ -134,11 +134,20 @@ def split_query(dataset_id, reference_bases, region_start,
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
         annotations = get_annotations(annotation_location, variants.keys())
+        variant_pattern = re.compile('([0-9]+)(.+)>(.+)')
         for annotation in annotations:
-            annotation['sampleCount'] = sum(
-                len(s)
-                for s in variants[annotation['Variant']].values()
-            )
+            variant_code = annotation.pop('Variant')
+            pos, ref, alt = variant_pattern.fullmatch(variant_code).groups()
+            annotation.update({
+                'pos': int(pos),
+                'ref': ref,
+                'alt': alt,
+                'sampleCount': sum(
+                    len(s)
+                    for s in variants[variant_code].values()
+                ),
+            })
+        annotations.sort(key=itemgetter('pos'))
         response_dict = {
             'include': True,
             'datasetId': dataset_id,
@@ -162,12 +171,6 @@ def split_query(dataset_id, reference_bases, region_start,
             'exists': exists,
         }
     return response_dict
-
-
-def variant_key(variant_dict):
-    variant = variant_dict['Variant']
-    match = re.match('([0-9]+)', variant)
-    return int(match.group()), variant[:match.end()]
 
 
 def lambda_handler(event, context):
