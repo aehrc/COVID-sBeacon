@@ -10,6 +10,12 @@ import threading
 import boto3
 
 
+EXTRA_ANNOTATION_FIELDS = {
+    'Variant',  # For matching and calculating pos,ref,alt
+    'SIFT_score',
+}
+
+
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
 
@@ -38,7 +44,8 @@ def get_annotations(annotation_location, variants):
                 annotations.append({
                     metadata: value
                     for metadata, value in row.items()
-                    if value not in {'.', ''}
+                    if (value not in {'.', ''}
+                        and metadata in EXTRA_ANNOTATION_FIELDS)
                 })
                 covered_variants.add(row['Variant'])
     annotations += [
