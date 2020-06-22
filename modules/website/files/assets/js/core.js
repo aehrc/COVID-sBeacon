@@ -31,8 +31,8 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       return response.data.datasets
     }
 
-    $scope.rootQuery = $http.get(rootUrl).then(successCallback);
-    console.log($scope.rootQuery);
+    //$scope.rootQuery = $http.get(rootUrl).then(successCallback);
+    //console.log($scope.rootQuery);
 
 
     $scope.ShowHide = function(){
@@ -42,7 +42,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       location.reload(false);
     }
     $scope.search = function(searches){
-      console.log(searches);
+      //console.log(searches);
       if(searches == 'D614G'){
         /*$scope.sPos = 23403;
         $scope.ref = "A";
@@ -79,9 +79,9 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         $scope.alt = match[2].split(">")[1].trim();
 
 
-        console.log($scope.sPos);
-        console.log($scope.ref);
-        console.log($scope.alt);
+        //console.log($scope.sPos);
+        //console.log($scope.ref);
+        //console.log($scope.alt);
       }
 
 
@@ -94,7 +94,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       }else{
         queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos-1,"variantType":$scope.VarType};
       }
-      console.log(url,queryData);
+      //console.log(url,queryData);
       $http({method: 'GET', url: url,params:queryData}).then(function successCallback(resp) {
         var hits = resp.data;
         //console.log(hits);
@@ -114,7 +114,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
               this.push(row);
             }, $scope.hits);*/
 
-            console.log($scope.hits);
+            //console.log($scope.hits);
             $scope.loading = false;
           //});
 
