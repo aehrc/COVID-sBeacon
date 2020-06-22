@@ -150,16 +150,17 @@ def split_query(dataset, reference_bases, region_start, region_end,
                 ),
             })
         annotations.sort(key=itemgetter('pos'))
+        sample_count = sum(len(samples)
+                           for samples in vcf_samples.values())
         response_dict = {
             'include': True,
             'datasetId': dataset['dataset_id'],
             'exists': exists,
-            'frequency': ((all_alleles_count or call_count and None)
-                          and call_count / all_alleles_count),
+            # Note not allelic frequency, only sample frequency
+            'frequency': sample_count / dataset_sample_count,
             'variantCount': len(variants),
             'callCount': call_count,
-            'sampleCount': sum(len(samples)
-                               for samples in vcf_samples.values()),
+            'sampleCount': sample_count,
             'note': None,
             'externalUrl': None,
             'info': {
