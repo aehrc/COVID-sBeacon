@@ -33,8 +33,12 @@ def get_datasets(assembly_id, dataset_ids):
     kwargs = {
         'TableName': 'Datasets',
         'IndexName': 'assembly_index',
-        'ProjectionExpression': 'id,vcfLocations,annotationLocation',
+        'ProjectionExpression': 'id,vcfLocations,annotationLocation,'
+                                'sampleCount,#name,description',
         'KeyConditionExpression': 'assemblyId = :assemblyId',
+        'ExpressionAttributeNames': {
+            '#name': 'name',
+        },
         'ExpressionAttributeValues': {
             ':assemblyId': {'S': assembly_id}
         }
@@ -65,12 +69,12 @@ def get_vcf_chromosome_map(datasets, chromosome):
     return vcf_chromosome_map
 
 
-def perform_query(dataset_id, vcf_locations, annotation_location, reference_bases, region_start,
-                  region_end, end_min, end_max, alternate_bases, variant_type,
+def perform_query(dataset, reference_bases, region_start, region_end,
+                  end_min, end_max, alternate_bases, variant_type,
                   include_datasets, responses):
 
     payload = json.dumps({
-        'dataset_id': dataset_id,
+        'dataset': dataset,
         'reference_bases': reference_bases,
         'region_start': region_start,
         'region_end': region_end,
@@ -79,8 +83,6 @@ def perform_query(dataset_id, vcf_locations, annotation_location, reference_base
         'alternate_bases': alternate_bases,
         'variant_type': variant_type,
         'include_datasets': include_datasets,
-        'vcf_locations': vcf_locations,
-        'annotation_location': annotation_location,
     })
     print("Invoking {lambda_name} with payload: {payload}".format(
         lambda_name=SPLIT_QUERY, payload=payload))
@@ -89,7 +91,7 @@ def perform_query(dataset_id, vcf_locations, annotation_location, reference_base
         Payload=payload,
     )
     response_json = response['Payload'].read()
-    print("dataset_id {ds} received payload: {p}".format(ds=dataset_id,
+    print("dataset_id {ds} received payload: {p}".format(ds=dataset['dataset_id'],
                                                          p=response_json))
     response_dict = json.loads(response_json)
     responses.put(response_dict)
@@ -149,11 +151,24 @@ def query_datasets(parameters):
         vcf_locations = {vcf: vcf_chromosomes[vcf]
                          for vcf in dataset['vcfLocations']['SS']
                          if vcf_chromosomes[vcf]}
+        annotation_location = dataset.get('annotationLocation',
+                                          {'S': None})['S']
+        try:
+            dataset_details = {
+                'annotation_location': annotation_location,
+                'dataset_id': dataset_id,
+                'description': dataset.get('description', {'S': None})['S'],
+                'name': dataset['name']['S'],
+                'vcf_locations': vcf_locations,
+                'sample_count': int(dataset['sampleCount']['N']),
+
+            }
+        except KeyError:
+            # Dataset hasn't been summarised yet or is invalid, skip
+            continue
         t = threading.Thread(target=perform_query,
                              kwargs={
-                                 'dataset_id': dataset_id,
-                                 'vcf_locations': vcf_locations,
-                                 'annotation_location': dataset.get('annotationLocation', {'S': None})['S'],
+                                 'dataset': dataset_details,
                                  'reference_bases': reference_bases,
                                  'region_start': region_start,
                                  'region_end': region_end,

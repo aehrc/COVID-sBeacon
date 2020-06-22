@@ -79,9 +79,9 @@ def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
     responses.put(response_dict)
 
 
-def split_query(dataset_id, reference_bases, region_start,
-                region_end, end_min, end_max, alternate_bases, variant_type,
-                include_datasets, vcf_locations, annotation_location):
+def split_query(dataset, reference_bases, region_start, region_end,
+                end_min, end_max, alternate_bases, variant_type,
+                include_datasets):
     responses = queue.Queue()
     check_all = include_datasets in ('HIT', 'ALL')
     kwargs = {
@@ -96,6 +96,7 @@ def split_query(dataset_id, reference_bases, region_start,
     }
     threads = []
     split_start = region_start
+    vcf_locations = dataset['vcf_locations']
     while split_start <= region_end:
         split_end = min(split_start + SPLIT_SIZE - 1, region_end)
         for vcf_location, chrom in vcf_locations.items():
@@ -131,9 +132,10 @@ def split_query(dataset_id, reference_bases, region_start,
                 for variant, samples in response['variant_samples'].items():
                     variants[variant][vcf_location].update(samples)
                     vcf_samples[vcf_location].update(samples)
+    dataset_sample_count = dataset['sample_count']
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
-        annotations = get_annotations(annotation_location, variants.keys())
+        annotations = get_annotations(dataset['annotation_location'], variants.keys())
         variant_pattern = re.compile('([0-9]+)(.+)>(.+)')
         for annotation in annotations:
             variant_code = annotation.pop('Variant')
@@ -150,7 +152,7 @@ def split_query(dataset_id, reference_bases, region_start,
         annotations.sort(key=itemgetter('pos'))
         response_dict = {
             'include': True,
-            'datasetId': dataset_id,
+            'datasetId': dataset['dataset_id'],
             'exists': exists,
             'frequency': ((all_alleles_count or call_count and None)
                           and call_count / all_alleles_count),
@@ -161,6 +163,9 @@ def split_query(dataset_id, reference_bases, region_start,
             'note': None,
             'externalUrl': None,
             'info': {
+                'description': dataset['description'],
+                'name': dataset['name'],
+                'datasetSampleCount': dataset_sample_count,
                 'variants': annotations,
             },
             'error': None,
@@ -175,7 +180,7 @@ def split_query(dataset_id, reference_bases, region_start,
 
 def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
-    dataset_id = event['dataset_id']
+    dataset = event['dataset']
     reference_bases = event['reference_bases']
     region_start = event['region_start']
     region_end = event['region_end']
@@ -184,10 +189,8 @@ def lambda_handler(event, context):
     alternate_bases = event['alternate_bases']
     variant_type = event['variant_type']
     include_datasets = event['include_datasets']
-    vcf_locations = event['vcf_locations']
-    annotation_location = event['annotation_location']
     response = split_query(
-        dataset_id=dataset_id,
+        dataset=dataset,
         reference_bases=reference_bases,
         region_start=region_start,
         region_end=region_end,
@@ -196,8 +199,6 @@ def lambda_handler(event, context):
         alternate_bases=alternate_bases,
         variant_type=variant_type,
         include_datasets=include_datasets,
-        vcf_locations=vcf_locations,
-        annotation_location=annotation_location,
     )
     print('Returning response: {}'.format(json.dumps(response)))
     return response

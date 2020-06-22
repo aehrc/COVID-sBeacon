@@ -19,7 +19,10 @@ resource aws_dynamodb_table datasets {
     name = "assembly_index"
     non_key_attributes = [
       "annotationLocation",
+      "description",
       "id",
+      "name",
+      "sampleCount",
       "vcfLocations",
     ]
     projection_type = "INCLUDE"
