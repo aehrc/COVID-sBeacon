@@ -239,9 +239,6 @@ def validate_request(parameters):
     end = parameters.get('end')
     if end is None:
         missing_parameters.add('end')
-        if 'start' not in missing_parameters and reference_bases == 'N':
-            return ("referenceBases must be [ACGT]* if start is specified but"
-                    " end is not specified")
     else:
         if 'start' in missing_parameters:
             return "end may not be specified if start is not specified"
