@@ -77,6 +77,13 @@ data aws_iam_policy_document lambda-summariseDataset {
       aws_sns_topic.summariseVcf.arn,
     ]
   }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["*"]
+  }
 }
 
 #
