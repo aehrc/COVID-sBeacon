@@ -156,10 +156,14 @@ def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
     responses.put(response_dict)
 
 
-def process_page(response, variants_skip, variants_max, sort_key, desc=False):
+def process_page(response, page_details):
     variants = response['info']['variants']
-    print(f"Sorting by {sort_key}, {'descending' if desc else 'ascending'}")
-    variants.sort(key=itemgetter(sort_key), reverse=desc)
+    sortby = page_details['sortby']
+    desc = page_details['desc']
+    variants_max = page_details['variants_max']
+    variants_skip = page_details['variants_skip']
+    print(f"Sorting by {sortby}, {'descending' if desc else 'ascending'}")
+    variants.sort(key=itemgetter(sortby), reverse=desc)
     if variants_max is None:
         final_index = None
     else:
@@ -281,7 +285,7 @@ def s3_get_object(bucket, key):
 
 def split_query(dataset, reference_bases, region_start, region_end,
                 end_min, end_max, alternate_bases, variant_type,
-                include_datasets, variants_skip, variants_max):
+                include_datasets, page_details):
     dataset_id = dataset['dataset_id']
     query_args = '&'.join(str(arg) for arg in [
         region_start,
@@ -301,7 +305,7 @@ def split_query(dataset, reference_bases, region_start, region_end,
                                include_datasets)
         cache_response(response, dataset_id, query_args)
     if response['include']:
-        process_page(response, variants_skip, variants_max, 'pos')
+        process_page(response, page_details)
     return response
 
 
@@ -325,8 +329,7 @@ def lambda_handler(event, context):
     alternate_bases = event['alternate_bases']
     variant_type = event['variant_type']
     include_datasets = event['include_datasets']
-    variants_skip = event['variants_skip']
-    variants_max = event['variants_max']
+    page_details = event['page_details']
     response = split_query(
         dataset=dataset,
         reference_bases=reference_bases,
@@ -337,8 +340,7 @@ def lambda_handler(event, context):
         alternate_bases=alternate_bases,
         variant_type=variant_type,
         include_datasets=include_datasets,
-        variants_skip=variants_skip,
-        variants_max=variants_max,
+        page_details=page_details,
     )
     print('Returning response: {}'.format(json.dumps(response)))
     return response

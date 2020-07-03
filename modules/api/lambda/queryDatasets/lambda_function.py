@@ -71,7 +71,7 @@ def get_vcf_chromosome_map(datasets, chromosome):
 
 def perform_query(dataset, reference_bases, region_start, region_end,
                   end_min, end_max, alternate_bases, variant_type,
-                  include_datasets, variants_skip, variants_max,
+                  include_datasets, page_details,
                   responses):
 
     payload = json.dumps({
@@ -84,8 +84,7 @@ def perform_query(dataset, reference_bases, region_start, region_end,
         'alternate_bases': alternate_bases,
         'variant_type': variant_type,
         'include_datasets': include_datasets,
-        'variants_skip': variants_skip,
-        'variants_max': variants_max,
+        'page_details': page_details,
     })
     print("Invoking {lambda_name} with payload: {payload}".format(
         lambda_name=SPLIT_QUERY, payload=payload))
@@ -147,8 +146,12 @@ def query_datasets(parameters):
     alternate_bases = parameters.get('alternateBases')
     variant_type = parameters.get('variantType')
     include_datasets = parameters.get('includeDatasetResponses', 'NONE')
-    variants_skip = parameters.get('variantsSkip', 0)
-    variants_max = parameters.get('variantsMax')
+    page_details = {
+        'variants_skip': parameters.get('variantsSkip', 0),
+        'variants_max': parameters.get('variantsMax'),
+        'sortby': parameters.get('variantsSortby', 'pos'),
+        'desc': bool(parameters.get('variantsDescending')),
+    }
     responses = queue.Queue()
     threads = []
     for dataset in datasets:
@@ -182,8 +185,7 @@ def query_datasets(parameters):
                                  'alternate_bases': alternate_bases,
                                  'variant_type': variant_type,
                                  'include_datasets': include_datasets,
-                                 'variants_skip': variants_skip,
-                                 'variants_max': variants_max,
+                                 'page_details': page_details,
                                  'responses': responses,
                              })
         t.start()
@@ -334,6 +336,20 @@ def validate_request(parameters):
     elif variants_max < 0:
         return "variantsMax cannot be negative"
 
+    variants_sortby = parameters.get('variantsSortby')
+    if variants_sortby is None:
+        missing_parameters.add('variantsSortby')
+    else:
+        if not isinstance(variants_sortby, str):
+            return "variantsSortby must be a string"
+
+    variants_descending = parameters.get('variantsDescending')
+    if variants_descending is None:
+        missing_parameters.add('variantsDescending')
+    else:
+        if variants_descending not in (0, 1):
+            return "variantsDescending must be 0 or 1"
+
     return ''
 
 
@@ -359,7 +375,8 @@ def lambda_handler(event, context):
         multi_values = event['multiValueQueryStringParameters']
         parameters['datasetIds'] = multi_values.get('datasetIds')
         for int_field in ('start', 'end', 'startMin', 'startMax', 'endMin',
-                          'endMax', 'variantsSkip', 'variantsMax'):
+                          'endMax', 'variantsSkip', 'variantsMax',
+                          'variantsDescending'):
             if int_field in parameters:
                 try:
                     parameters[int_field] = int(parameters[int_field])
