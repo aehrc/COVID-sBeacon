@@ -178,6 +178,7 @@ paths:
             Number of variants to skip when returning variant-specific annotations.
             Default is 0.
           in: query
+          required: false
           schema:
             type: integer
             format: int64
@@ -187,6 +188,7 @@ paths:
             Maximum number of variants to include when returning variant-specific annotations.
             If unspecified, no limit is applied.
           in: query
+          required: false
           schema:
             type: integer
             format: int64
@@ -397,6 +399,20 @@ components:
             - HIT
             - MISS
             - NONE
+        variantsSkip:
+          description: |
+            Number of variants to skip when returning variant-specific annotations.
+            Default is 0.
+          type: integer
+          format: int64
+          minimum: 0
+        variantsMax:
+          description: |
+            Maximum number of variants to include when returning variant-specific annotations.
+            If unspecified, no limit is applied.
+          type: integer
+          format: int64
+          minimum: 0
     BeaconAlleleResponse:
       type: object
       required:
