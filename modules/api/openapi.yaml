@@ -173,6 +173,24 @@ paths:
               - HIT
               - MISS
               - NONE
+        - name: variantsSkip
+          description: |
+            Number of variants to skip when returning variant-specific annotations.
+            Default is 0.
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: variantsMax
+          description: |
+            Maximum number of variants to include when returning variant-specific annotations.
+            If unspecified, no limit is applied.
+          in: query
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
       responses:
         '200':
           description: OK
