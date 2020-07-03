@@ -23,6 +23,7 @@ module lambda-submitDataset {
   environment = {
     variables = {
       DATASETS_TABLE = aws_dynamodb_table.datasets.name
+      FLUSH_CACHE_SNS_TOPIC_ARN = aws_sns_topic.flushCache.arn
       SUMMARISE_DATASET_SNS_TOPIC_ARN = aws_sns_topic.summariseDataset.arn
     }
   }
@@ -58,7 +59,6 @@ module "lambda-summariseDataset" {
 #
 # summariseVcf Lambda Function
 #
-
 module "lambda-summariseVcf" {
   source = "../lambda"
 
@@ -107,6 +107,32 @@ module "lambda-summariseSlice" {
       SUMMARISE_DATASET_SNS_TOPIC_ARN = aws_sns_topic.summariseDataset.arn
       SUMMARISE_SLICE_SNS_TOPIC_ARN = aws_sns_topic.summariseSlice.arn
       VCF_SUMMARIES_TABLE = aws_dynamodb_table.vcf_summaries.name
+    }
+  }
+}
+
+#
+# flushCache Lambda Function
+#
+module "lambda-flushCache" {
+  source = "../lambda"
+
+  function_name = "flushCache"
+  description = "Deletes cached responses for a dataset."
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.8"
+  memory_size = 128
+  timeout = 60
+  policy = {
+    json = data.aws_iam_policy_document.lambda-flushCache.json
+  }
+  source_path = "${path.module}/lambda/flushCache"
+  tags = var.common-tags
+
+  environment = {
+    variables = {
+      CACHE_BUCKET = aws_s3_bucket.cache.bucket
+      CACHE_TABLE = aws_dynamodb_table.cache.name
     }
   }
 }
@@ -188,6 +214,8 @@ module "lambda-splitQuery" {
 
   environment = {
     variables = {
+      CACHE_BUCKET = aws_s3_bucket.cache.bucket
+      CACHE_TABLE = aws_dynamodb_table.cache.name
       PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
       SPLIT_SIZE = 2000
     }

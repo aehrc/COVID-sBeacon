@@ -1,3 +1,4 @@
+import base64
 from collections import defaultdict
 import csv
 import json
@@ -9,6 +10,7 @@ import re
 import threading
 
 import boto3
+from botocore.exceptions import ClientError
 
 
 EXTRA_ANNOTATION_FIELDS = {
@@ -16,12 +18,76 @@ EXTRA_ANNOTATION_FIELDS = {
     'SIFT_score',
 }
 
-
+CACHE_BUCKET = os.environ['CACHE_BUCKET']
+CACHE_TABLE = os.environ['CACHE_TABLE']
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
 
 aws_lambda = boto3.client('lambda')
-s3_client = boto3.client('s3')
+dynamodb = boto3.client('dynamodb')
+s3 = boto3.client('s3')
+
+
+def cache_response(response, dataset_id, query_args):
+    response_body = json.dumps(response).encode()
+    encoded_query = base64.urlsafe_b64encode(query_args.encode())
+    safe_query = encoded_query.decode().strip('=')
+    key = f'{dataset_id}/{safe_query}'
+    kwargs = {
+        'Bucket': CACHE_BUCKET,
+        'Key': key,
+        'Body': truncate_body(response_body),
+    }
+    print(f"Calling s3.put_item with kwargs: {json.dumps(kwargs)}")
+    kwargs['Body'] = response_body
+    s3_response = s3.put_object(**kwargs)
+    print(f"Received response {json.dumps(s3_response, default=str)}")
+    kwargs = {
+        'TableName': CACHE_TABLE,
+        'Item': {
+            'datasetId': {
+                'S': dataset_id,
+            },
+            'queryArgs': {
+                'S': query_args,
+            },
+            'queryLocation': {
+                'S': key
+            }
+        },
+    }
+    print(f"Calling dynamodb.put_item with kwargs {json.dumps(kwargs)}")
+    dynamodb_response = dynamodb.put_item(**kwargs)
+    response_string = json.dumps(dynamodb_response, default=str)
+    print(f"Received response {response_string}")
+
+
+def get_cached(dataset_id, query_args):
+    kwargs = {
+        'TableName': CACHE_TABLE,
+        'Key': {
+            'datasetId': {
+                'S': dataset_id
+            },
+            'queryArgs': {
+                'S': query_args,
+            },
+        },
+        'ProjectionExpression': 'queryLocation',
+    }
+    print(f"Calling dynamodb.get_item with kwargs: {json.dumps(kwargs)}")
+    response = dynamodb.get_item(**kwargs)
+    print(f"Received response {json.dumps(response)}")
+    item = response.get('Item')
+    if not item:
+        return None
+    query_location = item['queryLocation']['S']
+    try:
+        streaming_body = s3_get_object(CACHE_BUCKET, query_location)
+    except ClientError as error:
+        print(json.dumps(error.response, default=str))
+        return None
+    return json.load(streaming_body)
 
 
 def get_frequency(samples, total_samples):
@@ -40,14 +106,8 @@ def get_annotations(annotation_location, variants):
         delim_index = annotation_location.find('/', 5)
         bucket = annotation_location[5:delim_index]
         key = annotation_location[delim_index+1:]
-        kwargs = {
-            'Bucket': bucket,
-            'Key': key,
-        }
-        print(f"Calling s3.get_object with kwargs: {json.dumps(kwargs)}")
-        response = s3_client.get_object(**kwargs)
-        print(f"Received response: {json.dumps(response, default=str)}")
-        iterator = (row.decode('utf-8') for row in response['Body'].iter_lines())
+        streaming_body = s3_get_object(bucket, key)
+        iterator = (row.decode('utf-8') for row in streaming_body.iter_lines())
         reader = csv.DictReader(iterator, delimiter='\t')
         for row in reader:
             if row['Variant'] in variants:
@@ -96,7 +156,7 @@ def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
     responses.put(response_dict)
 
 
-def split_query(dataset, reference_bases, region_start, region_end,
+def run_queries(dataset, reference_bases, region_start, region_end,
                 end_min, end_max, alternate_bases, variant_type,
                 include_datasets):
     responses = queue.Queue()
@@ -167,7 +227,6 @@ def split_query(dataset, reference_bases, region_start, region_end,
                 'sampleCount': variant_sample_count,
                 'frequency': get_frequency(variant_sample_count, dataset_sample_count),
             })
-        annotations.sort(key=itemgetter('pos'))
         sample_count = sum(len(samples)
                            for samples in vcf_samples.values())
         response_dict = {
@@ -195,6 +254,52 @@ def split_query(dataset, reference_bases, region_start, region_end,
             'exists': exists,
         }
     return response_dict
+
+
+def s3_get_object(bucket, key):
+    kwargs = {
+        'Bucket': bucket,
+        'Key': key,
+    }
+    print(f"Calling s3.get_object with kwargs: {json.dumps(kwargs)}")
+    response = s3.get_object(**kwargs)
+    print(f"Received response: {json.dumps(response, default=str)}")
+    return response['Body']
+
+
+def split_query(dataset, reference_bases, region_start, region_end,
+                end_min, end_max, alternate_bases, variant_type,
+                include_datasets):
+    dataset_id = dataset['dataset_id']
+    query_args = '&'.join(str(arg) for arg in [
+        region_start,
+        region_end,
+        end_min,
+        end_max,
+        reference_bases,
+        alternate_bases,
+        variant_type,
+        include_datasets,
+    ])
+    response = get_cached(dataset_id, query_args)
+    if response is None:
+        response = run_queries(dataset, reference_bases, region_start,
+                               region_end, end_min, end_max,
+                               alternate_bases, variant_type,
+                               include_datasets)
+        cache_response(response, dataset_id, query_args)
+    if response['include']:
+        response['info']['variants'].sort(key=itemgetter('pos'))
+    return response
+
+
+def truncate_body(body, head=100, tail=100):
+    if len(body) > head + tail + 16:
+        return (body[:head].decode()
+                + f'...<{len(body) - head - tail} bytes>...'
+                + body[-tail:].decode())
+    else:
+        return body.decode()
 
 
 def lambda_handler(event, context):

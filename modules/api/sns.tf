@@ -27,3 +27,13 @@ resource aws_sns_topic_subscription summariseSlice {
   protocol = "lambda"
   endpoint = module.lambda-summariseSlice.function_arn
 }
+
+resource aws_sns_topic flushCache {
+  name = "flushCache"
+}
+
+resource aws_sns_topic_subscription flushCache {
+  topic_arn = aws_sns_topic.flushCache.arn
+  protocol = "lambda"
+  endpoint = module.lambda-flushCache.function_arn
+}

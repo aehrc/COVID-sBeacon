@@ -1,3 +1,21 @@
+resource aws_dynamodb_table cache {
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key = "datasetId"
+  range_key = "queryArgs"
+  name = "QueryCache"
+  tags = var.common-tags
+
+  attribute {
+    name = "queryArgs"
+    type = "S"
+  }
+
+  attribute {
+    name = "datasetId"
+    type = "S"
+  }
+}
+
 resource aws_dynamodb_table datasets {
   billing_mode = "PAY_PER_REQUEST"
   hash_key = "id"

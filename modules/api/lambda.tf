@@ -43,6 +43,17 @@ resource aws_lambda_permission SNSSummariseSlice {
 }
 
 #
+# flushCache Lambda Function
+#
+resource aws_lambda_permission SNSFlushCache {
+  statement_id = "AllowSNSFlushCacheInvoke"
+  action = "lambda:InvokeFunction"
+  function_name = module.lambda-flushCache.function_name
+  principal = "sns.amazonaws.com"
+  source_arn = aws_sns_topic.flushCache.arn
+}
+
+#
 # getInfo Lambda Function
 #
 resource aws_lambda_permission APIGetInfo {
