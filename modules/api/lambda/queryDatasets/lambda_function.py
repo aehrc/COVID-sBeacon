@@ -69,21 +69,12 @@ def get_vcf_chromosome_map(datasets, chromosome):
     return vcf_chromosome_map
 
 
-def perform_query(dataset, reference_bases, region_start, region_end,
-                  end_min, end_max, alternate_bases, variant_type,
-                  include_datasets, page_details,
+def perform_query(dataset, query_details, page_details,
                   responses):
 
     payload = json.dumps({
         'dataset': dataset,
-        'reference_bases': reference_bases,
-        'region_start': region_start,
-        'region_end': region_end,
-        'end_min': end_min,
-        'end_max': end_max,
-        'alternate_bases': alternate_bases,
-        'variant_type': variant_type,
-        'include_datasets': include_datasets,
+        'query_details': query_details,
         'page_details': page_details,
     })
     print("Invoking {lambda_name} with payload: {payload}".format(
@@ -143,9 +134,17 @@ def query_datasets(parameters):
             region_end = region_start
             end_min = region_start + max_offset
             end_max = end_min
-    alternate_bases = parameters.get('alternateBases')
-    variant_type = parameters.get('variantType')
     include_datasets = parameters.get('includeDatasetResponses', 'NONE')
+    query_details = {
+        'region_start': region_start,
+        'region_end': region_end,
+        'end_min': end_min,
+        'end_max': end_max,
+        'reference_bases': reference_bases,
+        'alternate_bases': parameters.get('alternateBases'),
+        'variant_type': parameters.get('variantType'),
+        'include_datasets': include_datasets,
+    }
     page_details = {
         'variants_skip': parameters.get('variantsSkip', 0),
         'variants_max': parameters.get('variantsMax'),
@@ -177,14 +176,7 @@ def query_datasets(parameters):
         t = threading.Thread(target=perform_query,
                              kwargs={
                                  'dataset': dataset_details,
-                                 'reference_bases': reference_bases,
-                                 'region_start': region_start,
-                                 'region_end': region_end,
-                                 'end_min': end_min,
-                                 'end_max': end_max,
-                                 'alternate_bases': alternate_bases,
-                                 'variant_type': variant_type,
-                                 'include_datasets': include_datasets,
+                                 'query_details': query_details,
                                  'page_details': page_details,
                                  'responses': responses,
                              })

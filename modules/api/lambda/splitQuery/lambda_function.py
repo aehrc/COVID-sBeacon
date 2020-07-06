@@ -172,10 +172,16 @@ def process_page(response, page_details):
     response['info']['variants'] = variants[variants_skip:final_index]
 
 
-def run_queries(dataset, reference_bases, region_start, region_end,
-                end_min, end_max, alternate_bases, variant_type,
-                include_datasets):
+def run_queries(dataset, query_details):
     responses = queue.Queue()
+    region_start = query_details['region_start']
+    region_end = query_details['region_end']
+    end_min = query_details['end_min']
+    end_max = query_details['end_max']
+    reference_bases = query_details['reference_bases']
+    alternate_bases = query_details['alternate_bases']
+    variant_type = query_details['variant_type']
+    include_datasets = query_details['include_datasets']
     check_all = include_datasets in ('HIT', 'ALL')
     kwargs = {
         'reference_bases': reference_bases,
@@ -283,26 +289,12 @@ def s3_get_object(bucket, key):
     return response['Body']
 
 
-def split_query(dataset, reference_bases, region_start, region_end,
-                end_min, end_max, alternate_bases, variant_type,
-                include_datasets, page_details):
+def split_query(dataset, query_details, page_details):
     dataset_id = dataset['dataset_id']
-    query_args = '&'.join(str(arg) for arg in [
-        region_start,
-        region_end,
-        end_min,
-        end_max,
-        reference_bases,
-        alternate_bases,
-        variant_type,
-        include_datasets,
-    ])
+    query_args = '&'.join(str(arg) for arg in query_details.values())
     response = get_cached(dataset_id, query_args)
     if response is None:
-        response = run_queries(dataset, reference_bases, region_start,
-                               region_end, end_min, end_max,
-                               alternate_bases, variant_type,
-                               include_datasets)
+        response = run_queries(dataset, query_details)
         cache_response(response, dataset_id, query_args)
     if response['include']:
         process_page(response, page_details)
@@ -321,25 +313,11 @@ def truncate_body(body, head=100, tail=100):
 def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
     dataset = event['dataset']
-    reference_bases = event['reference_bases']
-    region_start = event['region_start']
-    region_end = event['region_end']
-    end_min = event['end_min']
-    end_max = event['end_max']
-    alternate_bases = event['alternate_bases']
-    variant_type = event['variant_type']
-    include_datasets = event['include_datasets']
+    query_details = event['query_details']
     page_details = event['page_details']
     response = split_query(
         dataset=dataset,
-        reference_bases=reference_bases,
-        region_start=region_start,
-        region_end=region_end,
-        end_min=end_min,
-        end_max=end_max,
-        alternate_bases=alternate_bases,
-        variant_type=variant_type,
-        include_datasets=include_datasets,
+        query_details=query_details,
         page_details=page_details,
     )
     print('Returning response: {}'.format(json.dumps(response)))
