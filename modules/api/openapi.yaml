@@ -173,19 +173,19 @@ paths:
               - HIT
               - MISS
               - NONE
-        - name: variantsSkip
+        - name: page
           description: |
-            Number of variants to skip when returning variant-specific annotations.
-            Default is 0.
+            Which page of variant-specific annotations to return.
+            Default is 1.
           in: query
           required: false
           schema:
             type: integer
             format: int64
-            minimum: 0
-        - name: variantsMax
+            minimum: 1
+        - name: pageSize
           description: |
-            Maximum number of variants to include when returning variant-specific annotations.
+            Maximum number of variants to include in a page of variant-specific annotations.
             If unspecified, no limit is applied.
           in: query
           required: false
@@ -418,16 +418,16 @@ components:
             - HIT
             - MISS
             - NONE
-        variantsSkip:
+        page:
           description: |
-            Number of variants to skip when returning variant-specific annotations.
-            Default is 0.
+            Which page of variant-specific annotations to return.
+            Default is 1.
           type: integer
           format: int64
-          minimum: 0
-        variantsMax:
+          minimum: 1
+        pageSize:
           description: |
-            Maximum number of variants to include when returning variant-specific annotations.
+            Maximum number of variants to include in a page of variant-specific annotations.
             If unspecified, no limit is applied.
           type: integer
           format: int64

@@ -146,8 +146,8 @@ def query_datasets(parameters):
         'include_datasets': include_datasets,
     }
     page_details = {
-        'variants_skip': parameters.get('variantsSkip', 0),
-        'variants_max': parameters.get('variantsMax'),
+        'page': parameters.get('page', 1),
+        'page_size': parameters.get('pageSize'),
         'sortby': parameters.get('variantsSortby', 'pos'),
         'desc': bool(parameters.get('variantsDescending')),
     }
@@ -312,21 +312,21 @@ def validate_request(parameters):
         return "includeDatasetResponses must be one of {}".format(
             ', '.join(INCLUDE_DATASETS_VALUES))
 
-    variants_skip = parameters.get('variantsSkip')
-    if variants_skip is None:
-        missing_parameters.add('variantsSkip')
-    elif not isinstance(variants_skip, int):
-        return "variantsSkip must be an integer"
-    elif variants_skip < 0:
-        return "variantsSkip cannot be negative"
+    page = parameters.get('page')
+    if page is None:
+        missing_parameters.add('page')
+    elif not isinstance(page, int):
+        return "page must be an integer"
+    elif page < 1:
+        return "page must be 1 or greater"
 
-    variants_max = parameters.get('variantsMax')
-    if variants_max is None:
-        missing_parameters.add('variantsMax')
-    elif not isinstance(variants_max, int):
-        return "variantsMax must be an integer"
-    elif variants_max < 0:
-        return "variantsMax cannot be negative"
+    page_size = parameters.get('pageSize')
+    if page_size is None:
+        missing_parameters.add('pageSize')
+    elif not isinstance(page_size, int):
+        return "pageSize must be an integer"
+    elif page_size < 0:
+        return "pageSize cannot be negative"
 
     variants_sortby = parameters.get('variantsSortby')
     if variants_sortby is None:
@@ -367,7 +367,7 @@ def lambda_handler(event, context):
         multi_values = event['multiValueQueryStringParameters']
         parameters['datasetIds'] = multi_values.get('datasetIds')
         for int_field in ('start', 'end', 'startMin', 'startMax', 'endMin',
-                          'endMax', 'variantsSkip', 'variantsMax',
+                          'endMax', 'page', 'pageSize',
                           'variantsDescending'):
             if int_field in parameters:
                 try:

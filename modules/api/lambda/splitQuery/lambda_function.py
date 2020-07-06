@@ -158,18 +158,23 @@ def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
 
 def process_page(response, page_details):
     variants = response['info']['variants']
+    num_variants = len(variants)
     sortby = page_details['sortby']
     desc = page_details['desc']
-    variants_max = page_details['variants_max']
-    variants_skip = page_details['variants_skip']
+    page_size = page_details['page_size']
+    if page_size is None:
+        page_size = num_variants
+    page = page_details['page']
     print(f"Sorting by {sortby}, {'descending' if desc else 'ascending'}")
     variants.sort(key=itemgetter(sortby), reverse=desc)
-    if variants_max is None:
-        final_index = None
-    else:
-        final_index = variants_skip + variants_max
-    print(f"Restricting to [{repr(variants_skip)}:{repr(final_index)}]")
-    response['info']['variants'] = variants[variants_skip:final_index]
+    skip = (page-1) * page_size
+    final_index = page * page_size
+    print(f"Restricting {num_variants} annotations to the range"
+          f" [{skip}:{final_index}]")
+    response['info'].update({
+        'variants': variants[skip:final_index],
+        'pages': math.ceil(num_variants / page_size),
+    })
 
 
 def run_queries(dataset, query_details):
