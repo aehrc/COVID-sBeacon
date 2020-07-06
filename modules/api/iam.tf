@@ -32,6 +32,7 @@ data aws_iam_policy_document lambda-submitDataset {
       "SNS:Publish",
     ]
     resources = [
+      aws_sns_topic.flushCache.arn,
       aws_sns_topic.summariseDataset.arn,
     ]
   }
@@ -76,6 +77,13 @@ data aws_iam_policy_document lambda-summariseDataset {
     resources = [
       aws_sns_topic.summariseVcf.arn,
     ]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = ["*"]
   }
 }
 
@@ -153,6 +161,39 @@ data aws_iam_policy_document lambda-summariseSlice {
 }
 
 #
+# flushCache Lambda Function
+#
+data aws_iam_policy_document lambda-flushCache {
+  statement {
+    actions = [
+      "dynamodb:Query",
+      "dynamodb:BatchWriteItem",
+    ]
+    resources = [
+      aws_dynamodb_table.cache.arn,
+    ]
+  }
+
+  statement {
+    actions = [
+      "s3:DeleteObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.cache.arn}/*",
+    ]
+  }
+
+  statement {
+    actions = [
+      "s3:ListBucket",
+    ]
+    resources = [
+      aws_s3_bucket.cache.arn,
+    ]
+  }
+}
+
+#
 # getInfo Lambda Function
 #
 data aws_iam_policy_document lambda-getInfo {
@@ -204,6 +245,21 @@ data aws_iam_policy_document lambda-splitQuery {
       "lambda:InvokeFunction",
     ]
     resources = [module.lambda-performQuery.function_arn]
+  }
+
+  statement {
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+    ]
+    resources = [aws_dynamodb_table.cache.arn]
+  }
+
+  statement {
+    actions = [
+      "s3:PutObject",
+    ]
+    resources = ["${aws_s3_bucket.cache.arn}/*"]
   }
 
   statement {

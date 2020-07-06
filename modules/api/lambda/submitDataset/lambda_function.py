@@ -9,6 +9,7 @@ import boto3
 from api_response import bad_request, bundle_response, missing_parameter
 
 DATASETS_TABLE_NAME = os.environ['DATASETS_TABLE']
+FLUSH_CACHE_SNS_TOPIC_ARN = os.environ['FLUSH_CACHE_SNS_TOPIC_ARN']
 SUMMARISE_DATASET_SNS_TOPIC_ARN = os.environ['SUMMARISE_DATASET_SNS_TOPIC_ARN']
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
@@ -110,6 +111,16 @@ def create_dataset(attributes):
     dynamodb.put_item(**kwargs)
 
 
+def flush_cache(dataset_id):
+    kwargs = {
+        'TopicArn': FLUSH_CACHE_SNS_TOPIC_ARN,
+        'Message': dataset_id
+    }
+    print(f"Calling sns.publish with kwargs {json.dumps(kwargs)}")
+    response = sns.publish(**kwargs)
+    print(f"Received Response: {json.dumps(response)}")
+
+
 def get_current_time():
     return datetime.datetime.now().isoformat(timespec='seconds')
 
@@ -130,8 +141,10 @@ def submit_dataset(body_dict, method):
         create_dataset(body_dict)
     else:
         update_dataset(body_dict)
+    dataset_id = body_dict['id']
     if summarise:
-        summarise_dataset(body_dict['id'])
+        summarise_dataset(dataset_id)
+    flush_cache(dataset_id)
     return bundle_response(200, {})
 
 

@@ -21,6 +21,7 @@ VCF_SUMMARIES_TABLE_NAME = os.environ['VCF_SUMMARIES_TABLE']
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 
 dynamodb = boto3.client('dynamodb')
+s3 = boto3.client('s3')
 sns = boto3.client('sns')
 
 regions = {}
@@ -31,6 +32,20 @@ for chrom, size in CHROMOSOME_LENGTHS_MBP.items():
         chrom_regions.append(start)
         start += SLICE_SIZE_MBP
     regions[chrom] = chrom_regions
+
+
+def get_etag(vcf_location):
+    if not vcf_location.startswith('s3://'):
+        return vcf_location
+    delimiter_index = vcf_location.find('/', 5)
+    kwargs = {
+        'Bucket': vcf_location[5:delimiter_index],
+        'Key': vcf_location[delimiter_index + 1:],
+    }
+    print(f"Calling s3.head_object with kwargs: {json.dumps(kwargs)}")
+    response = s3.head_object(**kwargs)
+    print(f"Received response: {json.dumps(response, default=str)}")
+    return response['ETag'].strip('"')
 
 
 def get_sample_count(location):
@@ -63,7 +78,7 @@ def get_translated_regions(location):
     return vcf_regions
 
 
-def mark_updating(location, vcf_regions):
+def mark_updating(location, vcf_regions, etag):
     kwargs = {
         'TableName': VCF_SUMMARIES_TABLE_NAME,
         'Key': {
@@ -71,11 +86,14 @@ def mark_updating(location, vcf_regions):
                 'S': location,
             },
         },
-        'UpdateExpression': 'SET toUpdate=:toUpdate'
+        'UpdateExpression': 'SET toUpdate=:toUpdate, eTag=:eTag'
                             ' REMOVE ' + ', '.join(COUNTS),
         'ExpressionAttributeValues': {
             ':toUpdate': {
                 'SS': vcf_regions,
+            },
+            ':eTag': {
+                'S': etag,
             },
         },
         'ConditionExpression': 'attribute_not_exists(toUpdate)',
@@ -109,7 +127,8 @@ def publish_slice_updates(location, vcf_regions):
 
 def summarise_vcf(location):
     vcf_regions = get_translated_regions(location)
-    start_update = mark_updating(location, vcf_regions)
+    etag = get_etag(location)
+    start_update = mark_updating(location, vcf_regions, etag)
     if not start_update:
         return
     sample_count = get_sample_count(location)

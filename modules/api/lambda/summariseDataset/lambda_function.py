@@ -17,7 +17,22 @@ COUNTS = [
 ]
 
 dynamodb = boto3.client('dynamodb')
+s3 = boto3.client('s3')
 sns = boto3.client('sns')
+
+
+def get_etag(vcf_location):
+    if not vcf_location.startswith('s3://'):
+        return vcf_location
+    delimiter_index = vcf_location.find('/', 5)
+    kwargs = {
+        'Bucket': vcf_location[5:delimiter_index],
+        'Key': vcf_location[delimiter_index + 1:],
+    }
+    print(f"Calling s3.head_object with kwargs: {json.dumps(kwargs)}")
+    response = s3.head_object(**kwargs)
+    print(f"Received response: {json.dumps(response, default=str)}")
+    return response['ETag'].strip('"')
 
 
 def get_locations(dataset):
@@ -45,7 +60,7 @@ def get_locations_info(locations):
     kwargs = {
         'RequestItems': {
             VCF_SUMMARIES_TABLE_NAME: {
-                'ProjectionExpression': ('vcfLocation,toUpdate,'
+                'ProjectionExpression': ('vcfLocation,toUpdate,eTag,'
                                          + ','.join(COUNTS)),
                 'Keys': [],
             },
@@ -86,7 +101,8 @@ def summarise_dataset(dataset):
         new_locations.remove(vcf_location)
         if 'toUpdate' in location:
             updated = False
-        elif any(count not in location for count in COUNTS):
+        elif (any(count not in location for count in COUNTS)
+              or get_etag(vcf_location) != location.get('eTag', {}).get('S')):
             new_locations.add(vcf_location)
         elif updated:
             counts.update({count: int(location[count]['N'])

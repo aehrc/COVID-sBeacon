@@ -69,20 +69,13 @@ def get_vcf_chromosome_map(datasets, chromosome):
     return vcf_chromosome_map
 
 
-def perform_query(dataset, reference_bases, region_start, region_end,
-                  end_min, end_max, alternate_bases, variant_type,
-                  include_datasets, responses):
+def perform_query(dataset, query_details, page_details,
+                  responses):
 
     payload = json.dumps({
         'dataset': dataset,
-        'reference_bases': reference_bases,
-        'region_start': region_start,
-        'region_end': region_end,
-        'end_min': end_min,
-        'end_max': end_max,
-        'alternate_bases': alternate_bases,
-        'variant_type': variant_type,
-        'include_datasets': include_datasets,
+        'query_details': query_details,
+        'page_details': page_details,
     })
     print("Invoking {lambda_name} with payload: {payload}".format(
         lambda_name=SPLIT_QUERY, payload=payload))
@@ -141,9 +134,23 @@ def query_datasets(parameters):
             region_end = region_start
             end_min = region_start + max_offset
             end_max = end_min
-    alternate_bases = parameters.get('alternateBases')
-    variant_type = parameters.get('variantType')
     include_datasets = parameters.get('includeDatasetResponses', 'NONE')
+    query_details = {
+        'region_start': region_start,
+        'region_end': region_end,
+        'end_min': end_min,
+        'end_max': end_max,
+        'reference_bases': reference_bases,
+        'alternate_bases': parameters.get('alternateBases'),
+        'variant_type': parameters.get('variantType'),
+        'include_datasets': include_datasets,
+    }
+    page_details = {
+        'page': parameters.get('page', 1),
+        'page_size': parameters.get('pageSize'),
+        'sortby': parameters.get('variantsSortby', 'pos'),
+        'desc': bool(parameters.get('variantsDescending')),
+    }
     responses = queue.Queue()
     threads = []
     for dataset in datasets:
@@ -169,14 +176,8 @@ def query_datasets(parameters):
         t = threading.Thread(target=perform_query,
                              kwargs={
                                  'dataset': dataset_details,
-                                 'reference_bases': reference_bases,
-                                 'region_start': region_start,
-                                 'region_end': region_end,
-                                 'end_min': end_min,
-                                 'end_max': end_max,
-                                 'alternate_bases': alternate_bases,
-                                 'variant_type': variant_type,
-                                 'include_datasets': include_datasets,
+                                 'query_details': query_details,
+                                 'page_details': page_details,
                                  'responses': responses,
                              })
         t.start()
@@ -311,6 +312,36 @@ def validate_request(parameters):
         return "includeDatasetResponses must be one of {}".format(
             ', '.join(INCLUDE_DATASETS_VALUES))
 
+    page = parameters.get('page')
+    if page is None:
+        missing_parameters.add('page')
+    elif not isinstance(page, int):
+        return "page must be an integer"
+    elif page < 1:
+        return "page must be 1 or greater"
+
+    page_size = parameters.get('pageSize')
+    if page_size is None:
+        missing_parameters.add('pageSize')
+    elif not isinstance(page_size, int):
+        return "pageSize must be an integer"
+    elif page_size < 0:
+        return "pageSize cannot be negative"
+
+    variants_sortby = parameters.get('variantsSortby')
+    if variants_sortby is None:
+        missing_parameters.add('variantsSortby')
+    else:
+        if not isinstance(variants_sortby, str):
+            return "variantsSortby must be a string"
+
+    variants_descending = parameters.get('variantsDescending')
+    if variants_descending is None:
+        missing_parameters.add('variantsDescending')
+    else:
+        if variants_descending not in (0, 1):
+            return "variantsDescending must be 0 or 1"
+
     return ''
 
 
@@ -336,7 +367,8 @@ def lambda_handler(event, context):
         multi_values = event['multiValueQueryStringParameters']
         parameters['datasetIds'] = multi_values.get('datasetIds')
         for int_field in ('start', 'end', 'startMin', 'startMax', 'endMin',
-                          'endMax'):
+                          'endMax', 'page', 'pageSize',
+                          'variantsDescending'):
             if int_field in parameters:
                 try:
                     parameters[int_field] = int(parameters[int_field])

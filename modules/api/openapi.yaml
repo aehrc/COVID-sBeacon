@@ -173,6 +173,45 @@ paths:
               - HIT
               - MISS
               - NONE
+        - name: page
+          description: |
+            Which page of variant-specific annotations to return.
+            Default is 1.
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: pageSize
+          description: |
+            Maximum number of variants to include in a page of variant-specific annotations.
+            If unspecified, no limit is applied.
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: variantsSortby
+          description: |
+            Metadata field by which to sort the variant-sepcific annotations.
+            If unspecified, pos is used.
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: variantsDescending
+          description: |
+            0 if variant-specific annotations should be sorted in ascending order, or 1 for descending.
+            Default is 0
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum:
+              - 0
+              - 1
       responses:
         '200':
           description: OK
@@ -379,6 +418,33 @@ components:
             - HIT
             - MISS
             - NONE
+        page:
+          description: |
+            Which page of variant-specific annotations to return.
+            Default is 1.
+          type: integer
+          format: int64
+          minimum: 1
+        pageSize:
+          description: |
+            Maximum number of variants to include in a page of variant-specific annotations.
+            If unspecified, no limit is applied.
+          type: integer
+          format: int64
+          minimum: 0
+        variantsSortby:
+          description: |
+            Metadata field by which to sort the variant-sepcific annotations.
+            If unspecified, pos is used.
+            type: string
+        variantsDescending:
+          description: |
+            0 if variant-specific annotations should be sorted in ascending order, or 1 for descending.
+            Default is 0
+          type: integer
+          enum:
+            - 0
+            - 1
     BeaconAlleleResponse:
       type: object
       required:
