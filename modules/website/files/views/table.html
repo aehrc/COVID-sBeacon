@@ -247,11 +247,12 @@
                       </thead>
                       <div  class="col-xs-4" id="searchText">
                         <label for="search">Search:</label>
-                        <input ng-model="subSearch" id="search" class="form-control" placeholder="Filter text">
+                        <input ng-model="subSearch" id="search" class="form-control" placeholder="Filter table">
                       </div>
                       <div  class="col-xs-4" id="searchNew">
                         <label for="search">Items per page:</label>
-                        <input type="number" min="1" max="100" class="form-control" ng-model="usersPerPage  ">
+
+                        <input type="number"  class="form-control" ng-model="usersPerPage">
                       </div>
                       <br><br>
 
@@ -274,7 +275,7 @@
                       </tbody>
 
                   </table>
-                  <center><dir-pagination-controls pagination-id="row.datasetId"> </dir-pagination-controls></center>
+                  <center><dir-pagination-controls direction-links="true" boundary-links="true" pagination-id="row.datasetId"> </dir-pagination-controls></center>
                   </td>
               </tr>
             </tbody>
