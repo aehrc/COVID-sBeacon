@@ -63,7 +63,7 @@ def get_vcf_chromosome_map(datasets, chromosome):
     all_vcfs = list(set(loc for d in datasets for loc in d['vcfLocations']['SS']))
     vcf_chromosome_map = {}
     for vcf in all_vcfs:
-        vcf_chromosomes = get_vcf_chromosomes(vcf)
+        vcf_chromosomes = get_vcf_chromosomes(vcf).keys()
         vcf_chromosome_map[vcf] = get_matching_chromosome(vcf_chromosomes,
                                                           chromosome)
     return vcf_chromosome_map
