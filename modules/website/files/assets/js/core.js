@@ -67,6 +67,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
     $scope.query = function(){
       $scope.loading = true;
+      if($scope.VarType != null ){
+        $scope.alt = null;
+      }
+      if($scope.alt != null ){
+        $scope.VarType = null;
+      }
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
         $scope.inputText= null;

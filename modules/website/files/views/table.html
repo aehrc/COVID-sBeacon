@@ -68,14 +68,14 @@
               <md-input-container>
                 <label>Alternate</label>
                 <div data-tip="The bases that appear instead of the reference bases.">
-                  <input type="text" ng-model="alt"  ng-required="!inputText">
+                  <input type="text" ng-model="alt"  ng-required="!VarType">
                 </div>
               </md-input-container>
 
               <md-input-container>
                 <label>Variant Type</label>
                 <div data-tip="The variantType is used to denote e.g. structural variants. Accepted Values 'INS','DUP','DEL','INV'">
-                  <input type="text" ng-model="VarType" >
+                  <input type="text" ng-model="VarType" ng-required="!alt" >
                 </div>
               </md-input-container>
 
