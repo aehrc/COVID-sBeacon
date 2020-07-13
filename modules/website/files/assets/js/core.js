@@ -67,16 +67,18 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
     $scope.query = function(){
       $scope.loading = true;
-      if($scope.VarType != null ){
-        $scope.alt = null;
-      }
-      if($scope.alt != null ){
-        $scope.VarType = null;
-      }
+
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
         $scope.inputText= null;
-        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType};
+          if($scope.VarType != null ){
+            $scope.alt = null;
+            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType.toUpperCase()};
+          }
+          if($scope.alt != null ){
+            $scope.VarType = null;
+            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1};
+          }
       }else if( $scope.inputText != null){
         try {
           var regex = /^(\d+)(.+)/;

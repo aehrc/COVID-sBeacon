@@ -72,10 +72,13 @@
                 </div>
               </md-input-container>
 
-              <md-input-container>
+              <md-input-container >
                 <label>Variant Type</label>
-                <div data-tip="The variantType is used to denote e.g. structural variants. Accepted Values 'INS','DUP','DEL','INV'">
-                  <input type="text" ng-model="VarType" ng-required="!alt" >
+                <div data-tip="Accepted Values 'INS','DEL'">
+                  <md-select id="dropDown" name="type" ng-model="VarType" ng-required="!alt">
+                    <md-option value="INS">Insertion</md-option>
+                    <md-option value="DEL">Deletion</md-option>
+                  </md-select>
                 </div>
               </md-input-container>
 
