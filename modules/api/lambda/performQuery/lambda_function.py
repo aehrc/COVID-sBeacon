@@ -82,6 +82,7 @@ IUPAC_MATCHES = {
 
 all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
+regular_alt = re.compile(f'[{"".join(IUPAC_AMBIGUITY_CODES.keys())}]+')
 
 
 class VariantGenotypes:
@@ -112,6 +113,21 @@ def get_possible_codes(code):
                     next_possible_codes.add(possible_code + iupac_code)
             possible_codes = next_possible_codes
     return possible_codes
+
+
+def name_variant(pos, ref, alt):
+    if regular_alt.fullmatch(alt):
+        # Just a sequence of IUPAC characters
+        suffix_len = 0
+        max_suffix = 1 - min(len(ref), len(alt))
+        while (suffix_len > max_suffix
+               and ref[suffix_len-1] == alt[suffix_len-1]):
+            suffix_len -= 1
+        if suffix_len:
+            assert ref[suffix_len:] == alt[suffix_len:]
+            ref = ref[:suffix_len]
+            alt = alt[:suffix_len]
+    return f'{pos}{ref}>{alt}'
 
 
 def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
@@ -237,7 +253,7 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             for genotype, samples in genotype_samples.items():
                 all_hits = variant_genotypes.alt_indexes(genotype)
                 for hit in all_hits & hit_indexes:
-                    name = f'{position}{reference}>{alts[hit]}'
+                    name = name_variant(position, reference, alts[hit])
                     variant_samples[name] += samples
         # Used for calculating frequency. This will be a misleading value if the
         #  alleles are spread over multiple vcf records. Ideally we should
