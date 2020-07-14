@@ -22,10 +22,10 @@ def check_vcf_locations(locations):
     errors = []
     for location in locations:
         try:
-            subprocess.check_output(
+            output = subprocess.check_output(
                 args=[
-                    'tabix',
-                    '--list-chroms',
+                    'bcftools', 'index',
+                    '--stats',
                     location,
                 ],
                 stderr=subprocess.PIPE,
@@ -46,6 +46,13 @@ def check_vcf_locations(locations):
                     location))
             else:
                 raise e
+        else:
+            if any(
+                    line.split('\t')[1] == '.'
+                    for line in output.strip().split('\n')
+            ):
+                errors.append("One or more contigs have unspecified"
+                              "length in {}".format(location))
     return "\n".join(errors)
 
 
@@ -71,6 +78,12 @@ def create_dataset(attributes):
             'SS': attributes['vcfLocations'],
         },
     }
+
+    annotation_location = attributes.get('annotationLocation')
+    if annotation_location:
+        item['annotationLocation'] = {
+            'S': annotation_location,
+        }
 
     description = attributes.get('description')
     if description:

@@ -1,3 +1,4 @@
+from collections import defaultdict
 import json
 import os
 import re
@@ -81,6 +82,38 @@ IUPAC_MATCHES = {
 
 all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
+regular_alt = re.compile(f'[{"".join(IUPAC_AMBIGUITY_CODES.keys())}]+')
+
+
+class VariantGenotypes:
+    def __init__(self):
+        self.genotype_to_alt_indexes = {}
+        self.alt_pattern = re.compile('\\b([1-9][0-9]*)\\b')
+
+    def alt_indexes(self, genotype):
+        try:
+            return self.genotype_to_alt_indexes[genotype]
+        except KeyError:
+            alt_strings = self.alt_pattern.findall(genotype)
+            alt_indexes = {int(i)-1 for i in alt_strings}
+            self.genotype_to_alt_indexes[genotype] = alt_indexes
+            return alt_indexes
+
+
+variant_genotypes = VariantGenotypes()
+
+
+def truncate_ref_alt(ref, alt):
+    if regular_alt.fullmatch(alt):
+        # Just a sequence of IUPAC characters
+        suffix_len = 0
+        max_suffix = 1 - min(len(ref), len(alt))
+        while (suffix_len > max_suffix
+               and ref[suffix_len-1] == alt[suffix_len-1]):
+            suffix_len -= 1
+        if suffix_len:
+            return ref[:suffix_len], alt[:suffix_len]
+    return ref, alt
 
 
 def get_possible_codes(code):
@@ -93,6 +126,10 @@ def get_possible_codes(code):
                     next_possible_codes.add(possible_code + iupac_code)
             possible_codes = next_possible_codes
     return possible_codes
+
+
+def name_variant(pos, ref, alt):
+    return f'{pos}{ref}>{alt}'
 
 
 def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
@@ -110,7 +147,7 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     last_bp = int(region[region.find('-')+1:])
     approx = reference_bases == 'N' and variant_type
     exists = False
-    variant_samples = {}
+    variant_samples = defaultdict(list)
     call_count = 0
     all_alleles_count = 0
     reference_matches = get_possible_codes(reference_bases)
@@ -128,58 +165,78 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
         if not first_bp <= pos <= last_bp:
             continue
 
-        ref_length = len(reference)
-
-        if not end_min <= pos + ref_length - 1 <= end_max:
+        ref_alts = [
+            truncate_ref_alt(reference, alt)
+            for alt in all_alts.split(',')
+        ]
+        hit_indexes = {
+            i for i, (ref, _) in enumerate(ref_alts)
+            if (end_min <= pos + len(ref) - 1 <= end_max
+                and approx or ref.upper() in reference_matches
+                )
+        }
+        if not hit_indexes:
             continue
 
-        if not approx and reference.upper() not in reference_matches:
-            continue
-
-        alts = all_alts.split(',')
         if alternate_bases is None:
             if variant_type == 'DEL':
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if ((alt.startswith(v_prefix)
-                                    or alt == '<CN0>')
-                                   if alt.startswith('<')
-                                   else len(alt) < ref_length)]
+                hit_indexes &= {
+                    i for i, (ref, alt) in enumerate(ref_alts)
+                    if (i in hit_indexes and (
+                        (alt.startswith(v_prefix)
+                         or alt == '<CN0>')
+                        if alt.startswith('<')
+                        else len(alt) < len(ref)))
+                }
             elif variant_type == 'INS':
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if (alt.startswith(v_prefix)
-                                   if alt.startswith('<')
-                                   else len(alt) > ref_length)]
+                hit_indexes &= {
+                    i for i, (ref, alt) in enumerate(ref_alts)
+                    if (alt.startswith(v_prefix)
+                        if alt.startswith('<')
+                        else len(alt) > len(ref))
+                }
+            # The calculation of these gets shaky as we don't have the
+            # bases before ref, so these will only work in trivial cases
             elif variant_type == 'DUP':
-                pattern = re.compile('({}){{2,}}'.format(reference))
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if ((alt.startswith(v_prefix)
-                                    or (alt.startswith('<CN')
-                                        and alt not in ('<CN0>', '<CN1>')))
-                                   if alt.startswith('<')
-                                   else pattern.fullmatch(alt))]
+                hit_indexes &= {
+                    i for i, (ref, alt) in enumerate(ref_alts)
+                    if ((alt.startswith(v_prefix)
+                         or (alt.startswith('<CN')
+                             and alt not in ('<CN0>', '<CN1>')))
+                        if alt.startswith('<')
+                        else re.fullmatch('({}){{2,}}'.format(ref),
+                                          alt))
+                }
             elif variant_type == 'DUP:TANDEM':
-                tandem = reference + reference
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if ((alt.startswith(v_prefix)
-                                    or alt == '<CN2>')
-                                   if alt.startswith('<')
-                                   else alt == tandem)]
+                hit_indexes &= {
+                    i for i, (ref, alt) in enumerate(ref_alts)
+                    if ((alt.startswith(v_prefix)
+                         or alt == '<CN2>')
+                        if alt.startswith('<')
+                        else alt == ref+ref)
+                }
             elif variant_type == 'CNV':
-                pattern = re.compile('\.|({})*'.format(reference))
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if ((alt.startswith(v_prefix)
-                                    or alt.startswith('<CN')
-                                    or alt.startswith('<DEL')
-                                    or alt.startswith('<DUP'))
-                                   if alt.startswith('<')
-                                   else pattern.fullmatch(alt))]
+                hit_indexes &= {
+                    i for i, (ref, alt) in enumerate(ref_alts)
+                    if ((alt.startswith(v_prefix)
+                         or alt.startswith('<CN')
+                         or alt.startswith('<DEL')
+                         or alt.startswith('<DUP'))
+                        if alt.startswith('<')
+                        else re.fullmatch('\\.|({})*'.format(ref),
+                                          alt))
+                }
             else:
                 # For structural variants that aren't otherwise recognisable
-                hit_indexes = [i for i, alt in enumerate(alts)
-                               if alt.startswith(v_prefix)]
+                hit_indexes &= {
+                    i for i, (_, alt) in enumerate(ref_alts)
+                    if alt.startswith(v_prefix)
+                }
         else:
-            hit_indexes = [i for i, alt in enumerate(alts)
-                           if alt.upper() in alternate_matches]
+            hit_indexes &= {
+                i for i, (_, alt) in enumerate(ref_alts)
+                if alt.upper() in alternate_matches
+            }
         if not hit_indexes:
             continue
 
@@ -212,15 +269,14 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
                 exists = True
                 if not include_details:
                     break
-            for hit in hit_indexes:
-                pattern = re.compile(f'(^|[|/]){hit+1}([|/]|$)')
-                sample_indices = [
-                    i for i, gt in enumerate(genotypes.split(','))
-                    if pattern.search(gt)
-                ]
-                if sample_indices:
-                    variant_name = position + reference + '>' + alts[hit]
-                    variant_samples[variant_name] = sample_indices
+            genotype_samples = defaultdict(list)
+            for i, gt in enumerate(genotypes.split(',')):
+                genotype_samples[gt].append(i)
+            for genotype, samples in genotype_samples.items():
+                all_hits = variant_genotypes.alt_indexes(genotype)
+                for hit in all_hits & hit_indexes:
+                    name = name_variant(position, *ref_alts[hit])
+                    variant_samples[name] += samples
         # Used for calculating frequency. This will be a misleading value if the
         #  alleles are spread over multiple vcf records. Ideally we should
         #  return a dictionary for each matching record/allele, but for now the

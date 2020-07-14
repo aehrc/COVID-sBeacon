@@ -42,17 +42,24 @@ CHROMOSOMES = CHROMOSOME_LENGTHS_MBP.keys()
 
 def get_vcf_chromosomes(vcf):
     args = [
-        'tabix',
-        '--list-chroms',
+        'bcftools', 'index',
+        '--stats',
         vcf
     ]
     try:
-        tabix_output = subprocess.check_output(args=args, cwd='/tmp', encoding='utf-8')
+        index_output = subprocess.check_output(args=args, cwd='/tmp', encoding='utf-8')
     except subprocess.CalledProcessError as e:
         print(e)
-        tabix_output = ''
+        index_output = ''
     clear_tmp()
-    return tabix_output.split('\n')[:-1]
+    lines = index_output.split('\n')[:-1]
+    output = {}
+    for line in lines:
+        contig, length_str, records_str = line.split('\t')
+        length = int(length_str)
+        records = int(records_str)
+        output[contig] = (length, records)
+    return output
 
 
 def get_matching_chromosome(vcf_chromosomes, target_chromosome):

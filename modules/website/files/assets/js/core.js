@@ -1,4 +1,4 @@
-var covidBeacon = angular.module('covidBeacon', ['ngMaterial','ngRoute'])
+var covidBeacon = angular.module('covidBeacon', ['ngMaterial','ngRoute','angularUtils.directives.dirPagination'])
   .config(["$routeProvider", "$locationProvider", function($routeProvider, $locationProvider) {
       $locationProvider.hashPrefix('');
       $routeProvider.when('/home/', {
@@ -18,13 +18,19 @@ var covidBeacon = angular.module('covidBeacon', ['ngMaterial','ngRoute'])
 covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
     var rootUrl = window.beacon_api_url;
-    $scope.sPos, $scope.VarType;
+    var url = rootUrl+ "/query";
+    $scope.sPos, $scope.VarType,$scope.totalEntries;
     $scope.ref = $scope.alt ="";
-    $scope.isVisible = $scope.loading = $scope.sortReverse = $scope.subSortReverse =  false;
+    $scope.isVisible = $scope.loading = $scope.sortReverse  =  false;
+    $scope.subSortReverse = true;
     $scope.orderByField = 'name';
     $scope.inputText = $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
     $scope.sortType     = 'name';
-    $scope.subSortType     = 'Variant';
+    $scope.subSortType     = 'frequency';
+    $scope.pages = [5 , 10, 25, 50, 100];
+    $scope.usersPerPage = 25;
+    $scope.currentPage = 1;
+
     var queryData = "";
     $scope.rootQuery = [];
     function successCallback(response) {
@@ -47,16 +53,33 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         /*$scope.sPos = 23403;
         $scope.ref = "A";
         $scope.alt = "G";*/
-        $scope.inputText= "23403A>G";
+        $scope.inputText= "23403 A>G";
         $scope.query();
       }
     }
 
+    //$scope.pageChanged = function(id){
+      //console.log(id);
+
+      //queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType};
+      //getData(url,queryData)
+    //}
+
     $scope.query = function(){
       $scope.loading = true;
-      var url = rootUrl+ "/query";
 
-      if( $scope.inputText != null){
+      //do validation and throw error. Need to change assembly to  hCoV-19 later.
+      if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
+        $scope.inputText= null;
+          if($scope.VarType != null ){
+            $scope.alt = null;
+            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType.toUpperCase()};
+          }
+          if($scope.alt != null ){
+            $scope.VarType = null;
+            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1};
+          }
+      }else if( $scope.inputText != null){
         try {
           var regex = /^(\d+)(.+)/;
           var text = $scope.inputText.replace(/\,/g, '')
@@ -69,7 +92,6 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           return;
         }
 
-
         if((match[2].split(">").length !== 2)){
           $scope.warning = "Incorrect search formatting - Separate REF and ALT with '>'. ";
           $scope.loading = false;
@@ -77,23 +99,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         }
         $scope.ref = match[2].split(">")[0].trim();
         $scope.alt = match[2].split(">")[1].trim();
-
-
-        //console.log($scope.sPos);
-        //console.log($scope.ref);
-        //console.log($scope.alt);
-      }
-
-
-
-
-      //do validation and throw error. Need to change assembly to  hCoV-19 later.
-      if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
-        $scope.inputText= null;
-        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType};
-      }else{
         queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos-1,"variantType":$scope.VarType};
+
       }
+      getData(url,queryData)
+    }
+    var getData = function(url,queryData){
       //console.log(url,queryData);
       $http({method: 'GET', url: url,params:queryData}).then(function successCallback(resp) {
         var hits = resp.data;
@@ -102,22 +113,8 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         if( hits.exists == true){
           $scope.warning = null;
           $scope.hits =hits.datasetAlleleResponses;
-          /*$q.all([$scope.rootQuery]).then(function(data){
-            var DatArray = data[0];
-            angular.forEach(hits.datasetAlleleResponses, function(row){
-              var filterObj = DatArray.filter(function(e) {
-                return e.id == row.datasetId;
-              });
-              row['totalSampleCount'] = filterObj[0].sampleCount;
-              row['description']= filterObj[0].description;
-              row['name']= filterObj[0].name;
-              this.push(row);
-            }, $scope.hits);*/
 
-            //console.log($scope.hits);
-            $scope.loading = false;
-          //});
-
+          $scope.loading = false;
         }else if(hits.error == true){
           $scope.warning = hits.error.errorMessage;
           $scope.hits = null;
@@ -128,16 +125,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           console.log($scope.warning );
           $scope.loading = false;
         }
-
-
       }, function errorCallback(resp) {
           console.log("Error: " + JSON.stringify(resp));
           $scope.warning = resp.data.error.errorMessage;
           $scope.hits = null;
           $scope.loading = false;
       });
-
-
     }
 
 });

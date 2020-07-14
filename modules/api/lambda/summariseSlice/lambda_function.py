@@ -17,8 +17,9 @@ VCF_SUMMARIES_TABLE_NAME = os.environ['VCF_SUMMARIES_TABLE']
 # If only this much time remains, split the task
 MILLISECONDS_BEFORE_SPLIT = 15000
 
-# How many records between each performance sample
-RECORDS_PER_SAMPLE = 10000
+# How many records/milliseconds between each performance sample
+MAX_RECORDS_PER_SAMPLE = 10000
+MAX_SECONDS_BETWEEN_SAMPLES = 10
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 
@@ -203,6 +204,7 @@ def sum_counts(counts_handle, start, end, time_assigned, gvcf=False):
     records = 0
     start_time = 0
     next_sample_record = 0
+    next_sample_time = time.time()
     for record in counts_handle:
         record_parts = record.split('\t')
         pos = int(record_parts[0])
@@ -212,8 +214,10 @@ def sum_counts(counts_handle, start, end, time_assigned, gvcf=False):
             continue
 
         # Check if the records are being processed fast enough
-        if records == next_sample_record:
-            next_sample_record += RECORDS_PER_SAMPLE
+        if (records == next_sample_record
+                or time.time() >= next_sample_time):
+            next_sample_record += MAX_RECORDS_PER_SAMPLE
+            next_sample_time = time.time() + MAX_SECONDS_BETWEEN_SAMPLES
             if start_time == 0:
                 start_time = time.time()
                 print("starting timer at {}".format(start_time))

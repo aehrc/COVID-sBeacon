@@ -5,7 +5,7 @@ import subprocess
 import boto3
 from botocore.exceptions import ClientError
 
-from chrom_matching import CHROMOSOME_LENGTHS_MBP, get_vcf_chromosomes, get_matching_chromosome
+from chrom_matching import CHROMOSOMES, get_vcf_chromosomes, get_matching_chromosome
 
 COUNTS = [
     'variantCount',
@@ -13,7 +13,7 @@ COUNTS = [
     'sampleCount',
 ]
 
-SLICE_SIZE_MBP = 20
+MAX_SLICE_SIZE_MBP = 20
 
 SUMMARISE_SLICE_SNS_TOPIC_ARN = os.environ['SUMMARISE_SLICE_SNS_TOPIC_ARN']
 VCF_SUMMARIES_TABLE_NAME = os.environ['VCF_SUMMARIES_TABLE']
@@ -23,15 +23,6 @@ os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 dynamodb = boto3.client('dynamodb')
 s3 = boto3.client('s3')
 sns = boto3.client('sns')
-
-regions = {}
-for chrom, size in CHROMOSOME_LENGTHS_MBP.items():
-    chrom_regions = []
-    start = 0
-    while start < size:
-        chrom_regions.append(start)
-        start += SLICE_SIZE_MBP
-    regions[chrom] = chrom_regions
 
 
 def get_etag(vcf_location):
@@ -68,14 +59,23 @@ def get_sample_count(location):
 
 def get_translated_regions(location):
     vcf_chromosomes = get_vcf_chromosomes(location)
-    vcf_regions = []
-    for target_chromosome, region_list in regions.items():
+    regions = []
+    for target_chromosome in CHROMOSOMES:
         chromosome = get_matching_chromosome(vcf_chromosomes, target_chromosome)
         if not chromosome:
             continue
-        vcf_regions += ['{}:{}'.format(chromosome, region)
-                        for region in region_list]
-    return vcf_regions
+        start = 0
+        length, _ = vcf_chromosomes[chromosome]
+        length_mbp = length / 1000000
+        while start < length_mbp:
+            mbp_left = (length_mbp - start)
+            region_size = min(MAX_SLICE_SIZE_MBP, mbp_left)
+            if int(region_size) == region_size:
+                region_size = int(region_size)
+            regions.append(('{}:{}'.format(chromosome, start),
+                            region_size))
+            start += region_size
+    return regions
 
 
 def mark_updating(location, vcf_regions, etag):
@@ -90,7 +90,7 @@ def mark_updating(location, vcf_regions, etag):
                             ' REMOVE ' + ', '.join(COUNTS),
         'ExpressionAttributeValues': {
             ':toUpdate': {
-                'SS': vcf_regions,
+                'SS': [region for region, length_mbp in vcf_regions],
             },
             ':eTag': {
                 'S': etag,
@@ -114,11 +114,11 @@ def publish_slice_updates(location, vcf_regions):
     kwargs = {
         'TopicArn': SUMMARISE_SLICE_SNS_TOPIC_ARN,
     }
-    for region in vcf_regions:
+    for region, length_mbp in vcf_regions:
         kwargs['Message'] = json.dumps({
             'location': location,
             'region': region,
-            'slice_size_mbp': SLICE_SIZE_MBP,
+            'slice_size_mbp': length_mbp,
         })
         print('Publishing to SNS: {}'.format(json.dumps(kwargs)))
         response = sns.publish(**kwargs)

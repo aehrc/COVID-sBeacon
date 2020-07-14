@@ -68,14 +68,17 @@
               <md-input-container>
                 <label>Alternate</label>
                 <div data-tip="The bases that appear instead of the reference bases.">
-                  <input type="text" ng-model="alt"  ng-required="!inputText">
+                  <input type="text" ng-model="alt"  ng-required="!VarType">
                 </div>
               </md-input-container>
 
-              <md-input-container>
+              <md-input-container >
                 <label>Variant Type</label>
-                <div data-tip="The variantType is used to denote e.g. structural variants. Accepted Values 'INS','DUP','DEL','INV'">
-                  <input type="text" ng-model="VarType" >
+                <div data-tip="Accepted Values 'INS','DEL'">
+                  <md-select id="dropDown" name="type" ng-model="VarType" ng-required="!alt">
+                    <md-option value="INS">Insertion</md-option>
+                    <md-option value="DEL">Deletion</md-option>
+                  </md-select>
                 </div>
               </md-input-container>
 
@@ -110,17 +113,17 @@
       <span> {{warning}}</span>
     </md-card-content>
     <md-card-content ng-show="hits != null">
-    <form>
+    <!--<form>
     <div class="form-search">
       <div class="input-group">
         <div class="input-group-addon"><i class="fa fa-search"></i></div>
-        <!--<label>Query Position REF>ALT</label>-->
-        <div data-tip="Quick search in table and subtable (case INsensitive)" >
+        <!--<label>Query Position REF>ALT</label>
+        <div data-tip="Quick search in table (case INsensitive)" >
           <input  type="text"  placeholder="Search" ng-model="searchText" >
         </div>
         </div>
       </div>
-    </form>
+    </form>-->
 
 
       <div class="table-responsive-md">
@@ -177,7 +180,7 @@
                       <span ng-show="sortType == 'frequency' && !sortReverse" class="fa fa-caret-down"></span>
                       <span ng-show="sortType == 'frequency' && sortReverse" class="fa fa-caret-up"></span>
                       <span ng-show="sortType != 'frequency'" class="fa fa-sort"></span>
-                    </a><span class="tableTooltip">Call count / Total Samples</span></th>
+                    </a><span class="tableTooltip">Frequency of samples that contain the variant</span></th>
                 </tr>
             </thead>
             <tbody>
@@ -195,8 +198,10 @@
                 <td>{{row.frequency}} %</td>
               </tr>
               <tr ng-show="main.activeRow" ng-repeat-end="">
+
                 <td colspan=7>
-                  <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header ng-show="main.activeRow">
+
+                  <table border="1" class=" table table-striped table-bordered table-hover" id="t01" fixed-header >
                       <thead>
                           <tr>
                             <th>
@@ -235,16 +240,30 @@
                               <span ng-show="subSortType != 'sampleCount'" class="fa fa-sort"></span>
                             </a><span class="tableTooltip">Samples that contain the mutation.</span></th>
                             <th>
-                            <a href="#" ng-click="subSortType = 'sampleCount'; subSortReverse = !subSortReverse">
+                            <a href="#" ng-click="subSortType = 'frequency'; subSortReverse = !subSortReverse">
                               Sample Frequency
-                              <span ng-show="subSortType == 'sampleCount' && !subSortReverse" class="fa fa-caret-down"></span>
-                              <span ng-show="subSortType == 'sampleCount' && subSortReverse" class="fa fa-caret-up"></span>
-                              <span ng-show="subSortType != 'sampleCount'" class="fa fa-sort"></span>
+                              <span ng-show="subSortType == 'frequency' && !subSortReverse" class="fa fa-caret-down"></span>
+                              <span ng-show="subSortType == 'frequency' && subSortReverse" class="fa fa-caret-up"></span>
+                              <span ng-show="subSortType != 'frequency'" class="fa fa-sort"></span>
                             </a><span class="tableTooltip">Frequency of samples that contain the variant</span></th>
                           </tr>
                       </thead>
+                      <div  class="col-xs-4" id="searchText">
+                        <label for="search">Search:</label>
+                        <input ng-model="subSearch" id="search" class="form-control" placeholder="Filter table">
+                      </div>
+                      <div  class="col-xs-4" id="searchNew">
+                        <label for="search">Items per page:</label>
+
+                        <input type="number"  class="form-control" ng-model="usersPerPage">
+                      </div>
+                      <br><br>
+
+
+
                       <tbody>
-                        <tr ng-repeat="var in row.info.variants  | orderBy:subSortType:subSortReverse | filter:searchText">
+
+                        <tr dir-paginate="var in row.info.variants  | orderBy:subSortType:subSortReverse | filter:subSearch |itemsPerPage:usersPerPage " pagination-id="row.datasetId"  current-page="currentPage">
 
                             <td>{{var.pos}}</td>
                             <td>{{var.ref}}</td>
@@ -255,13 +274,15 @@
                             <td>{{var.sampleCount}} </td>
                             <td>{{var.frequency}} %</td>
                         </tr>
+
                       </tbody>
+
                   </table>
+                  <center><dir-pagination-controls direction-links="true" boundary-links="true" pagination-id="row.datasetId"> </dir-pagination-controls></center>
                   </td>
               </tr>
-
-
             </tbody>
+
           <table>
         </div>
     </md-card-content>

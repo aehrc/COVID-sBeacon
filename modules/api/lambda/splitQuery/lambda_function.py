@@ -272,6 +272,7 @@ def run_queries(dataset, query_details):
                 'name': dataset['name'],
                 'datasetSampleCount': dataset_sample_count,
                 'variants': annotations,
+                'totalEntries': len(annotations),
             },
             'error': None,
         }
