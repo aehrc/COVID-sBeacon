@@ -176,6 +176,7 @@ def run(fasta_file_path, metadata_file_path, output_directory,
     valid_rows = get_valid_rows(metadata_file_path, start)
     ftp = get_ftp_connection()
     gff_files = ftp.nlst()
+    sample_metadata = []
     for row in valid_rows:
         accession_id = row['Accession ID']
         print(f"processing {accession_id}")
@@ -185,7 +186,13 @@ def run(fasta_file_path, metadata_file_path, output_directory,
             continue
         output_file = f'{output_directory}/{accession_id}.vcf'
         convert_to_vcf(gff_file, accession_id, sequence, output_file, ftp)
+        sample_metadata.append(row)
     ftp.quit()
+    sample_metadata.sort(key=lambda x: x['Accession ID'])
+    with open(output_directory + '/metadata.csv', 'w', newline='') as metadata_csv:
+        writer = csv.DictWriter(metadata_csv, fieldnames=sample_metadata[0].keys())
+        writer.writeheader()
+        writer.writerows(sample_metadata)
 
 
 def validate_metadata_line(metadata):
