@@ -144,6 +144,7 @@ def query_datasets(parameters):
         'alternate_bases': parameters.get('alternateBases'),
         'variant_type': parameters.get('variantType'),
         'include_datasets': include_datasets,
+        'sample_fields': parameters.get('sampleFields')
     }
     page_details = {
         'page': parameters.get('page', 1),
@@ -305,6 +306,16 @@ def validate_request(parameters):
         if not all(isinstance(dataset_id, str) for dataset_id in dataset_ids):
             return "datasetIds must be an array of strings"
 
+    sample_fields = parameters.get('sampleFields')
+    if sample_fields is None:
+        missing_parameters.add('sampleFields')
+    else:
+        if not isinstance(sample_fields, list):
+            return "sampleFields must be an array"
+        if not all(isinstance(sample_field, str)
+                   for sample_field in sample_fields):
+            return "sampleFields must be an array of strings"
+
     include_datasets = parameters.get('includeDatasetResponses')
     if include_datasets is None:
         missing_parameters.add('includeDatasetResponses')
@@ -366,6 +377,7 @@ def lambda_handler(event, context):
                                extra_params)
         multi_values = event['multiValueQueryStringParameters']
         parameters['datasetIds'] = multi_values.get('datasetIds')
+        parameters['sampleFields'] = multi_values.get('sampleFields')
         for int_field in ('start', 'end', 'startMin', 'startMax', 'endMin',
                           'endMax', 'page', 'pageSize',
                           'variantsDescending'):

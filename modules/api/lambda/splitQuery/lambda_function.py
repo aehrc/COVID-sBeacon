@@ -103,9 +103,7 @@ def get_annotations(annotation_location, variants):
     annotations = []
     covered_variants = set()
     if annotation_location:
-        delim_index = annotation_location.find('/', 5)
-        bucket = annotation_location[5:delim_index]
-        key = annotation_location[delim_index+1:]
+        bucket, key = get_bucket_and_key(annotation_location)
         streaming_body = s3_get_object(bucket, key)
         iterator = (row.decode('utf-8') for row in streaming_body.iter_lines())
         reader = csv.DictReader(iterator, delimiter='\t')
@@ -126,6 +124,13 @@ def get_annotations(annotation_location, variants):
         if variant not in covered_variants
     ]
     return annotations
+
+
+def get_bucket_and_key(s3_location):
+    delim_index = s3_location.find('/', 5)
+    bucket = s3_location[5:delim_index]
+    key = s3_location[delim_index + 1:]
+    return bucket, key
 
 
 def perform_query(region, reference_bases, end_min, end_max, alternate_bases,
@@ -177,6 +182,72 @@ def process_page(response, page_details):
     })
 
 
+def process_samples(variants, fields):
+    vcf_offsets = {}
+    all_sample_details = []
+    included_samples = set()
+    uncompressed_variants = {}
+
+    for variant, location_samples in variants.items():
+        variant_samples = set()
+        for vcf_location, sample_indexes in location_samples.items():
+            if vcf_location not in vcf_offsets:
+                bucket, key = get_bucket_and_key(vcf_location)
+                key = f'{key.split(".")[0]}.csv'
+                try:
+                    streaming_body = s3_get_object(bucket, key)
+                except ClientError as error:
+                    print(error.response)
+                    # Could not access sample metadata, skip
+                    offset = -1
+                else:
+                    offset = len(all_sample_details)
+                    iterator = (row.decode('utf-8')
+                                for row in streaming_body.iter_lines())
+                    reader = csv.DictReader(iterator)
+                    print(f"Found csv with headers: {reader.fieldnames}")
+                    print(f"Extracting {fields}")
+                    all_sample_details += [
+                        [sample.get(field) for field in fields]
+                        for sample in reader
+                    ]
+                vcf_offsets.update({vcf_location: offset})
+            else:
+                offset = vcf_offsets[vcf_location]
+            if offset == -1:  # Couldn't access this metadata
+                continue
+            variant_samples.update(
+                s_i + offset
+                for s_i in sample_indexes
+            )
+        uncompressed_variants[variant] = variant_samples
+        included_samples |= variant_samples
+
+    compression_mapping = []
+    offset = 0
+    for i in range(len(all_sample_details)):
+        if i in included_samples:
+            new_index = i - offset
+        else:
+            new_index = -1
+            offset += 1
+        compression_mapping.append(new_index)
+
+    compressed_variants = {
+        variant: [
+            compression_mapping[s_i]
+            for s_i in sample_indexes
+        ]
+        for variant, sample_indexes in uncompressed_variants.items()
+    }
+    sample_details = [
+        sample
+        for index, sample in enumerate(all_sample_details)
+        if compression_mapping[index] != -1
+    ]
+    return sample_details, compressed_variants
+
+
 def run_queries(dataset, query_details):
     responses = queue.Queue()
     region_start = query_details['region_start']
@@ -187,6 +258,7 @@ def run_queries(dataset, query_details):
     alternate_bases = query_details['alternate_bases']
     variant_type = query_details['variant_type']
     include_datasets = query_details['include_datasets']
+    sample_fields = query_details['sample_fields']
     check_all = include_datasets in ('HIT', 'ALL')
     kwargs = {
         'reference_bases': reference_bases,
@@ -241,8 +313,10 @@ def run_queries(dataset, query_details):
             or (include_datasets == 'MISS' and not exists)):
         annotations = get_annotations(dataset['annotation_location'], variants.keys())
         variant_pattern = re.compile('([0-9]+)(.+)>(.+)')
+        variant_codes = []
         for annotation in annotations:
             variant_code = annotation.pop('Variant')
+            variant_codes.append(variant_code)
             pos, ref, alt = variant_pattern.fullmatch(variant_code).groups()
             variant_sample_count = sum(
                 len(s) for s in variants[variant_code].values()
@@ -276,6 +350,15 @@ def run_queries(dataset, query_details):
             },
             'error': None,
         }
+        if sample_fields:
+            sample_details, compressed_variants = process_samples(variants, sample_fields)
+            response_dict['info'].update({
+                'sampleFields': sample_fields,
+                'sampleDetails': sample_details,
+            })
+            for code, variant in zip(variant_codes,
+                                     response_dict['info']['variants']):
+                variant['samples'] = compressed_variants[code]
     else:
         response_dict = {
             'include': False,
