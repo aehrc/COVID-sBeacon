@@ -20,12 +20,16 @@ EXTRA_ANNOTATION_FIELDS = {
 
 CACHE_BUCKET = os.environ['CACHE_BUCKET']
 CACHE_TABLE = os.environ['CACHE_TABLE']
+COUNTRY_CODES_PATH = os.environ['LAMBDA_TASK_ROOT'] + '/country_codes.json'
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
 
 aws_lambda = boto3.client('lambda')
 dynamodb = boto3.client('dynamodb')
 s3 = boto3.client('s3')
+
+with open(COUNTRY_CODES_PATH) as country_codes_json:
+    country_codes = json.load(country_codes_json)
 
 
 def cache_response(response, dataset_id, query_args):
@@ -226,7 +230,27 @@ def process_samples(variants, fields):
     extra_fields = {}
 
     for field_i, field in enumerate(fields):
-        if field == 'SampleCollectionDate':
+        if field == 'Location':
+            # Convert to Country only
+            for sample in all_sample_details:
+                location = sample[field_i]
+                if isinstance(location, str):
+                    # Clean data of known errors
+                    country = location.split('/')[0].strip(' \u200e').lower()
+                    sample[field_i] = country_codes[country]
+                else:
+                    sample[field_i] = None
+            location_counts_dict = Counter(
+                sample[field_i]
+                for sample in all_sample_details
+            )
+            extra_fields['locationCounts'] = [
+                {
+                    location: count,
+                }
+                for location, count in location_counts_dict.items()
+            ]
+        elif field == 'SampleCollectionDate':
             # Convert to months only
             for sample in all_sample_details:
                 date = sample[field_i]
@@ -234,7 +258,7 @@ def process_samples(variants, fields):
                     sample[field_i] = date[:7]
                 else:
                     sample[field_i] = "N/A"
-            date_frequencies_dict = Counter(
+            date_counts_dict = Counter(
                 sample[field_i]
                 for sample in all_sample_details
             )
@@ -243,7 +267,7 @@ def process_samples(variants, fields):
                     'date': date,
                     'value': count,
                 }
-                for date, count in date_frequencies_dict.items()
+                for date, count in date_counts_dict.items()
             ]
 
     compression_mapping = []
