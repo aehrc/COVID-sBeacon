@@ -1,5 +1,5 @@
 import base64
-from collections import defaultdict
+from collections import Counter, defaultdict
 import csv
 import json
 import math
@@ -223,6 +223,29 @@ def process_samples(variants, fields):
         uncompressed_variants[variant] = variant_samples
         included_samples |= variant_samples
 
+    extra_fields = {}
+
+    for field_i, field in enumerate(fields):
+        if field == 'SampleCollectionDate':
+            # Convert to months only
+            for sample in all_sample_details:
+                date = sample[field_i]
+                if isinstance(date, str) and len(date) >= 7:
+                    sample[field_i] = date[:7]
+                else:
+                    sample[field_i] = "N/A"
+            date_frequencies_dict = Counter(
+                sample[field_i]
+                for sample in all_sample_details
+            )
+            extra_fields['dateCounts'] = [
+                {
+                    'date': date,
+                    'value': count,
+                }
+                for date, count in date_frequencies_dict.items()
+            ]
+
     compression_mapping = []
     offset = 0
     for i in range(len(all_sample_details)):
@@ -245,7 +268,7 @@ def process_samples(variants, fields):
         for index, sample in enumerate(all_sample_details)
         if compression_mapping[index] != -1
     ]
-    return sample_details, compressed_variants
+    return sample_details, compressed_variants, extra_fields
 
 
 def run_queries(dataset, query_details):
@@ -351,11 +374,13 @@ def run_queries(dataset, query_details):
             'error': None,
         }
         if sample_fields:
-            sample_details, compressed_variants = process_samples(variants, sample_fields)
+            (sample_details, compressed_variants,
+             extra_fields) = process_samples(variants, sample_fields)
             response_dict['info'].update({
                 'sampleFields': sample_fields,
                 'sampleDetails': sample_details,
             })
+            response_dict['info'].update(extra_fields)
             for code, variant in zip(variant_codes,
                                      response_dict['info']['variants']):
                 variant['samples'] = compressed_variants[code]
