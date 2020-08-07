@@ -184,7 +184,7 @@
                 </tr>
             </thead>
             <tbody>
-              <tr ng-repeat-start="row in hits | orderBy:sortType:sortReverse | filter:searchText"  ng-click="main.activeRow = !main.activeRow" id="sameStrip">
+              <tr ng-repeat-start="row in hits | orderBy:sortType:sortReverse | filter:searchText"  ng-click="main.activeRow = !main.activeRow" id="sameStrip" ng-init="parentIndex = $index">
                 <td>
                   <button ng-if="main.activeRow" >-</button>
                   <button ng-if="!main.activeRow" >+</button>
@@ -246,6 +246,7 @@
                               <span ng-show="subSortType == 'frequency' && subSortReverse" class="fa fa-caret-up"></span>
                               <span ng-show="subSortType != 'frequency'" class="fa fa-sort"></span>
                             </a><span class="tableTooltip">Frequency of samples that contain the variant</span></th>
+                            
                           </tr>
                       </thead>
                       <div  class="col-xs-4" id="searchText">
@@ -263,7 +264,7 @@
 
                       <tbody>
 
-                        <tr dir-paginate="var in row.info.variants  | orderBy:subSortType:subSortReverse | filter:subSearch |itemsPerPage:usersPerPage " pagination-id="row.datasetId"  current-page="currentPage">
+                        <tr dir-paginate="var in row.info.variants   | orderBy:subSortType:subSortReverse | filter:subSearch |itemsPerPage:usersPerPage " pagination-id="row.datasetId"  current-page="currentPage" ng-init="childIndex = $index" >
 
                             <td>{{var.pos}}</td>
                             <td>{{var.ref}}</td>
@@ -273,6 +274,7 @@
                             <td><span ng-if="var.SIFT_score"> {{var.SIFT_score }} </span><span ng-if="!var.SIFT_score"> - </span></td>
                             <td>{{var.sampleCount}} </td>
                             <td>{{var.frequency}} %</td>
+
                         </tr>
 
                       </tbody>
@@ -281,9 +283,12 @@
                   <center><dir-pagination-controls direction-links="true" boundary-links="true" pagination-id="row.datasetId"> </dir-pagination-controls></center>
                   </td>
               </tr>
+
+
             </tbody>
 
           <table>
+            <div id="chartNGDC" ></div>
         </div>
     </md-card-content>
 

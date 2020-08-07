@@ -1890,6 +1890,59 @@ ul.contact li a.icon-rss:before
 #bokehContainer{
 		background: #2F2F2F url(images/bg01.jpg) repeat;
 }
+#chart1{
+	width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+}
+#chartNGDC{
+	width: 800;
+      height: 800;
+      margin: 0;
+      padding: 10;
+}
+.d3-tip {
+  line-height: 1;
+  padding: 12px;
+  background: rgba(43,43,43, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+/* Creates a small triangle extender for the tooltip */
+.d3-tip:after {
+  box-sizing: border-box;
+  display: inline;
+  font-size: 10px;
+  width: 100%;
+  line-height: 1;
+  color: rgba(0, 0, 0, 0.8);
+  content: "\25BC";
+  position: absolute;
+  text-align: center;
+}
+/* Style northward tooltips differently */
+.d3-tip.n:after {
+  margin: -1px 0 0 0;
+  top: 100%;
+  left: 0;
+}
+.legendThreshold {
+      font-size: 20px;
+      font-family: sans-serif;
+			line-height: 1;
+
+  }
+.countries {
+	    fill: none;
+	    stroke: #fff;
+	    stroke-linejoin: round;
+	  }
+.caption {
+      fill: #000;
+      text-anchor: start;
+      font-weight: bold;
+  }
 #wrapper
 {
 	background: #ffffff;
@@ -2139,6 +2192,12 @@ ul.contact li a.icon-rss:before
 	overflow: hidden;
 	padding: 4em 0em 5em 0em;
 }
+#container {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
 
 /** CONTENT */
 
