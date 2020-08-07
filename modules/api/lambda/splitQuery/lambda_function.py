@@ -234,7 +234,7 @@ def process_samples(variants, fields):
             # Convert to Country only
             for sample in all_sample_details:
                 location = sample[field_i]
-                if isinstance(location, str):
+                if location and isinstance(location, str):
                     # Clean data of known errors
                     country = location.split('/')[0].strip(' \u200e').lower()
                     sample[field_i] = country_codes[country]
@@ -254,7 +254,7 @@ def process_samples(variants, fields):
             # Convert to months only
             for sample in all_sample_details:
                 date = sample[field_i]
-                if isinstance(date, str) and len(date) >= 7:
+                if date and isinstance(date, str) and len(date) >= 7:
                     sample[field_i] = date[:7]
                 else:
                     sample[field_i] = "N/A"
