@@ -179,7 +179,9 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         d3.select(".legendThreshold").remove();
 
         var width = 800 ,
-            height = 600 ;
+            height = 400 ;
+        var lowColor = '#f2f4f5'
+        var highColor = '#477fb6'
         if(subDivID == null){
           d3.select('#'+divID).selectAll("svg").remove();
 
@@ -198,7 +200,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
 
         // Map and projection
-        var path = d3.geoPath();
+
         var projection = d3.geoNaturalEarth()
             .scale(width / 2 / Math.PI)
             .translate([width / 2, height / 2])
@@ -207,68 +209,100 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
         // Data and color scale
         var data = d3.map();
-        var colorScheme = d3.schemeBlues[7];
-        //colorScheme.unshift("#eee")
-        var colorScale = d3.scaleThreshold()
-            .domain(domain)
-            .range(colorScheme);
-            // Legend
-            var g = svg.append("g")
-                .attr("class", "legendThreshold")
-                .attr("transform", "translate(100,30)");
-                g.append("text")
-                .attr("class", "caption")
-                .attr("x", 100)
-                .attr("y", -10)
-                .text("Percentage of Samples with this Variant");
-            //var labels = ['0', '1-5', '6-10', '11-25', '26-100', '101-1000', '> 1000'];
-            var legend = d3.legendColor()
-                .labels(function (d) { return labels[d.i]; })
-                .scale(colorScale)
-                .orient("horizontal")
-                .shapePadding(120)
-                .labelOffset(25)
-                .labelAlign("start");
-                svg.select(".legendThreshold")
-                .call(legend);
 
-            // Load external data and boot
-            d3.queue()
-                .defer(d3.json, "assets/geojson/world.geojson")
-                .await(ready);
 
-            sampleData.forEach(function(d){
-            data.set(d.code, +d.value) // (first refers to county code, second refers to employment value)
-                })
 
-                var tip = d3.tip()
-                .attr('class', 'd3-tip')
-                .offset([0, 0])
-                .html(function(d) {
-                  return d.properties.name + ": " + d.value;
-                })
-                svg.call(tip);
 
-            function ready(error, topo) {
-                console.log(topo)
-                if (error) throw error;
+        // Load external data and boot
+        d3.queue()
+            .defer(d3.json, "assets/geojson/world.geojson")
+            .await(ready);
 
-                // Draw the map
-                svg.append("g")
-                    .attr("class", "countries")
-                    .selectAll("path")
-                    .data(topo.features)
-                    .enter().append("path")
-                        .attr("fill", function (d){
-                            // Pull data for this country
-                            d.value = data.get(d.id) || 0;
-                            // Set the color
-                            return colorScale(d.value);
-                        })
-                        .attr("d", path)
-                        .on('mouseover', tip.show)
-                        .on('mouseout', tip.hide);
-            }
+        sampleData.forEach(function(d){
+        data.set(d.code, +d.value) // (first refers to county code, second refers to employment value)
+            })
+
+
+
+        var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([0, 0])
+        .html(function(d) {
+          return d.properties.name + ": " + d.value+"%";
+        })
+        svg.call(tip);
+
+        function ready(error, topo) {
+            console.log(topo)
+            if (error) throw error;
+            var range_low = 0,
+                range_high= d3.max(topo.features, function(d){return data.get(d.id);});
+                console.log(range_low);
+                console.log(range_high);
+            var color = d3.scaleLinear()
+            .range([lowColor, highColor])
+            .domain([range_low,range_high])
+            .interpolate(d3.interpolateLab);
+
+            // Draw the map
+            svg.append("g")
+                .attr("class", "countries")
+                .selectAll("path")
+                .data(topo.features)
+                .enter().append("path")
+                    .attr("id", function(d){ d.value = data.get(d.id) || 0; return d.value;})
+                    .attr("d", path)
+                    .style("fill", function(d) {
+                      return color(d.value) })
+                    .on('mouseover', tip.show)
+                    .on('mouseout', tip.hide);
+
+                    // add a legend
+                		var w = 140, h = 200;
+
+                		var key = svg
+                			.append("svg")
+                			.attr("width", w)
+                			.attr("height", h)
+                			.attr("class", "legend");
+
+                		var legend = key.append("defs")
+                			.append("svg:linearGradient")
+                			.attr("id", "gradient")
+                			.attr("x1", "100%")
+                			.attr("y1", "0%")
+                			.attr("x2", "100%")
+                			.attr("y2", "100%")
+                			.attr("spreadMethod", "pad");
+
+                		legend.append("stop")
+                			.attr("offset", "0%")
+                			.attr("stop-color", highColor)
+                			.attr("stop-opacity", 1);
+
+                		legend.append("stop")
+                			.attr("offset", "100%")
+                			.attr("stop-color", lowColor)
+                			.attr("stop-opacity", 1);
+
+                		key.append("rect")
+                			.attr("width", w - 110)
+                			.attr("height", h)
+                			.style("fill", "url(#gradient)")
+                			.attr("transform", "translate(0,10)");
+
+                		var y = d3.scaleLinear()
+                			.range([h, 0])
+                			.domain([range_low, range_high]);
+
+                		var yAxis = d3.axisRight(y);
+
+                		key.append("g")
+                			.attr("class", "y axis")
+                			.attr("transform", "translate(41,10)")
+                			.call(yAxis)
+        }
+
 
       }
 

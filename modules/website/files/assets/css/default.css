@@ -1897,8 +1897,8 @@ ul.contact li a.icon-rss:before
       padding: 0;
 }
 #chartNGDC{
-	width: 800;
-      height: 800;
+			width: 800;
+      height: 500;
       margin: 0;
       padding: 10;
 }
