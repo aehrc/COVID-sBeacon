@@ -1694,6 +1694,9 @@ hr
 #dropDown{
 	margin-bottom:2.8em;
 }
+#dropDown2{
+	margin-bottom: 0.5em;
+}
 
 #popSearch{
 	margin-right: 10px;
@@ -1896,11 +1899,31 @@ ul.contact li a.icon-rss:before
       margin: 0;
       padding: 0;
 }
-#chartNGDC{
-			width: 800;
-      height: 500;
+#choropleth{
+			width: 600;
+      height: 400;
       margin: 0;
       padding: 10;
+			float: left;
+}
+#histogram{
+			width: 600;
+			height: 400;
+
+			float: left;
+}
+.bar {
+  fill: #477fb6;
+}
+
+
+
+.axis-x path {
+  display: none;
+}
+
+.axis text {
+  font-weight: bold;
 }
 .d3-tip {
   line-height: 1;

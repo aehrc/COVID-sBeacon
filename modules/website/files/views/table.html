@@ -246,7 +246,7 @@
                               <span ng-show="subSortType == 'frequency' && subSortReverse" class="fa fa-caret-up"></span>
                               <span ng-show="subSortType != 'frequency'" class="fa fa-sort"></span>
                             </a><span class="tableTooltip">Frequency of samples that contain the variant</span></th>
-                            
+
                           </tr>
                       </thead>
                       <div  class="col-xs-4" id="searchText">
@@ -286,10 +286,33 @@
 
 
             </tbody>
-
           <table>
-            <div id="chartNGDC" ></div>
         </div>
+
+        <div layout="row">
+          <md-input-container >
+
+            <div data-tip="Change Dataset to update visualisation">
+              <md-select id="dropDown2" name="type" ng-model="visualIndex" ng-change="graphDataGenerator(hits,visualIndex);" >
+                <md-option value="0">SARS-CoV-2 Genomes in Genbank</md-option>
+                <md-option ng-selected="true" value="1">National Genomics Data Center</md-option>
+                <md-option value="2">All Indian Genomes</md-option>
+              </md-select>
+            </div>
+          </md-input-container>
+          <!--<md-input-container >
+            <label>Variant Type</label>
+            <div data-tip="Accepted Values 'INS','DEL'">
+              <md-select id="dropDown" name="type" ng-model="VarType" ng-required="!alt">
+                <md-option value="INS">Insertion</md-option>
+                <md-option value="DEL">Deletion</md-option>
+              </md-select>
+            </div>
+          </md-input-container>-->
+        </div>
+
+        <div id="choropleth" ></div>
+        <div id="histogram"></div>
     </md-card-content>
 
 

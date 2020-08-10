@@ -33,6 +33,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     $scope.pages = [5 , 10, 25, 50, 100];
     $scope.usersPerPage = 25;
     $scope.currentPage = 1;
+    $scope.visualIndex =1;
 
     var queryData = "";
     $scope.rootQuery = [];
@@ -67,10 +68,69 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       //queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType};
       //getData(url,queryData)
     //}
+    $scope.graphDataGenerator = function(hits, index){
+      console.log(index);
+      console.log(hits);
+      var sampleDetails = hits[index].info.sampleDetails;
+      var locationDetails = hits[index].info.locationCounts;
+      var dateCounts = hits[index].info.dateCounts;
+      var sampleData = [];
+      var dateData = [];
+      var hashLoc = {};
+      var hashDate = {};
+      //Sample based calculations
+      for (var i = 0; i < sampleDetails.length; i++) {
+        var valLoc = sampleDetails[i][1];
+        var valDate = sampleDetails[i][0];
+        if (typeof hashLoc[valLoc] !== "undefined") {
+          hashLoc[valLoc]++;
+        }else{
+          hashLoc[valLoc] = 1;
+        }
+        if (typeof hashDate[valDate] !== "undefined") {
+          hashDate[valDate]++;
+        }else{
+          hashDate[valDate] = 1;
+        }
+      }
+
+      //Calculating percentage - divinding sample based count to totalCount
+      for(var i = 0; i < locationDetails.length; i++) {
+        //console.log(Object.keys(locationDetails[i]));
+        let key = Object.keys(locationDetails[i]);
+        var val = parseFloat((hashLoc[key]/locationDetails[i][key])*100).toFixed(2);
+        hashLoc[key]=val;
+      }
+
+      for(var i = 0; i < dateCounts.length; i++) {
+        let key = Object.keys(dateCounts[i]);
+        if(typeof hashDate[key] === "undefined"){
+          var val = 0;
+        }else{
+          var val = parseFloat((hashDate[key]/dateCounts[i][key])*100).toFixed(2);
+        }
+        hashDate[key]=val;
+      }
+
+      //Creating array of objects for graphs
+      for (var key in hashLoc) {
+        for(var i = 0; i < geoData.length; i++) {
+          if(geoData[i]["alpha3Code"] == key){
+            sampleData.push({"code": key, "value": hashLoc[key], "title": geoData[i]["name"]});
+            continue;
+          }
+        }
+      }
+      for (var key in hashDate) {
+            dateData.push({"date": key, "value": hashDate[key]});
+      }
+
+      generateMap(sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
+      generateHistogram(dateData);
+    }
 
     $scope.query = function(){
       $scope.loading = true;
-
       //do validation and throw error. Need to change assembly to  hCoV-19 later.
       if( $scope.sMin != null || $scope.sMax != null || $scope.eMin != null || $scope.eMax != null){
         $scope.inputText= null;
@@ -103,14 +163,8 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         $scope.ref = match[2].split(">")[0].trim();
         $scope.alt = match[2].split(">")[1].trim();
         queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos-1,"variantType":$scope.VarType,"sampleFields":["SampleCollectionDate","Location"]};
-
       }
-      console.log(queryData);
-
       getData(url,queryData)
-
-
-
     }
     var getData = function(url,queryData){
       //console.log(url,queryData);
@@ -121,40 +175,10 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         if( hits.exists == true){
           $scope.warning = null;
           $scope.hits =hits.datasetAlleleResponses;
-          console.log($scope.hits);
+          //console.log($scope.hits);
           $scope.loading = false;
-          var sampleDetails = $scope.hits[1].info.sampleDetails;
-          var locationDetails = $scope.hits[1].info.locationCounts;
-          var sampleData = [];
-          var hash = {};
-          for (var i = 0; i < sampleDetails.length; i++) {
-            var val = sampleDetails[i][1];
-            if (typeof hash[val] !== "undefined") {
-              hash[val]++;
-            }else{
-              hash[val] = 1;
-            }
-          }
-          console.log(hash);
-          console.log(Object.keys(locationDetails[0]));
-          for(var i = 0; i < locationDetails.length; i++) {
-            //console.log(Object.keys(locationDetails[i]));
-            let key = Object.keys(locationDetails[i]);
-            var val = parseFloat((hash[key]/locationDetails[i][key])*100).toFixed(2);
-            hash[key]=val;
-          }
-          console.log(hash);
+          $scope.graphDataGenerator($scope.hits,$scope.visualIndex);
 
-          for (var key in hash) {
-            for(var i = 0; i < geoData.length; i++) {
-              if(geoData[i]["alpha3Code"] == key){
-
-                sampleData.push({"code": key, "value": hash[key], "title": geoData[i]["name"]});
-                continue;
-              }
-            }
-          }
-          generateMap(sampleData,"chartNGDC",null,[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
         }else if(hits.error == true){
           $scope.warning = hits.error.errorMessage;
           $scope.hits = null;
@@ -174,29 +198,19 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     }
 
 
-      var generateMap = function(sampleData, divID, subDivID, labels, domain){
-        console.log(labels);
+      var generateMap = function(sampleData, divID, labels, domain){
         d3.select(".legendThreshold").remove();
-
-        var width = 800 ,
-            height = 400 ;
+        var width = parseInt(d3.select('#'+divID).style('width'), 10);
+        var height = parseInt(d3.select('#'+divID).style('height'), 10);
         var lowColor = '#f2f4f5'
         var highColor = '#477fb6'
-        if(subDivID == null){
-          d3.select('#'+divID).selectAll("svg").remove();
 
-          var svg = d3.select("body").select('#'+divID)
-                  .append("svg")
-                  .attr("width", width)
-                  .attr("height", height);
+        d3.select('#'+divID).selectAll("svg").remove();
 
-        }else{
-          d3.select('#'+divID).select('#'+subDivID).selectAll("svg").remove();
-          var svg = d3.select("body").select('#'+divID).select('#'+subDivID)
-                  .append("svg")
-                  .attr("width", width )
-                  .attr("height", height );
-        }
+        var svg = d3.select("body").select('#'+divID)
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
 
 
         // Map and projection
@@ -210,9 +224,6 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         // Data and color scale
         var data = d3.map();
 
-
-
-
         // Load external data and boot
         d3.queue()
             .defer(d3.json, "assets/geojson/world.geojson")
@@ -221,8 +232,6 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         sampleData.forEach(function(d){
         data.set(d.code, +d.value) // (first refers to county code, second refers to employment value)
             })
-
-
 
         var tip = d3.tip()
         .attr('class', 'd3-tip')
@@ -258,7 +267,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
                     .on('mouseout', tip.hide);
 
                     // add a legend
-                		var w = 140, h = 200;
+                		var w = 140, h = 150;
 
                 		var key = svg
                 			.append("svg")
@@ -299,9 +308,61 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
                 		key.append("g")
                 			.attr("class", "y axis")
-                			.attr("transform", "translate(41,10)")
+                			.attr("transform", "translate(40,10)")
                 			.call(yAxis)
         }
+      }
+      var generateHistogram = function(sampleData){
+        //console.log(sampleData.sort(function(a,b){return a.date > b.date;}));
+        d3.select("body").select('#histogram').selectAll("svg").remove();
+        sampleData = sampleData.sort(function(a,b){return a.date > b.date;});
+        var width = parseInt(d3.select('#histogram').style('width'), 10);
+        var height = parseInt(d3.select('#histogram').style('height'), 10);
+        var margin  = {top: 20, right: 20, bottom: 30, left: 50};
+        //var aspect = width / height;
+
+        var svg = d3.select("body").select('#histogram')
+        .append("svg")
+        .attr("width", width - 50 )
+        .attr("height", height);
+
+
+        x = d3.scaleBand().rangeRound([0, width - 100]).padding(0.1),
+        y = d3.scaleLinear().rangeRound([height-50, 0]),
+        g = svg.append("g")
+        .attr("transform", "translate(50,0)");
+
+        x.domain(sampleData.map(d => d.date));
+        y.domain([0, d3.max(sampleData, d => d.value)]);
+        var tip = d3.tip()
+        .attr('class', 'd3-tip')
+        .offset([0, 0])
+        .html(function(d) {
+          return  d.value+"%";
+        })
+        svg.call(tip);
+
+        g.append("g")
+        .attr("class", "axis axis-x")
+        .attr("transform", "translate(0,350)")
+        .call(d3.axisBottom(x));
+
+        g.append("g")
+        .attr("class", "axis axis-y")
+        .call(d3.axisLeft(y).ticks(5));
+
+        g.selectAll(".bar")
+        .data(sampleData)
+        .enter().append("rect")
+        .attr("class", "bar")
+        .attr("x", d => x(d.date))
+        .attr("y", d => y(d.value))
+        .attr("width", x.bandwidth())
+        .attr("height", d => height -50 - y(d.value))
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide);
+
+
 
 
       }
