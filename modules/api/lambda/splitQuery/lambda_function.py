@@ -275,12 +275,15 @@ def process_samples(variants, fields):
                 sample[field_i]
                 for sample in all_sample_details
             )
-            extra_fields['dateCounts'] = [
-                {
-                    date: count,
-                }
-                for date, count in date_counts_dict.items()
-            ]
+            extra_fields['dateCounts'] = sorted(
+                [
+                    {
+                        date: count,
+                    }
+                    for date, count in date_counts_dict.items()
+                ],
+                key=lambda x: list(x.keys())[0]
+            )
 
     compression_mapping = []
     offset = 0
