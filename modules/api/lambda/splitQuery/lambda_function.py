@@ -264,8 +264,7 @@ def process_samples(variants, fields):
             )
             extra_fields['dateCounts'] = [
                 {
-                    'date': date,
-                    'value': count,
+                    date: count,
                 }
                 for date, count in date_counts_dict.items()
             ]
