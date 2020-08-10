@@ -1,5 +1,6 @@
 resource aws_s3_bucket cache {
   bucket_prefix = "beacon-cache"
+  force_destroy = true
   tags = var.common-tags
 }
 
