@@ -1,3 +1,5 @@
+data "aws_region" "current" {}
+
 locals {
   api_version = "v1.0.0"
 }
@@ -189,6 +191,7 @@ module "lambda-queryDatasets" {
     variables = {
       BEACON_ID = var.beacon-id
       DATASETS_TABLE = aws_dynamodb_table.datasets.name
+      RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
       SPLIT_QUERY_LAMBDA = module.lambda-splitQuery.function_name
     }
   }
@@ -217,6 +220,7 @@ module "lambda-splitQuery" {
       CACHE_BUCKET = aws_s3_bucket.cache.bucket
       CACHE_TABLE = aws_dynamodb_table.cache.name
       PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
+      RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
       SPLIT_SIZE = 2000
     }
   }

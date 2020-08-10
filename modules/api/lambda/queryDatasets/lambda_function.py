@@ -7,10 +7,13 @@ import threading
 import boto3
 
 from api_response import bad_request, bundle_response, missing_parameter
+from aws_utils import S3Client
 from chrom_matching import CHROMOSOMES, get_matching_chromosome, get_vcf_chromosomes
 
 BEACON_ID = os.environ['BEACON_ID']
 DATASETS_TABLE_NAME = os.environ['DATASETS_TABLE']
+MAXIMUM_RESPONSE_SIZE = 6 * 2**20
+RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 SPLIT_QUERY = os.environ['SPLIT_QUERY_LAMBDA']
 
 INCLUDE_DATASETS_VALUES = {
@@ -26,6 +29,24 @@ base_pattern = re.compile('[ACGTUMRWSYKVHDBN]+')
 
 dynamodb = boto3.client('dynamodb')
 aws_lambda = boto3.client('lambda')
+s3 = S3Client()
+
+
+def check_size(response, context):
+    response_length = len(json.dumps(response))
+    print(f"Response is {response_length} characters")
+    if response_length > MAXIMUM_RESPONSE_SIZE:
+        print("Response is too large, uploading to S3...")
+        response_key = f'{context.aws_request_id}.json'
+        key = f'{context.function_name}/{response_key}'
+        s3.put_object(RESPONSE_BUCKET, key,
+                      json.dumps(response).encode())
+        return {
+            's3Response': {
+                'key': response_key,
+            },
+        }
+    return response
 
 
 def get_datasets(assembly_id, dataset_ids):
@@ -90,7 +111,7 @@ def perform_query(dataset, query_details, page_details,
     responses.put(response_dict)
 
 
-def query_datasets(parameters):
+def query_datasets(parameters, context):
     response_dict = {
         'beaconId': BEACON_ID,
         'apiVersion': None,
@@ -189,7 +210,8 @@ def query_datasets(parameters):
     exists = False
     while processed < num_threads and (include_datasets != 'NONE'
                                        or not exists):
-        response = responses.get()
+        raw_response = responses.get()
+        response = read_response(raw_response)
         processed += 1
         if 'exists' not in response:
             # function errored out, ignore
@@ -202,7 +224,17 @@ def query_datasets(parameters):
         'exists': exists,
         'datasetAlleleResponses': dataset_responses or None,
     })
+    response_dict = check_size(response_dict, context)
     return bundle_response(200, response_dict)
+
+
+def read_response(raw_response):
+    s3_response = raw_response.get('s3Response')
+    if s3_response:
+        response_stream = s3.get_object(s3_response['bucket'],
+                                        s3_response['key'])
+        return json.load(response_stream)
+    return raw_response
 
 
 def validate_request(parameters):
@@ -387,4 +419,4 @@ def lambda_handler(event, context):
                 except ValueError:
                     # Cannot be formatted as an integer, handle in validation
                     pass
-    return query_datasets(parameters)
+    return query_datasets(parameters, context)

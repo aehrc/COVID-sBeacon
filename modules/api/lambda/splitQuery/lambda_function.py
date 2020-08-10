@@ -12,6 +12,8 @@ import threading
 import boto3
 from botocore.exceptions import ClientError
 
+from aws_utils import S3Client
+
 
 EXTRA_ANNOTATION_FIELDS = {
     'Variant',  # For matching and calculating pos,ref,alt
@@ -21,12 +23,14 @@ EXTRA_ANNOTATION_FIELDS = {
 CACHE_BUCKET = os.environ['CACHE_BUCKET']
 CACHE_TABLE = os.environ['CACHE_TABLE']
 COUNTRY_CODES_PATH = os.environ['LAMBDA_TASK_ROOT'] + '/country_codes.json'
+MAXIMUM_RESPONSE_SIZE = 6 * 2**20
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
+RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
 
 aws_lambda = boto3.client('lambda')
 dynamodb = boto3.client('dynamodb')
-s3 = boto3.client('s3')
+s3 = S3Client()
 
 with open(COUNTRY_CODES_PATH) as country_codes_json:
     country_codes = json.load(country_codes_json)
@@ -37,15 +41,7 @@ def cache_response(response, dataset_id, query_args):
     encoded_query = base64.urlsafe_b64encode(query_args.encode())
     safe_query = encoded_query.decode().strip('=')
     key = f'{dataset_id}/{safe_query}'
-    kwargs = {
-        'Bucket': CACHE_BUCKET,
-        'Key': key,
-        'Body': truncate_body(response_body),
-    }
-    print(f"Calling s3.put_item with kwargs: {json.dumps(kwargs)}")
-    kwargs['Body'] = response_body
-    s3_response = s3.put_object(**kwargs)
-    print(f"Received response {json.dumps(s3_response, default=str)}")
+    s3.put_object(CACHE_BUCKET, key, response_body)
     kwargs = {
         'TableName': CACHE_TABLE,
         'Item': {
@@ -64,6 +60,23 @@ def cache_response(response, dataset_id, query_args):
     dynamodb_response = dynamodb.put_item(**kwargs)
     response_string = json.dumps(dynamodb_response, default=str)
     print(f"Received response {response_string}")
+
+
+def check_size(response, context):
+    response_length = len(json.dumps(response))
+    print(f"Response is {response_length} characters")
+    if response_length > MAXIMUM_RESPONSE_SIZE:
+        print("Response is too large, uploading to S3...")
+        key = f'{context.function_name}/{context.aws_request_id}.json'
+        s3.put_object(RESPONSE_BUCKET, key,
+                      json.dumps(response).encode())
+        return {
+            's3Response': {
+                'bucket': RESPONSE_BUCKET,
+                'key': key,
+            },
+        }
+    return response
 
 
 def get_cached(dataset_id, query_args):
@@ -87,7 +100,7 @@ def get_cached(dataset_id, query_args):
         return None
     query_location = item['queryLocation']['S']
     try:
-        streaming_body = s3_get_object(CACHE_BUCKET, query_location)
+        streaming_body = s3.get_object(CACHE_BUCKET, query_location)
     except ClientError as error:
         print(json.dumps(error.response, default=str))
         return None
@@ -108,7 +121,7 @@ def get_annotations(annotation_location, variants):
     covered_variants = set()
     if annotation_location:
         bucket, key = get_bucket_and_key(annotation_location)
-        streaming_body = s3_get_object(bucket, key)
+        streaming_body = s3.get_object(bucket, key)
         iterator = (row.decode('utf-8') for row in streaming_body.iter_lines())
         reader = csv.DictReader(iterator, delimiter='\t')
         for row in reader:
@@ -199,7 +212,7 @@ def process_samples(variants, fields):
                 bucket, key = get_bucket_and_key(vcf_location)
                 key = f'{key.split(".")[0]}.csv'
                 try:
-                    streaming_body = s3_get_object(bucket, key)
+                    streaming_body = s3.get_object(bucket, key)
                 except ClientError as error:
                     print(error.response)
                     # Could not access sample metadata, skip
@@ -415,17 +428,6 @@ def run_queries(dataset, query_details):
     return response_dict
 
 
-def s3_get_object(bucket, key):
-    kwargs = {
-        'Bucket': bucket,
-        'Key': key,
-    }
-    print(f"Calling s3.get_object with kwargs: {json.dumps(kwargs)}")
-    response = s3.get_object(**kwargs)
-    print(f"Received response: {json.dumps(response, default=str)}")
-    return response['Body']
-
-
 def split_query(dataset, query_details, page_details):
     dataset_id = dataset['dataset_id']
     query_args = '&'.join(str(arg) for arg in query_details.values())
@@ -438,15 +440,6 @@ def split_query(dataset, query_details, page_details):
     return response
 
 
-def truncate_body(body, head=100, tail=100):
-    if len(body) > head + tail + 16:
-        return (body[:head].decode()
-                + f'...<{len(body) - head - tail} bytes>...'
-                + body[-tail:].decode())
-    else:
-        return body.decode()
-
-
 def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
     dataset = event['dataset']
@@ -457,5 +450,6 @@ def lambda_handler(event, context):
         query_details=query_details,
         page_details=page_details,
     )
+    response = check_size(response, context)
     print('Returning response: {}'.format(json.dumps(response)))
     return response

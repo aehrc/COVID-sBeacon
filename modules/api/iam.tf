@@ -213,6 +213,15 @@ data aws_iam_policy_document lambda-getInfo {
 data aws_iam_policy_document lambda-queryDatasets {
   statement {
     actions = [
+      "s3:PutObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.large_response_bucket.arn}/${module.lambda-queryDatasets.function_name}/*",
+    ]
+  }
+
+  statement {
+    actions = [
       "dynamodb:Query",
     ]
     resources = [
@@ -259,7 +268,10 @@ data aws_iam_policy_document lambda-splitQuery {
     actions = [
       "s3:PutObject",
     ]
-    resources = ["${aws_s3_bucket.cache.arn}/*"]
+    resources = [
+      "${aws_s3_bucket.cache.arn}/*",
+      "${aws_s3_bucket.large_response_bucket.arn}/${module.lambda-splitQuery.function_name}/*",
+    ]
   }
 
   statement {
@@ -312,4 +324,46 @@ data aws_iam_policy_document api-root-get {
       aws_dynamodb_table.datasets.arn,
     ]
   }
+}
+
+#
+# API: /s3response/{request_id}.json GET
+#
+
+data aws_iam_policy_document api_s3_get_proxy {
+  statement {
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.large_response_bucket.arn}/${module.lambda-queryDatasets.function_name}/*",
+    ]
+  }
+}
+
+resource aws_iam_policy api_s3_get_proxy {
+  name = "s3_get_proxy"
+  policy = data.aws_iam_policy_document.api_s3_get_proxy.json
+}
+
+data aws_iam_policy_document api_s3_assume_role {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["apigateway.amazonaws.com"]
+    }
+  }
+}
+
+resource aws_iam_role api_s3_get_proxy {
+  name               = "s3_get_proxy"
+  path               = "/"
+  assume_role_policy = data.aws_iam_policy_document.api_s3_assume_role.json
+}
+
+resource aws_iam_role_policy_attachment api_s3_get_proxy {
+  role       = aws_iam_role.api_s3_get_proxy.name
+  policy_arn = aws_iam_policy.api_s3_get_proxy.arn
 }
