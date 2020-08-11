@@ -294,9 +294,9 @@
 
             <div data-tip="Change Dataset to update visualisation">
               <md-select id="dropDown2" name="type" ng-model="visualIndex" ng-change="graphDataGenerator(hits,visualIndex);" >
-                <md-option value="0">SARS-CoV-2 Genomes in Genbank</md-option>
-                <md-option ng-selected="true" value="1">National Genomics Data Center</md-option>
-                <md-option value="2">All Indian Genomes</md-option>
+                <md-option ng-repeat="hit in hits" value="{{hit.info.name}}">
+                {{hit.info.name}}
+                </md-option>
               </md-select>
             </div>
           </md-input-container>

@@ -22,7 +22,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
     var rootUrl = window.beacon_api_url;
     var url = rootUrl+ "/query";
-    $scope.sPos, $scope.VarType,$scope.totalEntries;
+    $scope.sPos, $scope.VarType,$scope.totalEntries,$scope.visualIndex;
     $scope.ref = $scope.alt ="";
     $scope.isVisible = $scope.loading = $scope.sortReverse  =  false;
     $scope.subSortReverse = true;
@@ -33,7 +33,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     $scope.pages = [5 , 10, 25, 50, 100];
     $scope.usersPerPage = 25;
     $scope.currentPage = 1;
-    $scope.visualIndex =1;
+
 
     var queryData = "";
     $scope.rootQuery = [];
@@ -68,9 +68,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       //queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType};
       //getData(url,queryData)
     //}
-    $scope.graphDataGenerator = function(hits, index){
-      console.log(index);
-      console.log(hits);
+    $scope.graphDataGenerator = function(hits, visIndex){
+      //console.log(visIndex);
+      //console.log(hits);
+      var index = hits.findIndex(x => x.info.name === visIndex);
+      //console.log(index);
+
       var sampleDetails = hits[index].info.sampleDetails;
       var locationDetails = hits[index].info.locationCounts;
       var dateCounts = hits[index].info.dateCounts;
@@ -104,6 +107,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
       for(var i = 0; i < dateCounts.length; i++) {
         let key = Object.keys(dateCounts[i]);
+
         if(typeof hashDate[key] === "undefined"){
           var val = 0;
         }else{
@@ -122,9 +126,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         }
       }
       for (var key in hashDate) {
+        //if( key == "N/A"){
+        //  continue;
+        //}
             dateData.push({"date": key, "value": hashDate[key]});
       }
-
+      //console.log(dateData);
       generateMap(sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       generateHistogram(dateData);
     }
@@ -166,17 +173,51 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       }
       getData(url,queryData)
     }
+
     var getData = function(url,queryData){
       //console.log(url,queryData);
       $http({method: 'GET', url: url,params:queryData}).then(function successCallback(resp) {
         var hits = resp.data;
         //console.log(hits);
         $scope.hits = [];
-        if( hits.exists == true){
+        if(hits.s3Response){
+          var newUrl = rootUrl +"/s3response/"+hits.s3Response.key;
+          //console.log(newUrl);
+          $http({method: 'GET', url: newUrl}).then(function successCallback(resp) {
+            hits = resp.data;
+            if( hits.exists == true){
+              $scope.warning = null;
+              $scope.hits =hits.datasetAlleleResponses;
+              //console.log($scope.hits);
+              $scope.loading = false;
+              const maxDatasetId = $scope.hits.sort((a, b) => b.callCount - a.callCount)[0];
+              $scope.visualIndex = maxDatasetId.info.name;
+              $scope.graphDataGenerator($scope.hits,$scope.visualIndex);
+
+            }else if(hits.error == true){
+              $scope.warning = hits.error.errorMessage;
+              $scope.hits = null;
+              $scope.loading = false;
+            }else{
+              $scope.hits = null;
+              $scope.warning = "No hits matching the search criteria";
+              console.log($scope.warning );
+              $scope.loading = false;
+            }
+          }, function errorCallback(resp) {
+                console.log("Error: " + JSON.stringify(resp));
+                $scope.warning = resp.data.error.errorMessage;
+                $scope.hits = null;
+                $scope.loading = false;
+          });
+        }else if( hits.exists == true){
           $scope.warning = null;
           $scope.hits =hits.datasetAlleleResponses;
           //console.log($scope.hits);
           $scope.loading = false;
+          const maxDatasetId = $scope.hits.sort((a, b) => b.callCount - a.callCount)[0];
+          $scope.visualIndex = maxDatasetId.info.name;
+          //console.log($scope.visualIndex);
           $scope.graphDataGenerator($scope.hits,$scope.visualIndex);
 
         }else if(hits.error == true){
@@ -237,17 +278,22 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         .attr('class', 'd3-tip')
         .offset([0, 0])
         .html(function(d) {
-          return d.properties.name + ": " + d.value+"%";
+          if(d.properties.name == "England"){
+            return "United Kingdom : " + d.value+"%";
+          }else{
+            return d.properties.name + ": " + d.value+"%";
+          }
+
         })
         svg.call(tip);
 
         function ready(error, topo) {
-            console.log(topo)
+            //console.log(topo)
             if (error) throw error;
             var range_low = 0,
                 range_high= d3.max(topo.features, function(d){return data.get(d.id);});
-                console.log(range_low);
-                console.log(range_high);
+                //console.log(range_low);
+                //console.log(range_high);
             var color = d3.scaleLinear()
             .range([lowColor, highColor])
             .domain([range_low,range_high])
@@ -315,7 +361,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       var generateHistogram = function(sampleData){
         //console.log(sampleData.sort(function(a,b){return a.date > b.date;}));
         d3.select("body").select('#histogram').selectAll("svg").remove();
-        sampleData = sampleData.sort(function(a,b){return a.date > b.date;});
+        sampleData = sampleData.sort((a,b) => a.date.localeCompare(b.date));
         var width = parseInt(d3.select('#histogram').style('width'), 10);
         var height = parseInt(d3.select('#histogram').style('height'), 10);
         var margin  = {top: 20, right: 20, bottom: 30, left: 50};
