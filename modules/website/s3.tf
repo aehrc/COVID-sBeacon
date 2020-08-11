@@ -4,6 +4,7 @@ locals {
   content_types = {
     "css" = "text/css; charset=utf-8"
     "eot" = "application/vnd.ms-fontobject"
+    "geojson" = "geojson/geojson; charset=utf-8"
     "html" = "text/html; charset=utf-8"
     "jpg" = "image/jpeg"
     "gif" = "image/gif"

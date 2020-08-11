@@ -21,7 +21,7 @@
             <md-input-container ng-show="sMin == null && sMax == null && eMin == null && eMax == null">
               <!--<label>Query Position REF>ALT</label>-->
               <div data-tip="(Start coordinate position) (REF)>(ALT).">
-                <input id="search" placeholder="8782 C>T" ng-model="inputText" ng-required="!sMin"  ng-keyup="$event.keyCode == 13 && query()"">
+                <input id="search" placeholder="8782 C>T" ng-model="inputText" ng-required="'true'" ng-keyup="$event.keyCode == 13 && query()"">
               </div>
             </md-input-container>
           </form>
@@ -33,35 +33,35 @@
               <md-input-container>
                 <label>Start min</label>
                 <div data-tip="for querying imprecise positions (e.g. identifying all structural variants starting anywhere between startMin <-> startMax, and ending anywhere between endMin <-> endMax">
-                  <input  ng-model="sMin" ng-required="!inputText">
+                  <input  ng-model="sMin" ng-required="'true'">
                 </div>
               </md-input-container>
 
               <md-input-container>
                 <label>Start Max</label>
                 <div data-tip="Maximum start coordinate">
-                  <input  ng-model="sMax" ng-required="!inputText">
+                  <input  ng-model="sMax" ng-required="'true'">
                 </div>
               </md-input-container>
 
               <md-input-container>
                 <label>End min</label>
                 <div data-tip="Minimum end coordinate">
-                  <input  ng-model="eMin" ng-required="!inputText">
+                  <input  ng-model="eMin" ng-required="'true'">
                 </div>
               </md-input-container>
 
               <md-input-container>
                 <label>End Max</label>
                 <div data-tip="Maximum end coordinate">
-                  <input  ng-model="eMax" ng-required="!inputText">
+                  <input  ng-model="eMax" ng-required="'true'">
                 </div>
               </md-input-container>
 
               <md-input-container>
                 <label>Reference</label>
                 <div data-tip="Reference bases for this variant (starting from start).">
-                  <input  type="text"  ng-model="ref" ng-required="!inputText">
+                  <input  type="text"  ng-model="ref" ng-required="'true'">
                 </div>
               </md-input-container>
 
@@ -92,7 +92,7 @@
           </div>
         </div>
         <div layout="row">
-        <md-button ng-disabled="quick.$invalid || detail.$invalid " class="md-raised md-primary"  ng-click="query()" >Search</md-button>
+        <md-button ng-disabled=" quick.$invalid && detail.$invalid " class="md-raised md-primary"  ng-click="query()" >Search</md-button>
         <md-button ng-disabled="false" class="md-raised md-primary" ng-click="ShowHide()">Advanced Parameters</md-button>
         <md-button class="md-raised md-primary" ng-click="refresh()">Reset</md-button>
 
@@ -184,7 +184,7 @@
                 </tr>
             </thead>
             <tbody>
-              <tr ng-repeat-start="row in hits | orderBy:sortType:sortReverse | filter:searchText"  ng-click="main.activeRow = !main.activeRow" id="sameStrip">
+              <tr ng-repeat-start="row in hits | orderBy:sortType:sortReverse | filter:searchText"  ng-click="main.activeRow = !main.activeRow" id="sameStrip" ng-init="parentIndex = $index">
                 <td>
                   <button ng-if="main.activeRow" >-</button>
                   <button ng-if="!main.activeRow" >+</button>
@@ -246,6 +246,7 @@
                               <span ng-show="subSortType == 'frequency' && subSortReverse" class="fa fa-caret-up"></span>
                               <span ng-show="subSortType != 'frequency'" class="fa fa-sort"></span>
                             </a><span class="tableTooltip">Frequency of samples that contain the variant</span></th>
+
                           </tr>
                       </thead>
                       <div  class="col-xs-4" id="searchText">
@@ -263,7 +264,7 @@
 
                       <tbody>
 
-                        <tr dir-paginate="var in row.info.variants  | orderBy:subSortType:subSortReverse | filter:subSearch |itemsPerPage:usersPerPage " pagination-id="row.datasetId"  current-page="currentPage">
+                        <tr dir-paginate="var in row.info.variants   | orderBy:subSortType:subSortReverse | filter:subSearch |itemsPerPage:usersPerPage " pagination-id="row.datasetId"  current-page="currentPage" ng-init="childIndex = $index" >
 
                             <td>{{var.pos}}</td>
                             <td>{{var.ref}}</td>
@@ -273,6 +274,7 @@
                             <td><span ng-if="var.SIFT_score"> {{var.SIFT_score }} </span><span ng-if="!var.SIFT_score"> - </span></td>
                             <td>{{var.sampleCount}} </td>
                             <td>{{var.frequency}} %</td>
+
                         </tr>
 
                       </tbody>
@@ -281,10 +283,36 @@
                   <center><dir-pagination-controls direction-links="true" boundary-links="true" pagination-id="row.datasetId"> </dir-pagination-controls></center>
                   </td>
               </tr>
-            </tbody>
 
+
+            </tbody>
           <table>
         </div>
+
+        <div layout="row">
+          <md-input-container >
+
+            <div data-tip="Change Dataset to update visualisation">
+              <md-select id="dropDown2" name="type" ng-model="visualIndex" ng-change="graphDataGenerator(hits,visualIndex);" >
+                <md-option ng-repeat="hit in hits" value="{{hit.info.name}}">
+                {{hit.info.name}}
+                </md-option>
+              </md-select>
+            </div>
+          </md-input-container>
+          <!--<md-input-container >
+            <label>Variant Type</label>
+            <div data-tip="Accepted Values 'INS','DEL'">
+              <md-select id="dropDown" name="type" ng-model="VarType" ng-required="!alt">
+                <md-option value="INS">Insertion</md-option>
+                <md-option value="DEL">Deletion</md-option>
+              </md-select>
+            </div>
+          </md-input-container>-->
+        </div>
+
+        <div id="choropleth" ></div>
+        <div id="histogram"></div>
     </md-card-content>
 
 
