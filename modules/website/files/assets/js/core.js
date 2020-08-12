@@ -298,7 +298,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           if(d.properties.name == "England"){
             return "United Kingdom : " + d.value+"%";
           }else{
-            return d.properties.name + ": " + breakup+" ("+ d.value+"%)";
+            if(typeof breakup === "undefined"){
+              return d.properties.name + ": No data ("+ d.value+"%)";
+            }else{
+              return d.properties.name + ": " + breakup+" ("+ d.value+"%)";
+            }
+
           }
 
         })
