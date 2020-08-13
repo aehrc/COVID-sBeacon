@@ -284,6 +284,19 @@ def process_samples(variants, fields):
                 ],
                 key=lambda x: list(x.keys())[0]
             )
+    if {'SampleCollectionDate', 'Location'} <= set(fields):
+        location_i = fields.index('Location')
+        date_i = fields.index('SampleCollectionDate')
+        location_date_counts_dict = Counter(
+            (sample[location_i], sample[date_i])
+            for sample in all_sample_details
+        )
+        location_date_counts = defaultdict(list)
+        for (loc, date), count in location_date_counts_dict.items():
+            location_date_counts[loc].append({date: count})
+        for date_counts in location_date_counts.values():
+            date_counts.sort(key=lambda x: list(x.keys())[0])
+        extra_fields['locationDateCounts'] = location_date_counts
 
     compression_mapping = []
     offset = 0
