@@ -270,7 +270,7 @@ def process_samples(variants, fields):
                 if date and isinstance(date, str) and len(date) >= 7:
                     sample[field_i] = date[:7]
                 else:
-                    sample[field_i] = "N/A"
+                    sample[field_i] = "Date Missing"
             date_counts_dict = Counter(
                 sample[field_i]
                 for sample in all_sample_details
