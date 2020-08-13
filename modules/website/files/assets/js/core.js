@@ -32,6 +32,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     $scope.pages = [5 , 10, 25, 50, 100];
     $scope.usersPerPage = 25;
     $scope.currentPage = 1;
+    $scope.sampleData = [];
 
 
     var queryData = "";
@@ -50,6 +51,9 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     $scope.refresh = function(){
       location.reload(false);
     }
+    $scope.refreshGraph = function(){
+      $scope.graphDataGenerator($scope.hits,$scope.visualIndex);
+    }
     $scope.search = function(searches){
       //console.log(searches);
       if(searches == 'D614G'){
@@ -67,79 +71,112 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       //queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType};
       //getData(url,queryData)
     //}
-    $scope.graphDataGenerator = function(hits, visIndex){
+    $scope.graphDataGenerator = function(hits, visIndex,location=null){
       //console.log(visIndex);
       //console.log(hits);
-      var index = hits.findIndex(x => x.info.name === visIndex);
-      //console.log(index);
 
-      var sampleDetails = hits[index].info.sampleDetails;
-      var locationDetails = hits[index].info.locationCounts;
-      var dateCounts = hits[index].info.dateCounts;
-      var sampleData = [];
+      //console.log(index);
       var dateData = [];
       var hashLoc = {};
       var hashDate = {};
-      //Sample based calculations
-      for (var i = 0; i < sampleDetails.length; i++) {
-        var valLoc = sampleDetails[i][1];
-        var valDate = sampleDetails[i][0];
-        if (typeof hashLoc[valLoc] !== "undefined") {
-          hashLoc[valLoc]++;
-        }else{
-          hashLoc[valLoc] = 1;
-        }
-        if (typeof hashDate[valDate] !== "undefined") {
-          hashDate[valDate]++;
-        }else{
-          hashDate[valDate] = 1;
-        }
-      }
 
-      //Calculating percentage - divinding sample based count to totalCount
-      for(var i = 0; i < locationDetails.length; i++) {
-        //console.log(Object.keys(locationDetails[i]));
-        let key = Object.keys(locationDetails[i]);
-        //var val = parseFloat((hashLoc[key]/locationDetails[i][key])*100).toFixed(2);
-        if(typeof hashLoc[key] === "undefined"){
-          var val = String(0+"/"+locationDetails[i][key]);
-        }else{
-          var val = String((hashLoc[key]+"/"+locationDetails[i][key]));
+      var index = hits.findIndex(x => x.info.name === visIndex);
+      var sampleDetails = hits[index].info.sampleDetails;
+      var locationDetails = hits[index].info.locationCounts;
+      var dateCounts = hits[index].info.dateCounts;
+
+
+      if(location == null){
+        //Sample based calculations
+        for (var i = 0; i < sampleDetails.length; i++) {
+          var valLoc = sampleDetails[i][1];
+          var valDate = sampleDetails[i][0];
+          if (typeof hashLoc[valLoc] !== "undefined") {
+            hashLoc[valLoc]++;
+          }else{
+            hashLoc[valLoc] = 1;
+          }
+          if (typeof hashDate[valDate] !== "undefined") {
+            hashDate[valDate]++;
+          }else{
+            hashDate[valDate] = 1;
+          }
         }
-        hashLoc[key]=val;
-      }
 
-      for(var i = 0; i < dateCounts.length; i++) {
-        let key = Object.keys(dateCounts[i]);
-
-        if(typeof hashDate[key] === "undefined"){
-          var val = String(0+"/"+dateCounts[i][key]);
-        }else{
-          //var val = parseFloat((hashDate[key]/dateCounts[i][key])*100).toFixed(2);
-          var val = String((hashDate[key]+"/"+dateCounts[i][key]));
+        //Calculating percentage - divinding sample based count to totalCount
+        for(var i = 0; i < locationDetails.length; i++) {
+          //console.log(Object.keys(locationDetails[i]));
+          let key = Object.keys(locationDetails[i]);
+          //var val = parseFloat((hashLoc[key]/locationDetails[i][key])*100).toFixed(2);
+          if(typeof hashLoc[key] === "undefined"){
+            var val = String(0+"/"+locationDetails[i][key]);
+          }else{
+            var val = String((hashLoc[key]+"/"+locationDetails[i][key]));
+          }
+          hashLoc[key]=val;
         }
-        hashDate[key]=val;
-      }
 
-      //Creating array of objects for graphs
-      for (var key in hashLoc) {
-        //for(var i = 0; i < geoData.length; i++) {
-        //  if(geoData[i]["alpha3Code"] == key){
-            sampleData.push({"code": key, "value": parseFloat((hashLoc[key].split("/")[0]/hashLoc[key].split("/")[1])*100).toFixed(2), "breakup": hashLoc[key]});
-        //    continue;
+        for(var i = 0; i < dateCounts.length; i++) {
+          let key = Object.keys(dateCounts[i]);
+
+          if(typeof hashDate[key] === "undefined"){
+            var val = String(0+"/"+dateCounts[i][key]);
+          }else{
+            //var val = parseFloat((hashDate[key]/dateCounts[i][key])*100).toFixed(2);
+            var val = String((hashDate[key]+"/"+dateCounts[i][key]));
+          }
+          hashDate[key]=val;
+        }
+
+        //Creating array of objects for graphs
+        for (var key in hashLoc) {
+              $scope.sampleData.push({"code": key, "value": parseFloat((hashLoc[key].split("/")[0]/hashLoc[key].split("/")[1])*100).toFixed(2), "breakup": hashLoc[key]});
+        }
+        //console.log(hashDate);
+        for (var key in hashDate) {
+          //if( key == "N/A"){
+          //  continue;
           //}
-        //}
+          //console.log(hashDate[key]);
+              dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key]});
+        }
+      }else{
+        console.log(location);
+        console.log($scope.hits);
+        //Sample based calculations
+        for (var i = 0; i < sampleDetails.length; i++) {
+          var valDate = sampleDetails[i][0];
+          if(sampleDetails[i][1] == location){
+            if (typeof hashDate[valDate] !== "undefined") {
+              hashDate[valDate]++;
+            }else{
+              hashDate[valDate] = 1;
+            }
+          }
+        }
+        console.log(hashDate);
+        for(var i = 0; i < dateCounts.length; i++) {
+          let key = Object.keys(dateCounts[i]);
+
+          if(typeof hashDate[key] === "undefined"){
+            var val = String(0+"/"+dateCounts[i][key]);
+          }else{
+            //var val = parseFloat((hashDate[key]/dateCounts[i][key])*100).toFixed(2);
+            var val = String((hashDate[key]+"/"+dateCounts[i][key]));
+          }
+          hashDate[key]=val;
+        }
+        console.log(hashDate);
+        for (var key in hashDate) {
+              dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key]});
+        }
+console.log(dateData);
+
       }
-      //console.log(hashDate);
-      for (var key in hashDate) {
-        //if( key == "N/A"){
-        //  continue;
-        //}
-        //console.log(hashDate[key]);
-            dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key]});
-      }
-      console.log(sampleData);
-      generateMap(sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
+
+      //console.log($scope.sampleData);
+      //console.log(dateData);
+      generateMap($scope.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       generateHistogram(dateData);
     }
 
@@ -248,12 +285,13 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
       var generateMap = function(sampleData, divID, labels, domain){
         d3.select(".legendThreshold").remove();
+        d3.select('#'+divID).selectAll("svg").remove();
         var width = parseInt(d3.select('#'+divID).style('width'), 10);
         var height = parseInt(d3.select('#'+divID).style('height'), 10);
         var lowColor = '#f2f4f5'
         var highColor = '#477fb6'
 
-        d3.select('#'+divID).selectAll("svg").remove();
+
 
         var svg = d3.select("body").select('#'+divID)
                 .append("svg")
@@ -279,11 +317,8 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
         sampleData.forEach(function(d){
         data.set(d.code, +d.value)// (first refers to county code, second refers to employment value)
-        //d.value = d.value;
-        //d.breakup = d.breakup;
-        //data[d.code] = {"value":d.value, "breakup":d.breakup};
             })
-        console.log()
+
         var tip = d3.tip()
         .attr('class', 'd3-tip')
         .offset([0, 0])
@@ -331,6 +366,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
                     .attr("d", path)
                     .style("fill", function(d) {
                       return color(d.value) })
+                    .on('click',function(d){$scope.graphDataGenerator($scope.hits,$scope.visualIndex,d.id)})
                     .on('mouseover', tip.show)
                     .on('mouseout', tip.hide);
 
@@ -389,9 +425,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         }
       }
       var generateHistogram = function(sampleData){
+
         //console.log(sampleData.sort(function(a,b){return a.date > b.date;}));
         d3.select("body").select('#histogram').selectAll("svg").remove();
         sampleData = sampleData.sort((a,b) => a.date.localeCompare(b.date));
+        console.log(sampleData)
+        console.log(d3.max(sampleData, d => d.value))
         var width = parseInt(d3.select('#histogram').style('width'), 10);
         var height = parseInt(d3.select('#histogram').style('height'), 10);
         var margin  = {top: 20, right: 20, bottom: 30, left: 50};
@@ -409,7 +448,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         .attr("transform", "translate(50,0)");
 
         x.domain(sampleData.map(d => d.date));
-        y.domain([0, d3.max(sampleData, d => d.value)]);
+        y.domain([0, 100]);//d3.max(sampleData, d => d.value)
         var tip = d3.tip()
         .attr('class', 'd3-tip')
         .offset([0, 0])
@@ -445,7 +484,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           .attr("y", 15)
           .attr("text-anchor", "middle")
           .style("font-size", "16px")
-          .text("Percent frequency over time for searched variant");
+          .text("Frequency over time for searched variant");
 
 
 

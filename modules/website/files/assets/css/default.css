@@ -1697,6 +1697,12 @@ hr
 #dropDown2{
 	margin-bottom: 0.5em;
 }
+#refresh{
+
+	height: 10px;
+	width: 40px;
+}
+
 
 #popSearch{
 	margin-right: 10px;
