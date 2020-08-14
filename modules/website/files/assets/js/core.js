@@ -72,18 +72,23 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       //getData(url,queryData)
     //}
     $scope.graphDataGenerator = function(hits, visIndex,location=null){
-      //console.log(visIndex);
-      //console.log(hits);
+      console.log(visIndex);
+      console.log(hits);
+      console.log(location);
 
-      //console.log(index);
+      //
       var dateData = [];
       var hashLoc = {};
       var hashDate = {};
 
       var index = hits.findIndex(x => x.info.name === visIndex);
+      console.log(index);
       var sampleDetails = hits[index].info.sampleDetails;
       var locationDetails = hits[index].info.locationCounts;
+      var locationDateCounts = hits[index].info.locationDateCounts;
       var dateCounts = hits[index].info.dateCounts;
+      console.log(sampleDetails);
+      console.log(locationDetails);
 
 
       if(location == null){
@@ -127,7 +132,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           }
           hashDate[key]=val;
         }
-
+        $scope.sampleData = [];
         //Creating array of objects for graphs
         for (var key in hashLoc) {
               $scope.sampleData.push({"code": key, "value": parseFloat((hashLoc[key].split("/")[0]/hashLoc[key].split("/")[1])*100).toFixed(2), "breakup": hashLoc[key]});
@@ -138,7 +143,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           //  continue;
           //}
           //console.log(hashDate[key]);
-              dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key]});
+              dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key], "location" : "all"});
         }
       }else{
         console.log(location);
@@ -155,20 +160,22 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           }
         }
         console.log(hashDate);
-        for(var i = 0; i < dateCounts.length; i++) {
-          let key = Object.keys(dateCounts[i]);
+        var locDateValues = locationDateCounts[location];
+        console.log(locDateValues);
+        for(var i = 0; i < locDateValues.length; i++) {
+          let key = Object.keys(locDateValues[i]);
 
           if(typeof hashDate[key] === "undefined"){
-            var val = String(0+"/"+dateCounts[i][key]);
+            var val = String(0+"/"+locDateValues[i][key]);
           }else{
             //var val = parseFloat((hashDate[key]/dateCounts[i][key])*100).toFixed(2);
-            var val = String((hashDate[key]+"/"+dateCounts[i][key]));
+            var val = String((hashDate[key]+"/"+locDateValues[i][key]));
           }
           hashDate[key]=val;
         }
         console.log(hashDate);
         for (var key in hashDate) {
-              dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key]});
+              dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key], "location":location});
         }
 console.log(dateData);
 
@@ -257,7 +264,7 @@ console.log(dateData);
         }else if( hits.exists == true){
           $scope.warning = null;
           $scope.hits =hits.datasetAlleleResponses;
-          //console.log($scope.hits);
+          console.log($scope.hits);
           $scope.loading = false;
           const maxDatasetId = $scope.hits.sort((a, b) => b.callCount - a.callCount)[0];
           $scope.visualIndex = maxDatasetId.info.name;
@@ -288,8 +295,8 @@ console.log(dateData);
         d3.select('#'+divID).selectAll("svg").remove();
         var width = parseInt(d3.select('#'+divID).style('width'), 10);
         var height = parseInt(d3.select('#'+divID).style('height'), 10);
-        var lowColor = '#f2f4f5'
-        var highColor = '#477fb6'
+        var lowColor = '#ccdef0'
+        var highColor = '#225487'//'#477fb6'
 
 
 
@@ -323,7 +330,6 @@ console.log(dateData);
         .attr('class', 'd3-tip')
         .offset([0, 0])
         .html(function(d) {
-
           var breakup;
           sampleData.forEach(function(n){
             if(d.id == n.code){
@@ -340,7 +346,6 @@ console.log(dateData);
             }
 
           }
-
         })
         svg.call(tip);
 
@@ -365,10 +370,17 @@ console.log(dateData);
                     .attr("id", function(d){ d.value = data.get(d.id) || 0; return d.value;})
                     .attr("d", path)
                     .style("fill", function(d) {
-                      return color(d.value) })
-                    .on('click',function(d){$scope.graphDataGenerator($scope.hits,$scope.visualIndex,d.id)})
-                    .on('mouseover', tip.show)
-                    .on('mouseout', tip.hide);
+                      if(typeof data.get(d.id) === "undefined"){
+                        return("#f2f4f5"); //#f7f9fa color like
+                      }else{
+                        return color(d.value)
+                      }
+                       }) //add a return color for no data
+                      .on("mouseover", tip.show)
+                      .on("mouseleave", tip.hide)
+                      .on("mouseout", tip.hide)
+                      .on('click',function(d){Array.prototype.forEach.call(document.querySelectorAll('.d3-tip'), (t) => t.parentNode.removeChild(t)); $scope.graphDataGenerator($scope.hits,$scope.visualIndex,d.id)});
+
 
             //title
             svg.append("text")
@@ -451,7 +463,7 @@ console.log(dateData);
         y.domain([0, 100]);//d3.max(sampleData, d => d.value)
         var tip = d3.tip()
         .attr('class', 'd3-tip')
-        .offset([0, 0])
+        .offset([-12, 0])
         .html(function(d) {
           //console.log(d);
           return  d.breakup+" ("+d.value+"%)";
@@ -480,11 +492,12 @@ console.log(dateData);
 
         //title
         g.append("text")
+          .data(sampleData)
           .attr("x", (width / 3))
           .attr("y", 15)
           .attr("text-anchor", "middle")
           .style("font-size", "16px")
-          .text("Frequency over time for searched variant");
+          .text(function(d){ console.log(d); if(d.location == "all"){return "Frequency over time for searched variant "} else{ return "Frequency over time for "+ d.location} });
 
 
 
