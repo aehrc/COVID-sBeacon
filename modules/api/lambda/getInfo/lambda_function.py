@@ -70,8 +70,8 @@ def transform_data(items):
                 "callCount": item.get('callCount', {}).get('N') or None,
                 "sampleCount": item.get('sampleCount', {}).get('N') or None,
                 "info": item.get('info', {}).get('L') or None,
-                "dataUseConditions": item.get('dataUseConditions', {}
-                                              ).get('M') or None,
+                "dataUseConditions": json.loads(item.get('dataUseConditions', {}
+                                                         ).get('S')) or None,
                 "externalUrl": item.get('externalUrl', {}).get('S') or None,
             } for item in items
         ]

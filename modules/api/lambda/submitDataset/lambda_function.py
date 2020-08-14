@@ -112,7 +112,7 @@ def create_dataset(attributes):
     data_use_conditions = attributes.get('dataUseConditions')
     if data_use_conditions:
         item['dataUseConditions'] = {
-            'M': data_use_conditions,
+            'S': json.dumps(data_use_conditions),
         }
 
     kwargs = {
@@ -234,7 +234,7 @@ def update_dataset(attributes):
     if 'dataUseConditions' in attributes:
         update_set_expressions.append('dataUseConditions=:dataUseConditions')
         expression_attribute_values[':dataUseConditions'] = {
-            'M': attributes['dataUseConditions'],
+            'S': json.dumps(attributes['dataUseConditions']),
         }
 
     update_expression = 'SET {}'.format(', '.join(update_set_expressions))

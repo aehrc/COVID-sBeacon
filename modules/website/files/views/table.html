@@ -282,7 +282,7 @@
           <table>
         </div>
 
-        <div layout="row">
+        <section layout="row" layout-sm="column" layout-align="left center" layout-wrap>
           <md-input-container >
 
             <div data-tip="Change Dataset to update visualisation">
@@ -293,6 +293,7 @@
               </md-select>
             </div>
           </md-input-container>
+          <md-button class="md-raised md-primary" id="refresh" ng-click="refreshGraph()">Reset</md-button>
           <!--<md-input-container >
             <label>Variant Type</label>
             <div data-tip="Accepted Values 'INS','DEL'">
@@ -302,7 +303,7 @@
               </md-select>
             </div>
           </md-input-container>-->
-        </div>
+        </section>
 
         <div id="choropleth" ></div>
         <div id="histogram"></div>
