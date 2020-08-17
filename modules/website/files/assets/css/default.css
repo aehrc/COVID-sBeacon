@@ -1906,7 +1906,7 @@ ul.contact li a.icon-rss:before
       padding: 0;
 }
 #choropleth{
-			width: 600;
+			width: 700;
       height: 400;
       margin: 0;
       padding: 10;
@@ -1917,6 +1917,9 @@ ul.contact li a.icon-rss:before
 			height: 400;
 
 			float: left;
+}
+.transparentBar {
+  fill: #ffffff;
 }
 .bar {
   fill: #477fb6;
@@ -1962,15 +1965,7 @@ ul.contact li a.icon-rss:before
 			line-height: 1;
 
   }
-	.tooltip {
-  background-color: black;
-  border: none;
-  border-radius: 5px;
-  padding: 15px;
-  min-width: 400px;
-  text-align: left;
-  color: white;
-}
+
 .countries {
 	    fill: none;
 	    stroke: #fff;
