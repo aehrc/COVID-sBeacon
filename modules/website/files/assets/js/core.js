@@ -60,6 +60,12 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         /*$scope.sPos = 23403;
         $scope.ref = "A";
         $scope.alt = "G";*/
+        if($scope.isVisible == true){
+          $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
+          $scope.isVisible = false;
+        }
+
+
         $scope.inputText= "23403 A>G";
         $scope.query();
       }
@@ -303,16 +309,22 @@ console.log(dateData);
         var svg = d3.select("body").select('#'+divID)
                 .append("svg")
                 .attr("width", width)
-                .attr("height", height);
+                .attr("height", height)
+                .call(d3.zoom().on("zoom", function () {
+                    svg.attr("transform", d3.event.transform)
+                 }))
+                 .append("g");
 
 
         // Map and projection
 
-        var projection = d3.geoNaturalEarth()
-            .scale(width / 2 / Math.PI)
-            .translate([width / 2, height / 2])
+        var projection = d3.geoMercator()
+            .scale(width / 2.7 / Math.PI)
+            .translate([width / 2, height/1.6 ])
         var path = d3.geoPath()
             .projection(projection);
+
+
 
         // Data and color scale
         var data = d3.map();
@@ -380,6 +392,9 @@ console.log(dateData);
                       .on("mouseleave", tip.hide)
                       .on("mouseout", tip.hide)
                       .on('click',function(d){Array.prototype.forEach.call(document.querySelectorAll('.d3-tip'), (t) => t.parentNode.removeChild(t)); $scope.graphDataGenerator($scope.hits,$scope.visualIndex,d.id)});
+
+
+
 
 
             //title
@@ -478,6 +493,17 @@ console.log(dateData);
         g.append("g")
         .attr("class", "axis axis-y")
         .call(d3.axisLeft(y).ticks(5));
+
+        g.selectAll(".bar")
+        .data(sampleData)
+        .enter().append("rect")
+        .attr("class", "transparentBar")
+        .attr("x", d => x(d.date))
+        .attr("y", 345)
+        .attr("width", x.bandwidth())
+        .attr("height", 5)
+        .on('mouseover', tip.show)
+        .on('mouseout', tip.hide);
 
         g.selectAll(".bar")
         .data(sampleData)
