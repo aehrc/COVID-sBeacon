@@ -2,6 +2,23 @@ provider aws {
     alias = "useast1"
 }
 
+module lambda_cloudfrontEdgeSecurity {
+  source = "../lambda"
+
+  function_name = "cloudfrontEdgeSecurity"
+  description = "Adds security headers to cloudfront requests."
+  memory_size = 128
+  runtime = "python3.8"
+  timeout = 2
+  source_path = "${path.module}/lambda/cloudfrontEdgeSecurity/source"
+  handler = "function.lambda_handler"
+  lambda_at_edge = true
+
+  providers = {
+    aws = aws.useast1
+  }
+}
+
 module lambda_refreshCloudfront {
   source = "../lambda"
 

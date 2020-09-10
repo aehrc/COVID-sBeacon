@@ -6,6 +6,11 @@ resource aws_cloudfront_distribution platform_distribution {
     domain_name = aws_s3_bucket.website_bucket.bucket_regional_domain_name
     origin_id = aws_s3_bucket.website_bucket.id
 
+    custom_header {
+      name = "API_URL"
+      value = var.beacon_api_url
+    }
+
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
     }
@@ -29,6 +34,11 @@ resource aws_cloudfront_distribution platform_distribution {
       cookies {
         forward = "none"
       }
+    }
+
+    lambda_function_association {
+      event_type = "origin-response"
+      lambda_arn = module.lambda_cloudfrontEdgeSecurity.function_qualified_arn
     }
 
     viewer_protocol_policy = "redirect-to-https"
