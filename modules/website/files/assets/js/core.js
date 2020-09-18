@@ -78,23 +78,16 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       //getData(url,queryData)
     //}
     $scope.graphDataGenerator = function(hits, visIndex,location=null){
-      console.log(visIndex);
-      console.log(hits);
-      console.log(location);
-
       //
       var dateData = [];
       var hashLoc = {};
       var hashDate = {};
 
       var index = hits.findIndex(x => x.info.name === visIndex);
-      console.log(index);
       var sampleDetails = hits[index].info.sampleDetails;
       var locationDetails = hits[index].info.locationCounts;
       var locationDateCounts = hits[index].info.locationDateCounts;
       var dateCounts = hits[index].info.dateCounts;
-      console.log(sampleDetails);
-      console.log(locationDetails);
 
 
       if(location == null){
@@ -165,9 +158,9 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
             }
           }
         }
-        console.log(hashDate);
+
         var locDateValues = locationDateCounts[location];
-        console.log(locDateValues);
+
         for(var i = 0; i < locDateValues.length; i++) {
           let key = Object.keys(locDateValues[i]);
 
@@ -179,15 +172,15 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           }
           hashDate[key]=val;
         }
-        console.log(hashDate);
+
         for (var key in hashDate) {
               dateData.push({"date": key, "value": parseFloat((hashDate[key].split("/")[0]/hashDate[key].split("/")[1])*100).toFixed(2), "breakup" : hashDate[key], "location":location});
         }
-console.log(dateData);
+
 
       }
 
-      //console.log($scope.sampleData);
+      console.log($scope.sampleData);
       //console.log(dateData);
       generateMap($scope.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       generateHistogram(dateData);
@@ -329,14 +322,6 @@ console.log(dateData);
         // Data and color scale
         var data = d3.map();
 
-        // Load external data and boot
-        d3.queue()
-            .defer(d3.json, "assets/geojson/world.geojson")
-            .await(ready);
-
-        sampleData.forEach(function(d){
-        data.set(d.code, +d.value)// (first refers to county code, second refers to employment value)
-            })
 
         var tip = d3.tip()
         .attr('class', 'd3-tip')
@@ -361,9 +346,17 @@ console.log(dateData);
         })
         svg.call(tip);
 
-        function ready(error, topo) {
+        //var promises = [
+        //  d3.json("assets/geojson/world.geojson"),
+        //  sampleData.forEach(function(d){data.set(d.code, +d.value);})
+        //]
+
+        //Promise.all(promises).then(ready)
+        d3.json("assets/geojson/world.geojson")
+        .then(function(topo) {
             console.log(topo)
-            if (error) throw error;
+            sampleData.forEach(function(d){data.set(d.code, +d.value);})
+
             var range_low = 0,
                 range_high= d3.max(topo.features, function(d){return data.get(d.id);});
                 //console.log(range_low);
@@ -449,7 +442,9 @@ console.log(dateData);
                 			.attr("class", "y axis")
                 			.attr("transform", "translate(40,10)")
                 			.call(yAxis)
-        }
+        }).catch(function(error) {
+          console.log(error);
+        });
       }
       var generateHistogram = function(sampleData){
 
