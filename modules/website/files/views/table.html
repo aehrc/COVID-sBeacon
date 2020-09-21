@@ -10,8 +10,8 @@
       </md-card-title>
       <md-card-content>
         <div layout="row">
-          <label>Popular Search: </label>
-          <label>&nbsp;&nbsp; <a class="text-primary" ng-href='#' ng-click = "search('D614G')""> D614G </a></label>
+          <label id="popular">Popular Search: </label>
+          <label id="popular">&nbsp;&nbsp; <a class="text-primary" ng-href='#' ng-click = "search('D614G')""> D614G </a></label>
         </div>
       </md-card-content>
 
@@ -242,18 +242,17 @@
 
                           </tr>
                       </thead>
-                      <div  class="col-xs-4" id="searchText">
-                        <label for="search">Search:</label>
-                        <input ng-model="subSearch" id="search" class="form-control" placeholder="Filter table">
+                      <div class="row">
+                        <div  class="col-1" id="searchText">
+                          <label for="search">Search:</label>
+                          <input ng-model="subSearch" id="search" class="form-control" placeholder="Filter table">
+                        </div>
+                        <div  class="col-2" id="searchNew">
+                          <label for="search">Items per page:</label>
+
+                          <input type="number"  class="form-control" ng-model="usersPerPage">
+                        </div>
                       </div>
-                      <div  class="col-xs-4" id="searchNew">
-                        <label for="search">Items per page:</label>
-
-                        <input type="number"  class="form-control" ng-model="usersPerPage">
-                      </div>
-                      <br><br>
-
-
 
                       <tbody>
 

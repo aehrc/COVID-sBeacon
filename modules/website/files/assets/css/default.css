@@ -1683,11 +1683,11 @@ hr
 	width: 200%;
 }
 #searchText {
-	width: 100px;
+
 	margin-bottom:1em;
 }
 #searchNew {
-	width: 150px;
+	
 	margin-left:4em;
 	margin-bottom:1em;
 }
@@ -2268,7 +2268,10 @@ ul.contact li a.icon-rss:before
 {
 	margin-bottom: 4em;
 }
-
+#popular
+{
+	font-weight: 700;
+}
 /* Footer */
 
 #footer
