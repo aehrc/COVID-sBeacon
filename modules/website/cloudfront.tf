@@ -2,6 +2,12 @@ resource aws_cloudfront_origin_access_identity oai {
 }
 
 resource aws_cloudfront_distribution platform_distribution {
+
+  aliases = [
+    var.domain_name,
+    "www.${var.domain_name}",
+  ]
+
   origin {
     domain_name = aws_s3_bucket.website_bucket.bucket_regional_domain_name
     origin_id = aws_s3_bucket.website_bucket.id
@@ -43,7 +49,7 @@ resource aws_cloudfront_distribution platform_distribution {
 
     viewer_protocol_policy = "redirect-to-https"
     min_ttl = 0
-    default_ttl = 86400
+    default_ttl = var.production == true ? 86400 : 0
     max_ttl = 31536000
   }
 
@@ -54,6 +60,9 @@ resource aws_cloudfront_distribution platform_distribution {
   }
 
   viewer_certificate {
-    cloudfront_default_certificate = true
+    cloudfront_default_certificate = var.production == true ? false : true
+    acm_certificate_arn = var.production == true ? data.aws_acm_certificate.cert[0].arn : ""
+    minimum_protocol_version = var.production == true ? "TLSv1.2_2018" : "TLSv1"
+    ssl_support_method = var.production == true ? "sni-only" : ""
   }
 }
