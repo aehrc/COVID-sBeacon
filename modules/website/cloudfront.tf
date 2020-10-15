@@ -3,10 +3,10 @@ resource aws_cloudfront_origin_access_identity oai {
 
 resource aws_cloudfront_distribution platform_distribution {
 
-  aliases = [
+  aliases = var.production == true ? [
     var.domain_name,
     "www.${var.domain_name}",
-  ]
+  ] : []
 
   origin {
     domain_name = aws_s3_bucket.website_bucket.bucket_regional_domain_name
