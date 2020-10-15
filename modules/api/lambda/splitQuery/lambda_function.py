@@ -284,6 +284,25 @@ def process_samples(variants, fields):
                 ],
                 key=lambda x: list(x.keys())[0]
             )
+        elif field == 'State':
+            # Convert to Country / State only
+            for sample in all_sample_details:
+                location = sample[field_i]
+                if location and isinstance(location, str):
+                    sample[field_i] = location.split('/')[0:2].strip()
+                else:
+                    sample[field_i] = None
+            state_counts_dict = Counter(
+                sample[field_i]
+                for sample in all_sample_details
+            )
+            extra_fields['stateCounts'] = [
+                {
+                    state: count,
+                }
+                for state, count in state_counts_dict.items()
+            ]
+
     if {'SampleCollectionDate', 'Location'} <= set(fields):
         location_i = fields.index('Location')
         date_i = fields.index('SampleCollectionDate')
@@ -297,6 +316,20 @@ def process_samples(variants, fields):
         for date_counts in location_date_counts.values():
             date_counts.sort(key=lambda x: list(x.keys())[0])
         extra_fields['locationDateCounts'] = location_date_counts
+
+    if {'SampleCollectionDate', 'State'} <= set(fields):
+        state_i = fields.index('State')
+        date_i = fields.index('SampleCollectionDate')
+        location_state_counts_dict = Counter(
+            (sample[state_i], sample[date_i])
+            for sample in all_sample_details
+        )
+        state_date_counts = defaultdict(list)
+        for (state, date), count in state_date_counts_dict.items():
+            state_date_counts[state].append({date: count})
+        for date_counts in state_date_counts.values():
+            date_counts.sort(key=lambda x: list(x.keys())[0])
+        extra_fields['stateDateCounts'] = state_date_counts
 
     compression_mapping = []
     offset = 0
