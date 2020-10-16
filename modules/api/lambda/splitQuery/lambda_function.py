@@ -24,6 +24,9 @@ CACHE_BUCKET = os.environ['CACHE_BUCKET']
 CACHE_TABLE = os.environ['CACHE_TABLE']
 COUNTRY_CODES_PATH = os.environ['LAMBDA_TASK_ROOT'] + '/country_codes.json'
 MAXIMUM_RESPONSE_SIZE = 6 * 2**20
+METADATA_TRANSLATIONS = {
+    'State': 'Location',
+}
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
@@ -225,7 +228,10 @@ def process_samples(variants, fields):
                     print(f"Found csv with headers: {reader.fieldnames}")
                     print(f"Extracting {fields}")
                     all_sample_details += [
-                        [sample.get(field) for field in fields]
+                        [
+                            sample.get(METADATA_TRANSLATIONS.get(field, field))
+                            for field in fields
+                        ]
                         for sample in reader
                     ]
                 vcf_offsets.update({vcf_location: offset})
@@ -289,7 +295,7 @@ def process_samples(variants, fields):
             for sample in all_sample_details:
                 location = sample[field_i]
                 if location and isinstance(location, str):
-                    sample[field_i] = location.split('/')[0:2].strip()
+                    sample[field_i] = '/'.join(location.split('/')[0:2]).strip(' \u200e')
                 else:
                     sample[field_i] = None
             state_counts_dict = Counter(
@@ -320,7 +326,7 @@ def process_samples(variants, fields):
     if {'SampleCollectionDate', 'State'} <= set(fields):
         state_i = fields.index('State')
         date_i = fields.index('SampleCollectionDate')
-        location_state_counts_dict = Counter(
+        state_date_counts_dict = Counter(
             (sample[state_i], sample[date_i])
             for sample in all_sample_details
         )
