@@ -295,7 +295,7 @@ def process_samples(variants, fields):
             for sample in all_sample_details:
                 location = sample[field_i]
                 if location and isinstance(location, str):
-                    sample[field_i] = '/'.join(location.split('/')[0:2]).strip(' \u200e')
+                    sample[field_i] = '/'.join(location.split('/')[0:2]).strip(' \u200e').lower()
                 else:
                     sample[field_i] = None
             state_counts_dict = Counter(
