@@ -221,7 +221,7 @@ module "lambda-splitQuery" {
       CACHE_TABLE = aws_dynamodb_table.cache.name
       PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
       RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
-      SPLIT_SIZE = 2000
+      SPLIT_SIZE = 300
     }
   }
 }
