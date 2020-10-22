@@ -58,8 +58,8 @@ def find_gff_file(gff_files, accession_id, related_ids):
         if genome_id in REFERENCE_IDS:
             # equal to reference, therefore no variants
             return False
-        prospective_file = GFF3_FILE_TEMPLATE.format(genome_id)
-        if prospective_file in gff_files:
+        prospective_file = gff_files.get(genome_id)
+        if prospective_file:
             return prospective_file
     return get_gff_from_web(accession_id)
 
@@ -169,13 +169,40 @@ def get_variant_string(gff3_line, sequence):
     ])
 
 
+def get_locations(ftp):
+    accessions = {}
+    suffix = '_variants.gff3'
+    len_suffix = len(suffix)
+    top_level = ftp.nlst()
+    for folder in top_level:
+        if len(folder) != 1:
+            continue
+        this_level = ftp.nlst(folder)
+        if not this_level:
+            break
+        prefix = f'{folder}/2019-nCoV_'
+        len_prefix = len(prefix)
+        new_accessions = {
+            file_path[len_prefix:-len_suffix]: file_path
+            for file_path in this_level
+            if file_path.startswith(prefix) and file_path.endswith(suffix)
+        }
+        assert new_accessions  # Make sure there were some hits in this folder
+        accessions.update(new_accessions)
+    else:
+        raise Exception("They've used up all the single letter folders,"
+                        " now what?")
+    assert accessions  # Make sure the format hasn't changed
+    return accessions
+
+
 def run(fasta_file_path, metadata_file_path, output_directory,
         start):
     with open(fasta_file_path, 'r') as fasta_file_obj:
         sequence = get_fasta_sequence(fasta_file_obj)['1']
     valid_rows = get_valid_rows(metadata_file_path, start)
     ftp = get_ftp_connection()
-    gff_files = ftp.nlst()
+    gff_files = get_locations(ftp)
     sample_metadata = []
     for row in valid_rows:
         accession_id = row['Accession ID']
