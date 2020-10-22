@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import csv
 import ftplib
+import pathlib
 import re
 import sys
 
@@ -58,8 +59,8 @@ def find_gff_file(gff_files, accession_id, related_ids):
         if genome_id in REFERENCE_IDS:
             # equal to reference, therefore no variants
             return False
-        prospective_file = GFF3_FILE_TEMPLATE.format(genome_id)
-        if prospective_file in gff_files:
+        prospective_file = gff_files.get(genome_id)
+        if prospective_file:
             return prospective_file
     return get_gff_from_web(accession_id)
 
@@ -169,22 +170,68 @@ def get_variant_string(gff3_line, sequence):
     ])
 
 
+def get_locations(ftp):
+    accessions = {}
+    suffix = '_variants.gff3'
+    len_suffix = len(suffix)
+    top_level = ftp.nlst()
+    for folder in top_level:
+        if len(folder) != 1:
+            continue
+        this_level = ftp.nlst(folder)
+        if not this_level:
+            break
+        prefix = f'{folder}/2019-nCoV_'
+        len_prefix = len(prefix)
+        new_accessions = {
+            file_path[len_prefix:-len_suffix]: file_path
+            for file_path in this_level
+            if file_path.startswith(prefix) and file_path.endswith(suffix)
+        }
+        assert new_accessions  # Make sure there were some hits in this folder
+        accessions.update(new_accessions)
+    else:
+        raise Exception("They've used up all the single letter folders,"
+                        " now what?")
+    assert accessions  # Make sure the format hasn't changed
+    return accessions
+
+
 def run(fasta_file_path, metadata_file_path, output_directory,
         start):
     with open(fasta_file_path, 'r') as fasta_file_obj:
         sequence = get_fasta_sequence(fasta_file_obj)['1']
     valid_rows = get_valid_rows(metadata_file_path, start)
     ftp = get_ftp_connection()
-    gff_files = ftp.nlst()
+    gff_files = get_locations(ftp)
     sample_metadata = []
     for row in valid_rows:
         accession_id = row['Accession ID']
+        output_file = f'{output_directory}/{accession_id}.vcf'
         print(f"processing {accession_id}")
+        vcf_path = pathlib.Path(output_file)
+        try:
+            # Check if file already exists and is not corrupt
+            vcf_characters = vcf_path.read_text()
+        except FileNotFoundError:
+            pass
+        else:
+            if (vcf_characters.endswith('\t.\t.\tGT\t1\n')
+                    or vcf_characters.endswith(
+                        f'FORMAT\t{accession_id}\n')):
+                print(f"File {output_file} is already complete.")
+                #  Touch it so obsolete files can be ignored
+                vcf_path.touch()
+                sample_metadata.append(row)
+                continue
+            else:
+                print(f"File {output_file} exists but appears to be"
+                          " corrupted.")
+        print(f"Searching for gff3 file for {accession_id}")
         gff_file = find_gff_file(gff_files, accession_id, row['Related ID'])
         if gff_file is None:
             print("\tWebsite does not contain link to gff3 file, skipping")
             continue
-        output_file = f'{output_directory}/{accession_id}.vcf'
         convert_to_vcf(gff_file, accession_id, sequence, output_file, ftp)
         sample_metadata.append(row)
     ftp.quit()
@@ -200,6 +247,7 @@ def validate_metadata_line(metadata):
         metadata['Nuc.Completeness'] == 'Complete'
         and metadata['Sequence Quality'] == 'High'
         and metadata['Host'].lower() == 'homo sapiens'
+        and metadata['Data Source'] != 'GISAID'  # Not allowed to publish
     )
 
 

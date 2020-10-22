@@ -18,7 +18,9 @@ module beacon_api {
 module beacon_website {
   source = "./modules/website"
   beacon_api_url = module.beacon_api.api_url
+  domain_name = var.domain_name
   max_web_requests_per_ip_in_five_minutes = var.max_website_requests_per_ip_in_five_minutes
+  production = var.production
 
   providers = {
     aws = aws
