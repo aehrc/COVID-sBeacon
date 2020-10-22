@@ -1,6 +1,6 @@
-beacon-id = "au.csiro-covid19.beacon"
+beacon-id = "au.csiro.covid19beacon"
 beacon-name = "CSIRO COVID-19 Serverless Beacon"
-domain_name = "covidbeacon.csiro.au"
+domain_name = "covid19beacon.csiro.au"
 organisation-id = "CSIRO"
 organisation-name = "CSIRO"
 production = true
