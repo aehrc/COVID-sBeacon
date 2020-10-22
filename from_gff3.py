@@ -247,6 +247,7 @@ def validate_metadata_line(metadata):
         metadata['Nuc.Completeness'] == 'Complete'
         and metadata['Sequence Quality'] == 'High'
         and metadata['Host'].lower() == 'homo sapiens'
+        and metadata['Data Source'] != 'GISAID'  # Not allowed to publish
     )
 
 
