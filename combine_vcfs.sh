@@ -24,5 +24,5 @@ done
 find "${TMP_DIRECTORY}" -name "*.gz" > "${MERGE_FILE}"
 
 
-bcftools merge --force-samples --missing-to-ref --file-list "${MERGE_FILE}" --no-version --output-type z --threads 4 > "${OUTPUT_PREFIX}.vcf.gz"
+bcftools merge --missing-to-ref --file-list "${MERGE_FILE}" --no-version --output-type z --threads 4 > "${OUTPUT_PREFIX}.vcf.gz"
 bcftools index "${OUTPUT_PREFIX}.vcf.gz"
