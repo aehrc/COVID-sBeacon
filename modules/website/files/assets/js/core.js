@@ -23,7 +23,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     var url = rootUrl+ "/query";
     $scope.sPos, $scope.VarType,$scope.totalEntries,$scope.visualIndex;
     $scope.ref = $scope.alt ="";
-    $scope.isVisible = $scope.loading = $scope.sortReverse  =  false;
+    $scope.isVisible = $scope.loading = $scope.sortReverse  = $scope.stateVisilble =  false;
     $scope.subSortReverse = true;
     $scope.orderByField = 'name';
     $scope.inputText = $scope.hits = $scope.warning = $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
@@ -33,6 +33,8 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
     $scope.usersPerPage = 25;
     $scope.currentPage = 1;
     $scope.sampleData = [];
+    $scope.hashState = [];
+
 
 
     var queryData = "";
@@ -47,6 +49,10 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
 
     $scope.ShowHide = function(){
             $scope.isVisible = !$scope.isVisible;
+    }
+    $scope.stateToggle = function(){
+            $scope.stateVisilble = !$scope.stateVisilble;
+            console.log($scope.stateVisilble);
     }
     $scope.refresh = function(){
       location.reload(false);
@@ -82,6 +88,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       var dateData = [];
       var hashLoc = {};
       var hashDate = {};
+      var hashState = {};
 
       var index = hits.findIndex(x => x.info.name === visIndex);
       var sampleDetails = hits[index].info.sampleDetails;
@@ -90,11 +97,13 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
       var dateCounts = hits[index].info.dateCounts;
 
 
+
       if(location == null){
         //Sample based calculations
         for (var i = 0; i < sampleDetails.length; i++) {
           var valLoc = sampleDetails[i][1];
           var valDate = sampleDetails[i][0];
+          var valState = sampleDetails[i][2];
           if (typeof hashLoc[valLoc] !== "undefined") {
             hashLoc[valLoc]++;
           }else{
@@ -105,8 +114,13 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           }else{
             hashDate[valDate] = 1;
           }
+          if (typeof hashState[valState] !== "undefined") {
+            hashState[valState]++;
+          }else{
+            hashState[valState] = 1;
+          }
         }
-
+        console.log(hashState);
         //Calculating percentage - divinding sample based count to totalCount
         for(var i = 0; i < locationDetails.length; i++) {
           //console.log(Object.keys(locationDetails[i]));
@@ -193,11 +207,11 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         $scope.inputText= null;
           if($scope.VarType != null ){
             $scope.alt = null;
-            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType.toUpperCase(),"sampleFields":["SampleCollectionDate","Location"]};
+            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"variantType":$scope.VarType.toUpperCase(),"sampleFields":["SampleCollectionDate","Location","State"]};
           }
           if($scope.alt != null ){
             $scope.VarType = null;
-            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"sampleFields":["SampleCollectionDate","Location"]};
+            queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "startMin":$scope.sMin-1,"startMax":$scope.sMax-1,"endMin":$scope.eMin-1,"endMax":$scope.eMax-1,"sampleFields":["SampleCollectionDate","Location","State"]};
           }
       }else if( $scope.inputText != null){
         try {
@@ -219,7 +233,7 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
         }
         $scope.ref = match[2].split(">")[0].trim();
         $scope.alt = match[2].split(">")[1].trim();
-        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos-1,"variantType":$scope.VarType,"sampleFields":["SampleCollectionDate","Location"]};
+        queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":$scope.ref.toUpperCase(),"alternateBases":$scope.alt.toUpperCase(), "start":$scope.sPos-1,"variantType":$scope.VarType,"sampleFields":["SampleCollectionDate","Location","State"]};
       }
       getData(url,queryData)
     }
@@ -243,6 +257,29 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
               const maxDatasetId = $scope.hits.sort((a, b) => b.callCount - a.callCount)[0];
               $scope.visualIndex = maxDatasetId.info.name;
               $scope.graphDataGenerator($scope.hits,$scope.visualIndex);
+              let hashState = {};
+              var search = "AUS";
+              var condition = new RegExp(search);
+              let sampleDetails = $scope.hits[0].info.sampleDetails.filter(e => e[1] == "AUS");
+              for (var j = 0; j < sampleDetails.length; j++){
+                var valState = sampleDetails[j][2];
+                if (typeof hashState[valState] !== "undefined") {
+                  hashState[valState]++;
+                }else{
+                  hashState[valState] = 1;
+                }
+              }
+
+              angular.forEach(hashState, function(value, key) {
+                  $scope.hashState.push({
+                      key: key,
+                      count: value
+                  });
+              });
+
+              console.log($scope.hashState);
+
+
 
             }else if(hits.error == true){
               $scope.warning = hits.error.errorMessage;
@@ -267,8 +304,27 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           $scope.loading = false;
           const maxDatasetId = $scope.hits.sort((a, b) => b.callCount - a.callCount)[0];
           $scope.visualIndex = maxDatasetId.info.name;
-          //console.log($scope.visualIndex);
+          console.log($scope.visualIndex);
           $scope.graphDataGenerator($scope.hits,$scope.visualIndex);
+          let hashState = {};
+          var search = "AUS";
+          var condition = new RegExp(search);
+          let sampleDetails = $scope.hits[0].info.sampleDetails.filter(e => e[1] == "AUS");
+          for (var j = 0; j < sampleDetails.length; j++){
+            var valState = sampleDetails[j][2];
+            if (typeof hashState[valState] !== "undefined") {
+              hashState[valState]++;
+            }else{
+              hashState[valState] = 1;
+            }
+          }
+          angular.forEach(hashState, function(value, key) {
+              $scope.hashState.push({
+                  key: key,
+                  count: value
+              });
+          });
+          console.log($scope.hashState);
 
         }else if(hits.error == true){
           $scope.warning = hits.error.errorMessage;
