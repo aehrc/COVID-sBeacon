@@ -30,6 +30,20 @@ METADATA_TRANSLATIONS = {
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
+STATE_SYNONYMS_RAW = {
+    'Australia / Northern Territory': {
+        'Australia / Northern territory',
+    },
+    'Australia / New South Wales': {
+        'Australia / NSW',
+    }
+}
+
+state_synonyms = {
+    alias: true_name
+    for true_name, aliases in STATE_SYNONYMS_RAW.items()
+    for alias in aliases
+}
 
 aws_lambda = boto3.client('lambda')
 dynamodb = boto3.client('dynamodb')
@@ -295,7 +309,8 @@ def process_samples(variants, fields):
             for sample in all_sample_details:
                 location = sample[field_i]
                 if location and isinstance(location, str):
-                    sample[field_i] = '/'.join(location.split('/')[0:2]).strip(' \u200e').lower()
+                    state_name = '/'.join(location.split('/')[0:2]).strip(' \u200e')
+                    sample[field_i] = state_synonyms.get(state_name, state_name)
                 else:
                     sample[field_i] = None
             state_counts_dict = Counter(
