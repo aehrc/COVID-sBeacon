@@ -448,12 +448,12 @@ def run_queries(dataset, query_details):
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
         annotations = get_annotations(dataset['annotation_location'], variants.keys())
-        variant_pattern = re.compile('([0-9]+)(.+)>(.+)')
+        variant_pattern = re.compile('([^0-9]+)([0-9]+)(.+)')
         variant_codes = []
         for annotation in annotations:
             variant_code = annotation.pop('Variant')
             variant_codes.append(variant_code)
-            pos, ref, alt = variant_pattern.fullmatch(variant_code).groups()
+            ref, pos, alt = variant_pattern.fullmatch(variant_code).groups()
             variant_sample_count = sum(
                 len(s) for s in variants[variant_code].values()
             )

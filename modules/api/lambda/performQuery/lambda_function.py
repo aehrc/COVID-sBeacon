@@ -129,7 +129,7 @@ def get_possible_codes(code):
 
 
 def name_variant(pos, ref, alt):
-    return f'{pos}{ref}>{alt}'
+    return f'{ref}{pos}{alt}'
 
 
 def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
