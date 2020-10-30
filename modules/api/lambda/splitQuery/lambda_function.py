@@ -221,13 +221,14 @@ def process_samples(variants, fields):
     all_sample_details = []
     included_samples = set()
     uncompressed_variants = {}
-
+    print("Processing samples...")
     for variant, location_samples in variants.items():
         variant_samples = set()
         for vcf_location, sample_indexes in location_samples.items():
             if vcf_location not in vcf_offsets:
                 bucket, key = get_bucket_and_key(vcf_location)
                 key = f'{key.split(".")[0]}.csv'
+                print(f"Getting sample information from {key}")
                 try:
                     streaming_body = s3.get_object(bucket, key)
                 except ClientError as error:
@@ -248,6 +249,7 @@ def process_samples(variants, fields):
                         ]
                         for sample in reader
                     ]
+                    print("Finished extracting all sample metadata.")
                 vcf_offsets.update({vcf_location: offset})
             else:
                 offset = vcf_offsets[vcf_location]
@@ -263,6 +265,7 @@ def process_samples(variants, fields):
     extra_fields = {}
 
     for field_i, field in enumerate(fields):
+        print(f"Processing {field} metadata")
         if field == 'Location':
             # Convert to Country only
             for sample in all_sample_details:
@@ -323,8 +326,9 @@ def process_samples(variants, fields):
                 }
                 for state, count in state_counts_dict.items()
             ]
-
+    print("Finished individual fields.")
     if {'SampleCollectionDate', 'Location'} <= set(fields):
+        print("Processing location-date counts")
         location_i = fields.index('Location')
         date_i = fields.index('SampleCollectionDate')
         location_date_counts_dict = Counter(
@@ -339,6 +343,7 @@ def process_samples(variants, fields):
         extra_fields['locationDateCounts'] = location_date_counts
 
     if {'SampleCollectionDate', 'State'} <= set(fields):
+        print("Processing state-date counts")
         state_i = fields.index('State')
         date_i = fields.index('SampleCollectionDate')
         state_date_counts_dict = Counter(
@@ -351,7 +356,7 @@ def process_samples(variants, fields):
         for date_counts in state_date_counts.values():
             date_counts.sort(key=lambda x: list(x.keys())[0])
         extra_fields['stateDateCounts'] = state_date_counts
-
+    print("Creating sample compression mapping")
     compression_mapping = []
     offset = 0
     for i in range(len(all_sample_details)):
@@ -361,7 +366,7 @@ def process_samples(variants, fields):
             new_index = -1
             offset += 1
         compression_mapping.append(new_index)
-
+    print("Compressing variants")
     compressed_variants = {
         variant: [
             compression_mapping[s_i]
@@ -369,11 +374,13 @@ def process_samples(variants, fields):
         ]
         for variant, sample_indexes in uncompressed_variants.items()
     }
+    print("Compressing sample details")
     sample_details = [
         sample
         for index, sample in enumerate(all_sample_details)
         if compression_mapping[index] != -1
     ]
+    print("Completed sample processing")
     return sample_details, compressed_variants, extra_fields
 
 
