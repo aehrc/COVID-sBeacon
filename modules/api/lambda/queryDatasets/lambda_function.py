@@ -12,7 +12,7 @@ from chrom_matching import CHROMOSOMES, get_matching_chromosome, get_vcf_chromos
 
 BEACON_ID = os.environ['BEACON_ID']
 DATASETS_TABLE_NAME = os.environ['DATASETS_TABLE']
-MAXIMUM_RESPONSE_SIZE = 6 * 2**20
+MAXIMUM_RESPONSE_SIZE = 6000000
 RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 SPLIT_QUERY = os.environ['SPLIT_QUERY_LAMBDA']
 

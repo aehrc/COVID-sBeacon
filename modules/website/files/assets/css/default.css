@@ -1687,7 +1687,7 @@ hr
 	margin-bottom:1em;
 }
 #searchNew {
-	
+
 	margin-left:4em;
 	margin-bottom:1em;
 }
@@ -1702,6 +1702,15 @@ hr
 	height: 10px;
 	width: 40px;
 }
+#state{
+
+	height: 10px;
+	width: 200px;
+}
+#t03, p:first-letter{
+    text-transform:capitalize;
+}
+
 
 
 #popSearch{
@@ -1911,12 +1920,16 @@ ul.contact li a.icon-rss:before
       margin: 0;
       padding: 10;
 			float: left;
+			background-color: rgba(255, 255, 255);
+	    border-radius: 10px 0px 0px 10px;
 }
 #histogram{
 			width: 600;
 			height: 400;
 
 			float: left;
+			background-color: rgba(255, 255, 255);
+	    border-radius: 0px 10px 10px 0px;
 }
 .transparentBar {
   fill: #ffffff;
@@ -1978,7 +1991,8 @@ ul.contact li a.icon-rss:before
   }
 #wrapper
 {
-	background: #ffffff;
+	background-color: #1D4753;
+	background-image: url(images/dot-grid.png);
 }
 
 #featured-wrapper
@@ -2147,7 +2161,7 @@ ul.contact li a.icon-rss:before
 #logo h1
 {
 	display: inline-block;
-	padding: 0.8em 1.3em 0.6em 1.50em;
+	padding: 0.8em 1.3em 0.6em 0em;
 	font-size: 2.5em;
 	text-transform: uppercase;
 	font-weight: 900;
@@ -2188,6 +2202,9 @@ ul.contact li a.icon-rss:before
 #menu ul
 {
 	display: inline-block;
+	background-color: rgba(255, 255, 255, .15);
+	backdrop-filter: blur(5px);
+	border-radius:  5px 5px 5px 5px;
 }
 
 #menu li
@@ -2271,6 +2288,12 @@ ul.contact li a.icon-rss:before
 #popular
 {
 	font-weight: 700;
+}
+#popular a
+{
+	font-weight: 700;
+	color: #0f4b7d;
+
 }
 /* Footer */
 
@@ -2424,6 +2447,10 @@ ul.contact li a.icon-rss:before
 #mc_embed_signup{background:#fff; clear:left; font:14px Helvetica,Arial,sans-serif;  }
 
 table#t01 {
+  width:95%;
+	padding:10px;
+}
+table#t03 {
   width:95%;
 	padding:10px;
 }

@@ -23,13 +23,27 @@ EXTRA_ANNOTATION_FIELDS = {
 CACHE_BUCKET = os.environ['CACHE_BUCKET']
 CACHE_TABLE = os.environ['CACHE_TABLE']
 COUNTRY_CODES_PATH = os.environ['LAMBDA_TASK_ROOT'] + '/country_codes.json'
-MAXIMUM_RESPONSE_SIZE = 6 * 2**20
+MAXIMUM_RESPONSE_SIZE = 6000000
 METADATA_TRANSLATIONS = {
     'State': 'Location',
 }
 PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
+STATE_SYNONYMS_RAW = {
+    'Australia / Northern Territory': {
+        'Australia / Northern territory',
+    },
+    'Australia / New South Wales': {
+        'Australia / NSW',
+    }
+}
+
+state_synonyms = {
+    alias: true_name
+    for true_name, aliases in STATE_SYNONYMS_RAW.items()
+    for alias in aliases
+}
 
 aws_lambda = boto3.client('lambda')
 dynamodb = boto3.client('dynamodb')
@@ -207,13 +221,14 @@ def process_samples(variants, fields):
     all_sample_details = []
     included_samples = set()
     uncompressed_variants = {}
-
+    print("Processing samples...")
     for variant, location_samples in variants.items():
         variant_samples = set()
         for vcf_location, sample_indexes in location_samples.items():
             if vcf_location not in vcf_offsets:
                 bucket, key = get_bucket_and_key(vcf_location)
                 key = f'{key.split(".")[0]}.csv'
+                print(f"Getting sample information from {key}")
                 try:
                     streaming_body = s3.get_object(bucket, key)
                 except ClientError as error:
@@ -234,6 +249,7 @@ def process_samples(variants, fields):
                         ]
                         for sample in reader
                     ]
+                    print("Finished extracting all sample metadata.")
                 vcf_offsets.update({vcf_location: offset})
             else:
                 offset = vcf_offsets[vcf_location]
@@ -249,6 +265,7 @@ def process_samples(variants, fields):
     extra_fields = {}
 
     for field_i, field in enumerate(fields):
+        print(f"Processing {field} metadata")
         if field == 'Location':
             # Convert to Country only
             for sample in all_sample_details:
@@ -295,7 +312,8 @@ def process_samples(variants, fields):
             for sample in all_sample_details:
                 location = sample[field_i]
                 if location and isinstance(location, str):
-                    sample[field_i] = '/'.join(location.split('/')[0:2]).strip(' \u200e').lower()
+                    state_name = '/'.join(location.split('/')[0:2]).strip(' \u200e')
+                    sample[field_i] = state_synonyms.get(state_name, state_name)
                 else:
                     sample[field_i] = None
             state_counts_dict = Counter(
@@ -308,8 +326,9 @@ def process_samples(variants, fields):
                 }
                 for state, count in state_counts_dict.items()
             ]
-
+    print("Finished individual fields.")
     if {'SampleCollectionDate', 'Location'} <= set(fields):
+        print("Processing location-date counts")
         location_i = fields.index('Location')
         date_i = fields.index('SampleCollectionDate')
         location_date_counts_dict = Counter(
@@ -324,6 +343,7 @@ def process_samples(variants, fields):
         extra_fields['locationDateCounts'] = location_date_counts
 
     if {'SampleCollectionDate', 'State'} <= set(fields):
+        print("Processing state-date counts")
         state_i = fields.index('State')
         date_i = fields.index('SampleCollectionDate')
         state_date_counts_dict = Counter(
@@ -336,7 +356,7 @@ def process_samples(variants, fields):
         for date_counts in state_date_counts.values():
             date_counts.sort(key=lambda x: list(x.keys())[0])
         extra_fields['stateDateCounts'] = state_date_counts
-
+    print("Creating sample compression mapping")
     compression_mapping = []
     offset = 0
     for i in range(len(all_sample_details)):
@@ -346,7 +366,7 @@ def process_samples(variants, fields):
             new_index = -1
             offset += 1
         compression_mapping.append(new_index)
-
+    print("Compressing variants")
     compressed_variants = {
         variant: [
             compression_mapping[s_i]
@@ -354,11 +374,13 @@ def process_samples(variants, fields):
         ]
         for variant, sample_indexes in uncompressed_variants.items()
     }
+    print("Compressing sample details")
     sample_details = [
         sample
         for index, sample in enumerate(all_sample_details)
         if compression_mapping[index] != -1
     ]
+    print("Completed sample processing")
     return sample_details, compressed_variants, extra_fields
 
 
@@ -426,12 +448,12 @@ def run_queries(dataset, query_details):
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
         annotations = get_annotations(dataset['annotation_location'], variants.keys())
-        variant_pattern = re.compile('([0-9]+)(.+)>(.+)')
+        variant_pattern = re.compile('([^0-9]+)([0-9]+)(.+)')
         variant_codes = []
         for annotation in annotations:
             variant_code = annotation.pop('Variant')
             variant_codes.append(variant_code)
-            pos, ref, alt = variant_pattern.fullmatch(variant_code).groups()
+            ref, pos, alt = variant_pattern.fullmatch(variant_code).groups()
             variant_sample_count = sum(
                 len(s) for s in variants[variant_code].values()
             )

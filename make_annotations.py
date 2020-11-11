@@ -20,7 +20,7 @@ def incorporate_file(variants_dict, fieldnames, file_path):
     with open(file_path, 'r', newline='') as f:
         reader = csv.DictReader(f, delimiter='\t')
         for row in reader:
-            variant = f"{row['Start'].strip()}{row['Ref'].strip()}>{row['Alt'].strip()}"
+            variant = f"{row['Ref'].strip()}{row['Start'].strip()}{row['Alt'].strip()}"
             if variant not in variants_dict:
                 variants_dict[variant] = defaultdict(
                     Counter,

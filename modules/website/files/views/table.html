@@ -273,6 +273,7 @@
                       </tbody>
 
                   </table>
+
                   <center><dir-pagination-controls direction-links="true" boundary-links="true" pagination-id="row.datasetId"> </dir-pagination-controls></center>
                   </td>
               </tr>
@@ -280,6 +281,17 @@
 
             </tbody>
           <table>
+        </div>
+
+        <md-button class="md-raised md-primary" id="state" ng-click="stateToggle()">Toggle State Data</md-button>
+
+        <div ng-show="stateVisilble">
+          <table border="1" class=" table table-striped table-bordered table-hover" id="t03" ng-show="stateVisilble">
+            <tr ng-repeat="ele in hashState | orderBy: 'key'">
+              <td> {{ele.key}} </td> <td> {{ ele.count }} </td>
+            </tr>
+          </table>
+
         </div>
 
         <section layout="row" layout-sm="column" layout-align="left center" layout-wrap>
