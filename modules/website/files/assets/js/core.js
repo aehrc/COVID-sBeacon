@@ -64,9 +64,19 @@ covidBeacon.controller('beacon', function( $scope, $http, $q) {
           $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
           $scope.isVisible = false;
         }
-
-
         $scope.inputText= "23403 A>G";
+        $scope.query();
+      }
+      if(searches == 'Y453F'){
+        /*$scope.sPos = 23403;
+        $scope.ref = "A";
+        $scope.alt = "G";*/
+        if($scope.isVisible == true){
+          $scope.sMin = $scope.sMax = $scope.eMin = $scope.eMax = null;
+          $scope.isVisible = false;
+        }
+
+        $scope.inputText= "22920 A>T";
         $scope.query();
       }
     }
