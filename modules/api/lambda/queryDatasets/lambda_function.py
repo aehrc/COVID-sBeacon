@@ -432,7 +432,9 @@ def validate_request(parameters):
 
     query_combination = parameters.get('queryCombination')
     if query_combination is not None:
-        if not all(c in '0123456789:&|!()' for c in query_combination):
+        if not isinstance(query_combination, str):
+            return "queryCombination must be a string"
+        elif not all(c in '0123456789:&|!()' for c in query_combination):
             return (
                 "if queryCombination is present, it must only include numerals,"
                 " as well as the \":&|!()\" special characters"
