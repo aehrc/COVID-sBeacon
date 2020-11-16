@@ -76,6 +76,17 @@ resource aws_lambda_permission APIQueryDatasets {
 }
 
 #
+# collateQueries Lambda Function
+#
+resource aws_lambda_permission QueryDatasetsLambdaCollateQueries {
+  statement_id = "AllowQueryDatasetsLambdaCollateQueriesInvoke"
+  action = "lambda:InvokeFunction"
+  function_name = module.lambda-collateQueries.function_name
+  principal = "lambda.amazonaws.com"
+  source_arn = module.lambda-queryDatasets.function_arn
+}
+
+#
 # splitQuery Lambda Function
 #
 resource aws_lambda_permission QueryDatasetsLambdaSplitQuery {
@@ -83,7 +94,7 @@ resource aws_lambda_permission QueryDatasetsLambdaSplitQuery {
   action = "lambda:InvokeFunction"
   function_name = module.lambda-splitQuery.function_name
   principal = "lambda.amazonaws.com"
-  source_arn = module.lambda-queryDatasets.function_arn
+  source_arn = module.lambda-collateQueries.function_arn
 }
 
 #
@@ -95,4 +106,26 @@ resource aws_lambda_permission SplitQueryLambdaPerformQuery {
   function_name = module.lambda-performQuery.function_name
   principal = "lambda.amazonaws.com"
   source_arn = module.lambda-splitQuery.function_arn
+}
+
+#
+# getSampleMetadata Lambda Function
+#
+resource aws_lambda_permission CollateQueriesLambdaGetSampleMetadata {
+  statement_id = "AllowCollateQueriesLambdaGetSampleMetadataInvoke"
+  action = "lambda:InvokeFunction"
+  function_name = module.lambda-getSampleMetadata.function_name
+  principal = "lambda.amazonaws.com"
+  source_arn = module.lambda-collateQueries.function_arn
+}
+
+#
+# getAnnotations Lambda Function
+#
+resource aws_lambda_permission CollateQueriesLambdaGetAnnotations {
+  statement_id = "AllowCollateQueriesLambdaGetAnnotationsInvoke"
+  action = "lambda:InvokeFunction"
+  function_name = module.lambda-getAnnotations.function_name
+  principal = "lambda.amazonaws.com"
+  source_arn = module.lambda-collateQueries.function_arn
 }

@@ -2,6 +2,12 @@ resource aws_s3_bucket cache {
   bucket_prefix = "beacon-cache"
   force_destroy = true
   tags = var.common-tags
+  lifecycle_rule {
+    enabled = true
+    expiration {
+      days = local.cache_days
+    }
+  }
 }
 
 resource aws_s3_bucket large_response_bucket {

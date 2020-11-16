@@ -2,6 +2,21 @@ data "aws_region" "current" {}
 
 locals {
   api_version = "v1.0.0"
+  cache_days = 1
+  cache_expiry_key = "expires"
+  cache_key = "cacheString"
+  cache_loc = "s3Location"
+}
+
+locals {
+  cache_env_vars = {
+    CACHE_DAYS = local.cache_days
+    CACHE_EXPIRY_KEY = local.cache_expiry_key
+    CACHE_KEY = local.cache_key
+    CACHE_LOC = local.cache_loc
+    CACHE_BUCKET = aws_s3_bucket.cache.bucket
+    CACHE_TABLE = aws_dynamodb_table.cache.name
+  }
 }
 
 #
@@ -132,10 +147,14 @@ module "lambda-flushCache" {
   tags = var.common-tags
 
   environment = {
-    variables = {
-      CACHE_BUCKET = aws_s3_bucket.cache.bucket
-      CACHE_TABLE = aws_dynamodb_table.cache.name
-    }
+    variables = merge(
+      {
+        CACHE_KEY = local.cache_key
+        CACHE_LOC = local.cache_loc
+        CACHE_BUCKET = aws_s3_bucket.cache.bucket
+        CACHE_TABLE = aws_dynamodb_table.cache.name
+      }
+    )
   }
 }
 
@@ -180,7 +199,7 @@ module "lambda-queryDatasets" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 28
+  timeout = 29
   policy = {
     json = data.aws_iam_policy_document.lambda-queryDatasets.json
   }
@@ -188,14 +207,48 @@ module "lambda-queryDatasets" {
   tags = var.common-tags
 
   environment = {
-    variables = {
+    variables = merge(
+    {
       BEACON_ID = var.beacon-id
       DATASETS_TABLE = aws_dynamodb_table.datasets.name
       RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
-      SPLIT_QUERY_LAMBDA = module.lambda-splitQuery.function_name
-    }
+      COLLATE_QUERIES_LAMBDA = module.lambda-collateQueries.function_name
+    },
+    local.cache_env_vars,
+    )
   }
 }
+
+#
+# collateQueries Lambda Function
+#
+module "lambda-collateQueries" {
+  source = "../lambda"
+
+  function_name = "collateQueries"
+  description = "Calls splitQuery for each component query, and assigns metadata."
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.8"
+  memory_size = 2048
+  timeout = 28
+  policy = {
+    json = data.aws_iam_policy_document.lambda-collateQueries.json
+  }
+  source_path = "${path.module}/lambda/collateQueries"
+  tags = var.common-tags
+
+  environment = {
+    variables = merge(
+      {
+        GET_ANNOTATIONS_LAMBDA = module.lambda-getAnnotations.function_name
+        GET_SAMPLE_METADATA_LAMBDA = module.lambda-getSampleMetadata.function_name
+        SPLIT_QUERY_LAMBDA = module.lambda-splitQuery.function_name
+      },
+      local.cache_env_vars,
+    )
+  }
+}
+
 
 #
 # splitQuery Lambda Function
@@ -208,7 +261,7 @@ module "lambda-splitQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 26
+  timeout = 27
   policy = {
     json = data.aws_iam_policy_document.lambda-splitQuery.json
   }
@@ -216,13 +269,13 @@ module "lambda-splitQuery" {
   tags = var.common-tags
 
   environment = {
-    variables = {
-      CACHE_BUCKET = aws_s3_bucket.cache.bucket
-      CACHE_TABLE = aws_dynamodb_table.cache.name
-      PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
-      RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
-      SPLIT_SIZE = 300
-    }
+    variables = merge(
+      {
+        PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
+        SPLIT_SIZE = 300
+      },
+      local.cache_env_vars,
+    )
   }
 }
 
@@ -237,10 +290,60 @@ module "lambda-performQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 24
+  timeout = 26
   policy = {
     json = data.aws_iam_policy_document.lambda-performQuery.json
   }
   source_path = "${path.module}/lambda/performQuery"
   tags = var.common-tags
+
+  environment = {
+    variables = local.cache_env_vars
+  }
+}
+
+#
+# getSampleMetadata Lambda Function
+#
+module "lambda-getSampleMetadata" {
+  source = "../lambda"
+
+  function_name = "getSampleMetadata"
+  description = "Collects desired metadata of all samples in a dataset."
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.8"
+  memory_size = 2048
+  timeout = 27
+  policy = {
+    json = data.aws_iam_policy_document.lambda-getSampleMetadata.json
+  }
+  source_path = "${path.module}/lambda/getSampleMetadata"
+  tags = var.common-tags
+
+  environment = {
+    variables = local.cache_env_vars
+  }
+}
+
+#
+# getAnnotations Lambda Function
+#
+module "lambda-getAnnotations" {
+  source = "../lambda"
+
+  function_name = "getAnnotations"
+  description = "Collects desired annotation fields of all variants in a dataset."
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.8"
+  memory_size = 2048
+  timeout = 27
+  policy = {
+    json = data.aws_iam_policy_document.lambda-getAnnotations.json
+  }
+  source_path = "${path.module}/lambda/getAnnotations"
+  tags = var.common-tags
+
+  environment = {
+    variables = local.cache_env_vars
+  }
 }

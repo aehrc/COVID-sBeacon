@@ -3,6 +3,61 @@ import json
 import boto3
 
 
+class DynamodbClient:
+    def __init__(self):
+        self.client = boto3.client('dynamodb')
+
+    def get_item(self, table, key, projection_expression):
+        kwargs = {
+            'TableName': table,
+            'Key': key,
+            'ProjectionExpression': projection_expression,
+        }
+        print(f"Calling dynamodb.get_item with kwargs: {json.dumps(kwargs)}")
+        response = self.client.get_item(**kwargs)
+        print(f"Received response {json.dumps(response)}")
+        return response.get('Item')
+
+    def put_item(self, table, item):
+        kwargs = {
+            'TableName': table,
+            'Item': item,
+        }
+        print(f"Calling dynamodb.put_item with kwargs: {json.dumps(kwargs)}")
+        response = self.client.put_item(**kwargs)
+        print(f"Received response {json.dumps(response, default=str)}")
+
+    def query(self, **kwargs):
+        more_results = True
+        items = []
+        while more_results:
+            print(f"Calling dynamodb.query with kwargs: {json.dumps(kwargs)}")
+            response = self.client.query(**kwargs)
+            print(f"Received response {json.dumps(response, default=str)}")
+            items += response.get('Items', [])
+            last_evaluated = response.get('LastEvaluatedKey', {})
+            if last_evaluated:
+                kwargs['ExclusiveStartKey'] = last_evaluated
+            else:
+                more_results = False
+        return items
+
+
+class LambdaClient:
+    def __init__(self):
+        self.client = boto3.client('lambda')
+
+    def invoke(self, name, kwargs):
+        payload = json.dumps(kwargs)
+        print(f"Invoking {name} with payload: {payload}")
+        response = self.client.invoke(
+            FunctionName=name,
+            Payload=payload,
+        )
+        print(f"Received response {json.dumps(response, default=str)}")
+        return response['Payload']
+
+
 class S3Client:
     def __init__(self):
         self.client = boto3.client('s3')
@@ -16,6 +71,16 @@ class S3Client:
         response = self.client.get_object(**kwargs)
         print(f"Received response: {json.dumps(response, default=str)}")
         return response['Body']
+
+    def get_object_from_path(self, s3_location):
+        delim_index = s3_location.find('/', 5)
+        bucket = s3_location[5:delim_index]
+        key = s3_location[delim_index + 1:]
+        return self.get_object(bucket, key)
+
+    def put_object_from_dict(self, bucket, key, data):
+        body = json.dumps(data, separators=(',', ':')).encode()
+        self.put_object(bucket, key, body)
 
     def put_object(self, bucket, key, body):
         kwargs = {
