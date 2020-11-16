@@ -184,12 +184,10 @@ def get_results(responses):
 
 
 def get_sample_metadata(samples, details):
-    return {
-        'sampleDetails': [
-            details[sample]
-            for sample in samples
-        ],
-    }
+    return [
+        details[sample]
+        for sample in samples
+    ]
 
 
 def get_variants(all_splits):
