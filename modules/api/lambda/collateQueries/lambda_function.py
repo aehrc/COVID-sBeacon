@@ -94,12 +94,11 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
     variants_info = annotate_variants(variant_counts, all_annotations,
                                       dataset_sample_count)
     pages, variants_subset = process_page(variants_info, page_details)
-    all_sample_metadata_samples = all_sample_metadata['samples']
     samples = combine_queries(all_splits, query_combination,
-                              all_sample_metadata_samples.keys())
+                              all_sample_metadata['samples'].keys())
     sample_count = len(samples)
     exists = bool(samples)
-    sample_metadata = get_sample_metadata(samples, all_sample_metadata_samples)
+    sample_metadata_counts = get_sample_metadata_counts(samples, all_sample_metadata)
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
         response_dict = {
@@ -119,9 +118,7 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
                 'description': dataset['description'],
                 'name': dataset['name'],
                 'pages': pages,
-                'sampleCounts': all_sample_metadata['counts'],
-                'sampleDetails': sample_metadata,
-                'sampleFields': all_sample_metadata['fields'],
+                'sampleCounts': sample_metadata_counts,
                 'variants': variants_subset,
             },
             'note': None,
@@ -183,11 +180,30 @@ def get_results(responses):
     return all_splits, all_sample_metadata, all_annotations
 
 
-def get_sample_metadata(samples, details):
-    return [
+def get_sample_metadata_counts(samples, all_sample_metadata):
+    print("Counting samples for each field")
+    details = all_sample_metadata['samples']
+    sample_metadata = [
         details[sample]
         for sample in samples
     ]
+    field_indexes = all_sample_metadata['field_indexes']
+    counts = all_sample_metadata['counts']
+    for field_name, sample_field_counts in counts.items():
+        indexes = field_indexes[field_name]
+        field_counts = Counter(
+            tuple(
+                sample[sub_field_i]
+                for sub_field_i in indexes
+            )
+            for sample in sample_metadata
+        )
+        for field_vals, field_count in field_counts.items():
+            last_dict = sample_field_counts
+            for this_field in field_vals[:-1]:
+                last_dict = last_dict[this_field]
+            last_dict[field_vals[-1]][0] = field_count
+    return counts
 
 
 def get_variants(all_splits):

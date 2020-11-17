@@ -38,27 +38,13 @@ class CalculatedField:
             for raw_field in self.raw_fields(base_field)
         ))
 
-    def __eq__(self, other):
-        return self.json == other.json
-
-    def __hash__(self):
-        return hash(self.json)
-
-    def __lt__(self, other):
-        if self_json := self.json is None:
-            return False
-        elif other_json := other.json is None:
-            return True
-        else:
-            return self_json < other_json
-
     @classmethod
     def raw_fields(cls, base_field):
         return base_field[base_field]
 
     @staticmethod
     def set_json(*raw_fields):
-        return raw_fields[0] if raw_fields[0] else None
+        return raw_fields[0] if raw_fields[0] else "null"
 
 
 class CalculatedFieldDate(CalculatedField):
@@ -91,7 +77,7 @@ class CalculatedFieldLocation(CalculatedField):
             country = location.split('/')[0].strip(' \u200e').lower()
             return country_codes[country]
         else:
-            return None
+            return "null"
 
 
 class CalculatedFieldState(CalculatedField):
@@ -110,7 +96,7 @@ class CalculatedFieldState(CalculatedField):
                 return 'Australia / Australian Capital Territory'
             return state_synonyms.get(state_name, state_name)
         else:
-            return None
+            return "null"
 
 
 CALCULATED_FIELDS = {
@@ -121,38 +107,48 @@ CALCULATED_FIELDS = {
 }
 
 
-def count_metadata(sample_fields, sample_metadata):
+def count_metadata(base_fields, sample_fields, sample_metadata):
     counts = {}
+    field_indexes = {}
     for sample_field in sample_fields:
         sub_fields = sample_field.split(COMPOSITE_FIELD_SEPARATOR)
+        indexes = [
+            base_fields.index(sub_field)
+            for sub_field in sub_fields
+        ]
+        field_indexes[sample_field] = indexes
         print(f"Counting {sub_fields=}")
         count = Counter(
             tuple(
-                sample[sub_field]
-                for sub_field in sub_fields
+                sample[sub_field_i]
+                for sub_field_i in indexes
             )
             for sample in sample_metadata.values()
         )
         print(f"Formatting counts")
         sample_field_counts = {}
-        for field_vals, field_count in sorted(count.items()):
+        for field_vals, field_count in sorted(
+            count.items(),
+            key=lambda x: [
+                f if f is not None else 'ZZZ' for f in x[0]
+            ]
+        ):
             last_dict = sample_field_counts
-            for this_field_val in field_vals[:-1]:
-                field_val_json = this_field_val.json
-                if field_val_json not in last_dict:
-                    last_dict[field_val_json] = {}
-                last_dict = last_dict[field_val_json]
-            last_dict[field_vals[-1].json] = field_count
+            for this_field in field_vals[:-1]:
+                if this_field not in last_dict:
+                    last_dict[this_field] = {}
+                last_dict = last_dict[this_field]
+            last_dict[field_vals[-1]] = [0, field_count]
         counts[sample_field] = sample_field_counts
-    return counts
+    return field_indexes, counts
 
 
 def get_base_fields(all_fields):
-    return {
+    return list({
         base_field
         for field in all_fields
         for base_field in field.split(COMPOSITE_FIELD_SEPARATOR)
-    }
+    })
 
 
 def get_individual_metadata(vcf_locations, base_fields):
@@ -164,10 +160,10 @@ def get_individual_metadata(vcf_locations, base_fields):
     ]
     print("All raw fields extracted")
     return {
-        f'{vcf_i}:{sample_i}': {
-            field: get_field(field)(sample_raw_fields, field)
+        f'{vcf_i}:{sample_i}': [
+            get_field(field)(sample_raw_fields, field).json
             for field in base_fields
-        }
+        ]
         for vcf_i, samples in enumerate(raw_vcf_metadata)
         for sample_i, sample_raw_fields in enumerate(samples)
     }
@@ -190,18 +186,12 @@ def get_sample_metadata(vcf_locations, sample_fields):
     sample_metadata = get_individual_metadata(vcf_locations, base_fields)
     print(f"Individual metadata for {len(sample_metadata)} samples calculated")
     print("Counting totals")
-    counts = count_metadata(sample_fields, sample_metadata)
+    field_indexes, counts = count_metadata(base_fields, sample_fields, sample_metadata)
     print("Formatting result")
     return {
         'counts': counts,
-        'fields': list(base_fields),
-        'samples': {
-            sample_key: {
-                field_name: calculated_field.json
-                for field_name, calculated_field in fields.items()
-            }
-            for sample_key, fields in sample_metadata.items()
-        },
+        'field_indexes': field_indexes,
+        'samples': sample_metadata,
     }
 
 
