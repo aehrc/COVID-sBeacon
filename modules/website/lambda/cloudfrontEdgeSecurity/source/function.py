@@ -3,7 +3,7 @@ import json
 
 STATIC_SECURITY_HEADERS = {
     'Content-Security-Policy': '; '.join([
-        "base-uri 'none'",
+        "base-uri 'self'",
         "connect-src 'self' API_DOMAIN",
         "default-src 'none'",
         "font-src 'self'",
