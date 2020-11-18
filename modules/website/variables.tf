@@ -15,3 +15,7 @@ variable production {
   type = bool
   default = false
 }
+variable login {
+  type = bool
+  default = false
+}
