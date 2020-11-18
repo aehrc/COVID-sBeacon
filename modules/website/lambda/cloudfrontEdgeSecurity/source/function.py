@@ -12,7 +12,7 @@ STATIC_SECURITY_HEADERS = {
         "frame-src 'self'",
         "img-src 'self'",
         "object-src 'self'",
-        "script-src 'self'",
+        "script-src 'self' 'unsafe-eval'",
         "style-src 'self'",
         "style-src-elem 'self' 'unsafe-inline'",
     ]),
