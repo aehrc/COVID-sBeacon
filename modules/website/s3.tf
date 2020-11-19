@@ -1,6 +1,6 @@
 locals {
   config_file = "assets/config.json"
-  config_file_content = "{\n \"apiBaseUrl\" : \"${var.beacon_api_url}\" \n \"login\" : ${var.login} }"
+  config_file_content = "{\n \"apiBaseUrl\" : \"${var.beacon_api_url}\",\n \"login\" : ${var.login} }"
   content_types = {
     "css" = "text/css; charset=utf-8"
     "eot" = "application/vnd.ms-fontobject"
