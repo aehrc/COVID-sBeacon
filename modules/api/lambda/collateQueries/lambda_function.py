@@ -146,9 +146,33 @@ def combine_queries(all_splits, query_combination, all_sample_metadata_samples):
     if query_combination is None:
         return list(split_samples[0].intersection(*split_samples[1:]))
     else:
-        # Placeholder just ANDS all the sets together
-        assert all(c in '0123456789:&' for c in query_combination)
-        return list(split_samples[0].intersection(*split_samples[1:]))
+        all_sample_set = set(all_sample_metadata_samples)
+        samples = []
+        operators = [samples.append]
+        number_string = ''
+        for c in query_combination:
+            if c in '0123456789':
+                number_string += c
+                continue
+            elif number_string:
+                index = int(number_string)
+                operators.pop()(split_samples[index])
+                number_string = ''
+            if c in '&:':
+                operators.append(samples[-1].intersection_update)
+            elif c == '|':
+                operators.append(samples[-1].update)
+            elif c == '!':
+                last_operator = operators.pop()
+                operators[-1] = lambda x: last_operator(all_sample_set-x)
+            elif c == '(':
+                operators.append(samples.append)
+            elif c == ')':
+                operators.pop()(samples.pop())
+        if number_string:
+            index = int(number_string)
+            operators.pop()(split_samples[index])
+        return list(samples.pop())
 
 
 def get_frequency(samples, total_samples):

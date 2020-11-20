@@ -272,6 +272,8 @@ def query_datasets(parameters, context):
 
 
 def validate_queries(queries):
+    if not queries:
+        return "At least one query must be present"
     for parameters in queries:
         missing_parameters = set()
         try:
@@ -439,6 +441,48 @@ def validate_request(parameters):
                 "if queryCombination is present, it must only include numerals,"
                 " as well as the \":&|!()\" special characters"
             )
+        elif any(
+            (
+                (char in '0123456789' and next_char in '(!')
+                or (char in ':&|!(' and next_char in ':&|)')
+                or (char == ')' and next_char in '0123456789!')
+            )
+            for char, next_char in (
+                query_combination[i:i + 2]
+                for i in range(len(query_combination) - 1)
+            )
+        ):
+            return "queryCombination contains logical syntax errors"
+        elif {
+                int(s)
+                for s in re.findall('[0-9]+', query_combination)
+        } != set(range(len(queries))):
+            return (
+                "queryCombination must reference all and only existing queries"
+            )
+        elif any(
+            None in (open_i, close_i) or close_i < open_i
+            for open_i, close_i in zip_longest(
+                (
+                    open_match.start()
+                    for open_match in re.finditer('\\(', query_combination)
+                ),
+                (
+                    close_match.start()
+                    for close_match in re.finditer('\\)', query_combination)
+                ),
+            )
+        ):
+            return (
+                "All opening parentheses in queryCombination must have matching"
+                " closing parentheses"
+            )
+        elif query_combination[0] not in '0123456789(!':
+            return (
+                "queryCombination must not start with an operator except \"!\""
+            )
+        elif query_combination[-1] not in '0123456789)':
+            return "queryCombination must not end in an operator"
     return ''
 
 
