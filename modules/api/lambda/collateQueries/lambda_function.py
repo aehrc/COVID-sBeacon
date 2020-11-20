@@ -164,7 +164,7 @@ def combine_queries(all_splits, query_combination, all_sample_metadata_samples):
                 operators.append(samples[-1].update)
             elif c == '!':
                 last_operator = operators.pop()
-                operators[-1] = lambda x: last_operator(all_sample_set-x)
+                operators.append(lambda x: last_operator(all_sample_set-x))
             elif c == '(':
                 operators.append(samples.append)
             elif c == ')':
