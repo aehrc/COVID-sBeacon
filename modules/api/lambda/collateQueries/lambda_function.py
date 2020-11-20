@@ -147,8 +147,8 @@ def combine_queries(all_splits, query_combination, all_sample_metadata_samples):
         return list(split_samples[0].intersection(*split_samples[1:]))
     else:
         all_sample_set = set(all_sample_metadata_samples)
-        samples = []
-        operators = [samples.append]
+        samples = [None]
+        operators = [lambda x: x]
         number_string = ''
         for c in query_combination:
             if c in '0123456789':
@@ -156,22 +156,23 @@ def combine_queries(all_splits, query_combination, all_sample_metadata_samples):
                 continue
             elif number_string:
                 index = int(number_string)
-                operators.pop()(split_samples[index])
+                samples[-1] = operators.pop()(split_samples[index])
                 number_string = ''
             if c in '&:':
-                operators.append(samples[-1].intersection_update)
+                operators.append(samples[-1].intersection)
             elif c == '|':
-                operators.append(samples[-1].update)
+                operators.append(samples[-1].union)
             elif c == '!':
                 last_operator = operators.pop()
                 operators.append(lambda x: last_operator(all_sample_set-x))
             elif c == '(':
-                operators.append(samples.append)
+                samples.append(None)
+                operators.append(lambda x: x)
             elif c == ')':
-                operators.pop()(samples.pop())
+                samples[-1] = operators.pop()(samples.pop())
         if number_string:
             index = int(number_string)
-            operators.pop()(split_samples[index])
+            samples[-1] = operators.pop()(split_samples[index])
         return list(samples.pop())
 
 
