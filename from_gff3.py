@@ -39,10 +39,10 @@ def convert_to_vcf(gff_file, accession_id, sequence, output_file_name, ftp):
     lines = list(VCF_HEADER_LINES)
     lines[-1] += accession_id + '\n'
     if not gff_file:
-        print("\tIs reference, producing empty VCF")
+        print("\tIs reference, producing empty VCF", file=sys.stderr)
     else:
         ftp_command = 'RETR ' + gff_file
-        print('\t' + ftp_command)
+        print('\t' + ftp_command, file=sys.stderr)
 
         def update_local_vcf(line):
             update_vcf(sequence, lines, line)
@@ -65,7 +65,7 @@ def find_gff_file(gff_files, accession_id, related_ids):
     return get_gff_from_web(accession_id)
 
 
-def get_valid_rows(metadata_file_path, start_accession=None):
+def get_valid_rows(metadata_file_path, gisaid, high_quality, start_accession=None):
     with open(metadata_file_path, newline='') as csv_file:
         reader = csv.DictReader(csv_file)
         skipping = start_accession
@@ -75,7 +75,7 @@ def get_valid_rows(metadata_file_path, start_accession=None):
                     skipping = False
                 else:
                     continue
-            if validate_metadata_line(row):
+            if validate_metadata_line(row, gisaid, high_quality):
                 yield row
 
 
@@ -96,7 +96,7 @@ def get_fasta_sequence(fasta_file_iterable):
 
 def get_gff_from_web(accession_id):
     web_url = WEBPAGE_TEMPLATE.format(accession_id)
-    print(f"\tLooking up file on {web_url}")
+    print(f"\tLooking up file on {web_url}", file=sys.stderr)
     response = requests.get(web_url)
     assert response.status_code == 200
     content = response.content
@@ -129,18 +129,19 @@ def get_variant_string(gff3_line, sequence):
     alt = alt_str[4:]
     if sequence[start-1:end] != ref:
         print(f"\tLine does not match reference sequence "
-              f"'{sequence[start-1:end]}'\n\t{gff3_line}")
+              f"'{sequence[start-1:end]}'\n\t{gff3_line}", file=sys.stderr)
         if (start == 1 and ref[1:] == sequence[start-1:end]
                 and alt == '-'):
             # Deletes at the start add a base before the sequence
             ref = ref[1:]
-            print(f"\tChanging reference to '{ref}'")
+            print(f"\tChanging reference to '{ref}'", file=sys.stderr)
         elif ref == '-' and alt.startswith('-') and start == end:
             # Some insertions seem to use '-' as the ref
             # fasta shows Alt should start with 'N'
             ref = sequence[start-1]
             alt = ref + 'N' + alt[1:]
-            print(f"\tChanging reference to '{ref}' and alt to '{alt}'")
+            print(f"\tChanging reference to '{ref}' and alt to '{alt}'",
+                  file=sys.stderr)
         else:
             raise Exception("Unhandled reference mismatch")
     if not valid_alt.fullmatch(alt):
@@ -198,17 +199,17 @@ def get_locations(ftp):
 
 
 def run(fasta_file_path, metadata_file_path, output_directory,
-        start):
+        gisaid, high_quality, start):
     with open(fasta_file_path, 'r') as fasta_file_obj:
         sequence = get_fasta_sequence(fasta_file_obj)['1']
-    valid_rows = get_valid_rows(metadata_file_path, start)
+    valid_rows = get_valid_rows(metadata_file_path, gisaid, high_quality,
+                                start)
     ftp = get_ftp_connection()
     gff_files = get_locations(ftp)
-    sample_metadata = []
     for row in valid_rows:
         accession_id = row['Accession ID']
         output_file = f'{output_directory}/{accession_id}.vcf'
-        print(f"processing {accession_id}")
+        print(f"processing {accession_id}", file=sys.stderr)
         vcf_path = pathlib.Path(output_file)
         try:
             # Check if file already exists and is not corrupt
@@ -219,35 +220,28 @@ def run(fasta_file_path, metadata_file_path, output_directory,
             if (vcf_characters.endswith('\t.\t.\tGT\t1\n')
                     or vcf_characters.endswith(
                         f'FORMAT\t{accession_id}\n')):
-                print(f"File {output_file} is already complete.")
-                #  Touch it so obsolete files can be ignored
-                vcf_path.touch()
-                sample_metadata.append(row)
+                print(f"File {output_file} is already complete.", file=sys.stderr)
+                print(output_file, file=sys.stdout)
                 continue
             else:
                 print(f"File {output_file} exists but appears to be"
-                          " corrupted.")
-        print(f"Searching for gff3 file for {accession_id}")
+                          " corrupted.", file=sys.stderr)
+        print(f"Searching for gff3 file for {accession_id}", file=sys.stderr)
         gff_file = find_gff_file(gff_files, accession_id, row['Related ID'])
         if gff_file is None:
-            print("\tWebsite does not contain link to gff3 file, skipping")
+            print("\tWebsite does not contain link to gff3 file, skipping", file=sys.stderr)
             continue
         convert_to_vcf(gff_file, accession_id, sequence, output_file, ftp)
-        sample_metadata.append(row)
+        print(output_file, file=sys.stdout)
     ftp.quit()
-    sample_metadata.sort(key=lambda x: x['Accession ID'])
-    with open(output_directory + '/metadata.csv', 'w', newline='') as metadata_csv:
-        writer = csv.DictWriter(metadata_csv, fieldnames=sample_metadata[0].keys())
-        writer.writeheader()
-        writer.writerows(sample_metadata)
 
 
-def validate_metadata_line(metadata):
+def validate_metadata_line(metadata, gisaid=False, high_quality=True):
     return (
         metadata['Nuc.Completeness'] == 'Complete'
-        and metadata['Sequence Quality'] == 'High'
+        and (metadata['Sequence Quality'] == 'High') == high_quality
         and metadata['Host'].lower() == 'homo sapiens'
-        and metadata['Data Source'] != 'GISAID'  # Not allowed to publish
+        and (metadata['Data Source'] == 'GISAID') == gisaid
     )
 
 
@@ -258,6 +252,13 @@ def update_vcf(sequence, vcf_lines, prospective_line):
 
 
 if __name__ == '__main__':
-    fasta_file, metadata_file, output_dir = sys.argv[1:4]
-    start_accession_id = sys.argv[4] if len(sys.argv) > 4 else None
-    run(fasta_file, metadata_file, output_dir, start_accession_id)
+    (
+        fasta_file,
+        metadata_file,
+        output_dir,
+        gisaid_str,
+        high_quality_str,
+    ) = sys.argv[1:6]
+    start_accession_id = sys.argv[6] if len(sys.argv) > 6 else None
+    run(fasta_file, metadata_file, output_dir, bool(int(gisaid_str)),
+        bool(int(high_quality_str)), start_accession_id)
