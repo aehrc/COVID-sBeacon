@@ -20,12 +20,12 @@ export class AppComponent {
 
    ngOnInit() {
      this.login = this.appConfigService.login;
-     if(this.login == true){
-       this.router.navigate(['/login']);
-     }
-      this.oktaAuth.isAuthenticated().then((auth) => {
-        this.isAuthenticated = auth;
-      });
+     this.oktaAuth.isAuthenticated().then((auth) => {
+       this.isAuthenticated = auth;
+       if(this.login == true && this.isAuthenticated == false ){
+         this.router.navigate(['/login']);
+       }
+     });
     }
     logout() {
     this.oktaAuth.logout('/');

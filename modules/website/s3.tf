@@ -1,24 +1,4 @@
-locals {
-  config_file = "assets/config.json"
-  config_file_content = "{\n \"apiBaseUrl\" : \"${var.beacon_api_url}\",\n \"login\" : ${var.login} }"
-  content_types = {
-    "css" = "text/css; charset=utf-8"
-    "eot" = "application/vnd.ms-fontobject"
-    "geojson" = "geojson/geojson; charset=utf-8"
-    "gif" = "image/gif"
-    "html" = "text/html; charset=utf-8"
-    "ico" = "text/json; charset=utf-8"
-    "json" = "text/html; charset=utf-8"
-    "jpg" = "image/jpeg"
-    "js" = "application/javascript"
-    "map" = "application/javascript"
-    "otf" = "font/otf"
-    "png" = "image/png"
-    "svg" = "image/svg"
-    "ttf" = "font/ttf"
-    "woff" = "font/woff"
-  }
-}
+
 
 resource aws_s3_bucket website_bucket {
   bucket_prefix = "covid19-beacon-website"
@@ -41,21 +21,25 @@ resource aws_s3_bucket_notification refreshCloudfront {
   depends_on = [aws_lambda_permission.s3_refreshCloudfront]
 }
 
-resource aws_s3_bucket_object website_config_file {
-  bucket = aws_s3_bucket.website_bucket.id
-  content_type = local.content_types[regex("[^.]*$", local.config_file)]
-  key = local.config_file
-  content = local.config_file_content
-  etag = md5(local.config_file_content)
+data external hash {
+  program = ["/bin/bash", "hash.sh"]
+  working_dir = path.module
 }
 
-resource aws_s3_bucket_object website_files {
-  for_each = fileset("${path.module}/beaconApp/dist/beaconApp", "**")
-  bucket = aws_s3_bucket.website_bucket.id
-  content_type = local.content_types[regex("[^.]*$", each.value)]
-  key = each.value
-  source = "${path.module}/beaconApp/dist/beaconApp/${each.value}"
-  etag = filemd5("${path.module}/beaconApp/dist/beaconApp/${each.value}")
+resource null_resource upload {
+
+  triggers = {
+    command_hash = filesha256("${path.module}/upload.sh")
+    src_hash = lookup(data.external.hash.result, "hash")
+  }
+  provisioner local-exec {
+      command = "./upload.sh ${aws_s3_bucket.website_bucket.id}  ${aws_cloudfront_distribution.platform_distribution.id} ${var.beacon_api_url} ${var.login}"
+      working_dir = path.module
+    }
+
+  depends_on = [
+    aws_s3_bucket.website_bucket
+  ]
 }
 
 resource aws_s3_bucket_policy cloudfront_access {
