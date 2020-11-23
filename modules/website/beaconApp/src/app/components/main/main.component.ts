@@ -3,7 +3,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource } from '@angular/material';
 import {MatSort, Sort} from '@angular/material/sort';
-import { JwPaginationComponent } from 'jw-angular-pagination';
+//import { JwPaginationComponent } from 'jw-angular-pagination';
 //import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Beacon, Dataset } from './main.interfaces';
 import { AppConfigService } from '../../app.config.service';

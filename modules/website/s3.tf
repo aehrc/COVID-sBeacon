@@ -33,7 +33,7 @@ resource null_resource upload {
     src_hash = lookup(data.external.hash.result, "hash")
   }
   provisioner local-exec {
-      command = "./upload.sh ${aws_s3_bucket.website_bucket.id}  ${aws_cloudfront_distribution.platform_distribution.id} ${var.beacon_api_url} ${var.login}"
+      command = "./upload.sh ${aws_s3_bucket.website_bucket.id}  ${aws_cloudfront_distribution.platform_distribution.id} ${var.beacon_api_url} ${var.login} ${var.production}"
       working_dir = path.module
     }
 
