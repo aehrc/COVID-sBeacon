@@ -65,7 +65,7 @@ def find_gff_file(gff_files, accession_id, related_ids):
     return get_gff_from_web(accession_id)
 
 
-def get_valid_rows(metadata_file_path, gisaid, high_quality, start_accession=None):
+def get_valid_rows(metadata_file_path, gisaid, start_accession=None):
     with open(metadata_file_path, newline='') as csv_file:
         reader = csv.DictReader(csv_file)
         skipping = start_accession
@@ -75,7 +75,7 @@ def get_valid_rows(metadata_file_path, gisaid, high_quality, start_accession=Non
                     skipping = False
                 else:
                     continue
-            if validate_metadata_line(row, gisaid, high_quality):
+            if validate_metadata_line(row, gisaid):
                 yield row
 
 
@@ -199,11 +199,10 @@ def get_locations(ftp):
 
 
 def run(fasta_file_path, metadata_file_path, output_directory,
-        gisaid, high_quality, start):
+        gisaid, start):
     with open(fasta_file_path, 'r') as fasta_file_obj:
         sequence = get_fasta_sequence(fasta_file_obj)['1']
-    valid_rows = get_valid_rows(metadata_file_path, gisaid, high_quality,
-                                start)
+    valid_rows = get_valid_rows(metadata_file_path, gisaid, start)
     ftp = get_ftp_connection()
     gff_files = get_locations(ftp)
     for row in valid_rows:
@@ -225,7 +224,7 @@ def run(fasta_file_path, metadata_file_path, output_directory,
                 continue
             else:
                 print(f"File {output_file} exists but appears to be"
-                          " corrupted.", file=sys.stderr)
+                      " corrupted.", file=sys.stderr)
         print(f"Searching for gff3 file for {accession_id}", file=sys.stderr)
         gff_file = find_gff_file(gff_files, accession_id, row['Related ID'])
         if gff_file is None:
@@ -236,10 +235,10 @@ def run(fasta_file_path, metadata_file_path, output_directory,
     ftp.quit()
 
 
-def validate_metadata_line(metadata, gisaid=False, high_quality=True):
+def validate_metadata_line(metadata, gisaid=False):
     return (
         metadata['Nuc.Completeness'] == 'Complete'
-        and (metadata['Sequence Quality'] == 'High') == high_quality
+        and metadata['Sequence Quality'] == 'High'
         and metadata['Host'].lower() == 'homo sapiens'
         and (metadata['Data Source'] == 'GISAID') == gisaid
     )
@@ -257,8 +256,7 @@ if __name__ == '__main__':
         metadata_file,
         output_dir,
         gisaid_str,
-        high_quality_str,
     ) = sys.argv[1:6]
     start_accession_id = sys.argv[6] if len(sys.argv) > 6 else None
     run(fasta_file, metadata_file, output_dir, bool(int(gisaid_str)),
-        bool(int(high_quality_str)), start_accession_id)
+        start_accession_id)
