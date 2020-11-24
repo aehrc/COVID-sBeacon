@@ -104,6 +104,7 @@ tr.example-element-row:not(.example-expanded-row):active {
 			float: left;
 			background-color: rgba(255, 255, 255);
 	    border-radius: 10px 0px 0px 10px;
+      overflow: hidden;
 }
 #histogram{
 			width: 600;
