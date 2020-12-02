@@ -314,8 +314,12 @@ export class MainComponent implements AfterViewInit {
 
           },
           error => {
-            //console.log(error);
-            this.warning = error.error.error.errorMessage;
+            console.log(error);
+            if(error.statusText == "Unknown Error"){
+              this.warning = "Query request timed out. Please contact administrator to run your query."
+            }else{
+              this.warning = error.error.error.errorMessage;
+            }
             this.hits = new MatTableDataSource<Dataset>();
             this.loading = false;
           }
@@ -341,9 +345,13 @@ export class MainComponent implements AfterViewInit {
 
       },
       error => {
-        //console.log(error);
+        console.log(error);
         this.hits = new MatTableDataSource<Dataset>();
-        this.warning = error.error.error.errorMessage;
+        if(error.statusText == "Unknown Error"){
+          this.warning = "Query request timed out. Please contact administrator to run your query."
+        }else{
+          this.warning = error.error.error.errorMessage;
+        }
         this.loading = false;
       }
     );
@@ -608,7 +616,12 @@ export class MainComponent implements AfterViewInit {
     g.append("g")
     .attr("class", "axis axis-x")
     .attr("transform", "translate(0,350)")
-    .call(d3.axisBottom(x));
+    .call(d3.axisBottom(x))
+    .selectAll("text")
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .attr("transform", "rotate(-25)" );
 
     g.append("g")
     .attr("class", "axis axis-y")

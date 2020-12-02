@@ -150,7 +150,7 @@
 									  <th mat-sort-header="SIFT_score">Sift</th>
 									  <th mat-sort-header="sampleCount">Samples</th>
 									  <th mat-sort-header="frequency">Frequency</th>
-										<tbody *ngIf="element.info.variants.length < 5">
+										<tbody *ngIf="element.info.variants.length < 10">
 										  <tr   *ngFor="let item of element.info.variants">
 										    <td > {{item.pos}} </td>
 										    <td > {{ item.ref }} </td>
@@ -160,8 +160,8 @@
 										    <td > {{ item.frequency }} </td>
 										  </tr>
 										</tbody>
-										<tbody *ngIf="element.info.variants.length > 5">
-										  <tr   *ngFor="let item of pageOfItems; index as i;">
+										<tbody *ngIf="element.info.variants.length > 10">
+										  <tr   *ngFor="let item of pageOfItems;">
 										    <td > {{item.pos}} </td>
 										    <td > {{ item.ref }} </td>
 										    <td > {{ item.alt }} </td>
@@ -173,7 +173,7 @@
 								</table>
 
 									<div class=" pagination pb-0 pt-3">
-							        <jw-pagination [items]="element.info.variants" [pageSize]="5" (changePage)="onChangePage($event)"></jw-pagination>
+							        <jw-pagination [items]="element.info.variants" [pageSize]="10" (changePage)="onChangePage($event)"></jw-pagination>
 							    </div>
 								</div>
 							</div>
