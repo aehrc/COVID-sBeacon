@@ -40,7 +40,7 @@ class CalculatedField:
 
     @classmethod
     def raw_fields(cls, base_field):
-        return base_field[base_field]
+        return [base_field]
 
     @staticmethod
     def set_json(*raw_fields):
