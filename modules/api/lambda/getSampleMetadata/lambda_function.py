@@ -47,6 +47,22 @@ class CalculatedField:
         return raw_fields[0] if raw_fields[0] else "null"
 
 
+class CalculatedFieldId(CalculatedField):
+    @classmethod
+    def raw_fields(cls, base_field=None):
+        return [
+            'AccessionID',
+            'RelatedID',
+        ]
+
+    @staticmethod
+    def set_json(accession_id, related_id):
+        for related in related_id.split(','):
+            if related.startswith('EPI_ISL_'):
+                return related
+        return accession_id
+
+
 class CalculatedFieldDate(CalculatedField):
     @classmethod
     def raw_fields(cls, base_field=None):
@@ -101,6 +117,7 @@ class CalculatedFieldState(CalculatedField):
 
 CALCULATED_FIELDS = {
     'Date': CalculatedFieldDate,
+    'ID': CalculatedFieldId,
     'Location': CalculatedFieldLocation,
     'SampleCollectionDate': CalculatedFieldDate,
     'State': CalculatedFieldState,

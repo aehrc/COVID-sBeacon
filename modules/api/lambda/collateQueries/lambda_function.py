@@ -214,6 +214,9 @@ def get_sample_metadata_counts(samples, all_sample_metadata):
     ]
     field_indexes = all_sample_metadata['field_indexes']
     counts = all_sample_metadata['counts']
+    ids = 'ID' in counts
+    if ids:
+        del counts['ID']
     for field_name, sample_field_counts in counts.items():
         indexes = field_indexes[field_name]
         field_counts = Counter(
@@ -228,6 +231,12 @@ def get_sample_metadata_counts(samples, all_sample_metadata):
             for this_field in field_vals[:-1]:
                 last_dict = last_dict[this_field]
             last_dict[field_vals[-1]][0] = field_count
+    if ids:
+        id_index = field_indexes['ID'][0]
+        counts['ID'] = [
+            sample[id_index]
+            for sample in sample_metadata
+        ]
     return counts
 
 
