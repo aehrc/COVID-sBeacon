@@ -1,3 +1,4 @@
+import hashlib
 import json
 import os
 import queue
@@ -37,11 +38,15 @@ class CachedInvoke:
         self._cache_string = self._get_cache_string()
 
     def _get_cache_string(self):
-        return json.dumps(
+        base_bytes = json.dumps(
             {
                 self.function_name: self.invoke_kwargs
             },
             separators=(',', ':')
+        ).encode()
+        return '-'.join(
+            h(base_bytes).hexdigest()
+            for h in (hashlib.md5, hashlib.sha256)
         )
 
     def _set_location_from_dynamodb(self):
