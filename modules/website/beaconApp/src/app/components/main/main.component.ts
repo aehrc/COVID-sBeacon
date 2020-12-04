@@ -62,12 +62,13 @@ export class MainComponent implements AfterViewInit {
   url: string ='';
   expandedElement: Beacon | null;
   warning: string = '';
-  displayedColumns: string[] = ['name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
+  displayedColumns: string[] = ['expand','name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency', 'accessions'];
   innerDisplayedColumns: string[] = ['pos', 'ref', 'alt', 'SIFT_score', 'subSampleCount', 'subFrequency'];
   sampleData:{ code: string, value: any, breakup: any}[] = [];
   dateData:{ date: string, value: any, breakup: any, location: string}[] = [];
   hashState={};
   states=[];
+  filteredArray=[];
   ids: string[] =["SampleCollectionDate","Location"];
   queryData = new HttpParams()
   .set('assemblyId','hCoV-19')
@@ -302,7 +303,12 @@ export class MainComponent implements AfterViewInit {
               this.visualIndex = maxDatasetId.info.name;
               this.graphDataGenerator(this.hits, this.visualIndex);
               this.statesData("Australia","AUS");
-
+              this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
+                return itm.datasetId == 'cn';
+              });
+              if(this.filteredArray.length == 0){
+                this.displayedColumns = ['expand','name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
+              }
 
             }else{
               this.hits = new MatTableDataSource<Dataset>();
@@ -335,6 +341,12 @@ export class MainComponent implements AfterViewInit {
           this.visualIndex = maxDatasetId.info.name;
           this.graphDataGenerator(this.hits, this.visualIndex);
           this.statesData("Australia","AUS");
+          this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
+            return itm.datasetId == 'cn';
+          });
+          if(this.filteredArray.length == 0){
+            this.displayedColumns = ['expand','name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
+          }
 
         }else{
           this.warning = "No hits matching the search criteria";

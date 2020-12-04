@@ -21,6 +21,7 @@ import { LoginComponent } from './components/login/login.component';
 import { OktaAuthModule } from '@okta/okta-angular';
 import { JwPaginationComponent } from 'jw-angular-pagination';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
+import {MatIconModule} from '@angular/material/icon';
 
 @NgModule({
   declarations: [
@@ -44,6 +45,7 @@ import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
     MatTableModule,
     MatSortModule,
     NgbModule,
+    MatIconModule,
     OktaAuthModule.initAuth({
       issuer: 'https://dev-8520796.okta.com/oauth2/default',
       redirectUri: window.location.origin +'/implicit/callback',

@@ -48,15 +48,21 @@
 
 }
 
-.mat-column-variantCount, .mat-column-callCount, .mat-column-sampleCount, .mat-column-totalSamples, .mat-column-frequency{
+.mat-column-accessions{
   max-width:10%;
   justify-content: center;
   text-align: center;
 }
-.mat-column-name{
-  max-width:20%;
+.mat-column-variantCount, .mat-column-callCount, .mat-column-sampleCount, .mat-column-totalSamples, .mat-column-frequency{
+  max-width:15%;
+  justify-content: center;
+  text-align: center;
 }
-
+.mat-column-expand, .mat-column-name{
+  max-width:20%;
+  justify-content: center;
+  text-align: center;
+}
 .mat-column-expandedDetail{
   width: 100%;
 }
