@@ -41,6 +41,7 @@ resource aws_dynamodb_table datasets {
       "annotationLocation",
       "id",
       "name",
+      "updateDateTime",
     ]
     projection_type = "INCLUDE"
   }

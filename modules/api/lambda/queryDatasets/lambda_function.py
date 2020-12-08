@@ -72,6 +72,7 @@ def get_datasets(assembly_id, reference_names, dataset_ids):
         IndexName='assembly_index',
         ProjectionExpression=(
             'id,vcfLocations,annotationLocation,sampleCount,#name,description'
+            ',updateDateTime'
         ),
         KeyConditionExpression='assemblyId = :assemblyId',
         ExpressionAttributeNames={
@@ -98,6 +99,7 @@ def get_datasets(assembly_id, reference_names, dataset_ids):
                 'dataset_id': dataset_id,
                 'description': dataset.get('description', {'S': None})['S'],
                 'name': dataset['name']['S'],
+                'updateDateTime': dataset['updateDateTime']['S'],
                 'vcf_locations': vcf_locations,
                 'sample_count': int(dataset['sampleCount']['N']),
 
