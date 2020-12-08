@@ -118,42 +118,42 @@
 					</ng-container>
 
 					<ng-container matColumnDef="name">
-						<th mat-header-cell  *matHeaderCellDef > Dataset name </th>
-						<td mat-cell   *matCellDef="let element"> {{element.info.name}} </td>
+						<th mat-header-cell title="Dataset or clade name"   *matHeaderCellDef > Dataset name </th>
+						<td mat-cell  *matCellDef="let element"> {{element.info.name}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="description">
-						<th mat-header-cell *matHeaderCellDef > Description </th>
-						<td mat-cell  *matCellDef="let element"> {{element.info.description}} </td>
+						<th title="Dataset description" mat-header-cell *matHeaderCellDef > Description </th>
+						<td mat-cell *matCellDef="let element"> {{element.info.description}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="variantCount">
-						<th mat-header-cell  *matHeaderCellDef > Variant Count</th>
+						<th mat-header-cell title="Number of variants within searched genomic profiles (including ambiguous variants)" *matHeaderCellDef > Variant Count</th>
 						<td mat-cell *matCellDef="let element"> {{element.variantCount}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="callCount">
-						<th mat-header-cell *matHeaderCellDef > Call Count</th>
+						<th mat-header-cell title="Total number of hits for a searched variants. Sum of hits of individual variants for genomic profiles." *matHeaderCellDef > Call Count</th>
 						<td mat-cell *matCellDef="let element"> {{element.callCount}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="sampleCount">
-						<th mat-header-cell *matHeaderCellDef > Samples </th>
+						<th mat-header-cell title ="Total number of hits for a genomic profile."*matHeaderCellDef > Samples </th>
 						<td mat-cell *matCellDef="let element"> {{element.sampleCount}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="totalSamples">
-						<th mat-header-cell *matHeaderCellDef > Total Samples </th>
+						<th mat-header-cell title ="Total number of samples within this dataset." *matHeaderCellDef > Total Samples </th>
 						<td mat-cell *matCellDef="let element"> {{element.info.datasetSampleCount}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="frequency">
-						<th mat-header-cell *matHeaderCellDef > Frequency </th>
+						<th mat-header-cell title ="Samples/Total Samples" *matHeaderCellDef > Frequency </th>
 						<td mat-cell *matCellDef="let element"> {{element.frequency}} % </td>
 					</ng-container>
 
 					<ng-container matColumnDef="accessions" >
-						<th mat-header-cell *matHeaderCellDef > Accessions Download </th>
+						<th mat-header-cell title ="Download gisaid metadata" *matHeaderCellDef > Metadata Download </th>
 						<td mat-cell *matCellDef="let element">
 							<span *ngIf="element.datasetId === 'cn'"> <a href="javascript: void(0);" (click)="download()"><mat-icon>vertical_align_bottom</mat-icon></a> </span>
 							</td>
@@ -164,12 +164,12 @@
 							<div class="example-element-detail" *ngIf="element.info.variants?.length" [@detailExpand]="element == expandedElement ? 'expanded' : 'collapsed'">
 								<div class="inner-table mat-elevation-z8" *ngIf="expandedElement">
 									<table class="table table-striped table-bordered table-hover" id="t03" matSort (matSortChange)="sortData($event, element)">
-									  <th mat-sort-header="position">Position</th>
-									  <th mat-sort-header="ref">Ref</th>
-									  <th mat-sort-header="alt">Alt</th>
-									  <th mat-sort-header="SIFT_score">Sift</th>
-									  <th mat-sort-header="sampleCount">Samples</th>
-									  <th mat-sort-header="frequency">Frequency</th>
+										<th mat-sort-header="position" title ="Searched variants position.">Position</th>
+									  <th mat-sort-header="ref" title ="Searched reference variants.">Ref</th>
+									  <th mat-sort-header="alt" title ="Searched alternate variants.">Alt</th>
+									  <th mat-sort-header="SIFT_score" title ="Predicted SIFT score for variants.">Sift</th>
+									  <th mat-sort-header="sampleCount" title ="Number of samples hits for corresponding variants.">Samples</th>
+									  <th mat-sort-header="frequency" title ="Samples/Total samples for this variant">Frequency</th>
 										<tbody *ngIf="element.info.variants.length < 10">
 										  <tr   *ngFor="let item of element.info.variants">
 										    <td > {{item.pos}} </td>
@@ -222,9 +222,9 @@
 				<table  class="table table-striped table-bordered table-hover" matSort (matSortChange)="stateSortData($event)" >
 					<thead>
 						<tr>
-							<th mat-sort-header="regions"> Region</th>
-							<th  mat-sort-header="count"> Count </th>
-							<th  mat-sort-header="frequency"> Frequency </th>
+							<th mat-sort-header="regions" title="Country and Regions"> Country / Region</th>
+							<th  mat-sort-header="count" title="Number of hits specific to this region."> Count </th>
+							<th  mat-sort-header="frequency" title="Count/Total count of variants specific to this region."> Frequency </th>
 						</tr>
 					</thead>
 					<tbody>
