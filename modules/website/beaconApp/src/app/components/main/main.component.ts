@@ -10,9 +10,7 @@ import { AppConfigService } from '../../app.config.service';
 import * as d3 from 'd3';
 import d3Tip from "d3-tip";
 import * as topoJson from 'topojson-client';
-
-
-
+import { DownloadService } from './main.service';
 
 @Component({
   selector: 'app-main',
@@ -33,7 +31,7 @@ export class MainComponent implements AfterViewInit {
   @ViewChild(MatSort, { static: false }) sort: MatSort;
   //@ViewChild(MatPaginator, { static: false }) paginator: MatPaginator;
 
-  constructor(private http: HttpClient, private appConfigService: AppConfigService) {
+  constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService) {
   }
   ngOnInit() {
     this.hits.sort = this.sort;
@@ -69,13 +67,18 @@ export class MainComponent implements AfterViewInit {
   hashState={};
   states=[];
   filteredArray=[];
+  accessionDetails=[];
   ids: string[] =["SampleCollectionDate","Location"];
   queryData = new HttpParams()
   .set('assemblyId','hCoV-19')
-  .set('includeDatasetResponses','HIT');
+  .set('includeDatasetResponses','ALL');
   vis: number = 0;
   pageOfItems: Array<any>;
   statePageOfItems: Array<any>;
+
+  download(){
+    this.downloadService.downloadFile(this.accessionDetails);
+  }
 
   compare(a: number | string, b: number | string, isAsc: boolean) {
   return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
@@ -213,20 +216,20 @@ export class MainComponent implements AfterViewInit {
       this.loading = true;
       this.queryData = new HttpParams()
       .set('assemblyId','hCoV-19')
-      .set('includeDatasetResponses','HIT');
+      .set('includeDatasetResponses','ALL');
       if( this.sMin  || this.sMax  || this.eMin || this.eMax ){
         this.inputText= null;
         this.ref = this.ref.map(function(x){ return x.toUpperCase(); })
 
           if(this.varType != null ){
             this.alt = null;
-              this.queryData = this.queryData.append('referenceName','1').append("referenceBases",this.ref.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append('variantType',this.varType.toUpperCase()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate");
+              this.queryData = this.queryData.append('referenceName','1').append("referenceBases",this.ref.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append('variantType',this.varType.toUpperCase()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID");
             //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"variantType":this.varType.toUpperCase(),"sampleFields":["SampleCollectionDate","Location"]};
           }
           if(this.alt != null ){
             this.alt = this.alt.map(function(x){ return x.toUpperCase(); })
             this.varType = null;
-            this.queryData = this.queryData.append('referenceName','1').append('referenceBases',this.ref.join(', ')).append('alternateBases',this.alt.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate");
+            this.queryData = this.queryData.append('referenceName','1').append('referenceBases',this.ref.join(', ')).append('alternateBases',this.alt.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID");
             //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"sampleFields":["SampleCollectionDate","Location"]};
           }
       }else if( this.inputText != null){
@@ -272,7 +275,7 @@ export class MainComponent implements AfterViewInit {
         }
 
         //console.log(this.alt);
-        this.queryData = this.queryData.append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate");
+        this.queryData = this.queryData.append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID");
         //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "start":this.sPos-1,"variantType":this.varType,"sampleFields":["SampleCollectionDate","Location"]};
       }
 
@@ -311,10 +314,13 @@ export class MainComponent implements AfterViewInit {
               }
 
             }else{
-              this.hits = new MatTableDataSource<Dataset>();
-              this.warning = "No hits matching the search criteria";
-              //console.log(this.warning );
+              console.log(response);
+              this.warning = null;
+              this.hits = response.datasetAlleleResponses;
               this.loading = false;
+              const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
+              this.visualIndex = 0;
+              this.accessionDetails = [];
             }
 
 
@@ -349,10 +355,13 @@ export class MainComponent implements AfterViewInit {
           }
 
         }else{
-          this.warning = "No hits matching the search criteria";
-          this.hits = new MatTableDataSource<Dataset>();
-          //console.log(this.warning );
+          console.log(response);
+          this.warning = null;
+          this.hits = response.datasetAlleleResponses;
           this.loading = false;
+          const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
+          this.visualIndex = 0;
+          this.accessionDetails =[];
         }
 
       },
@@ -373,6 +382,10 @@ export class MainComponent implements AfterViewInit {
     //console.log(visIndex);
     let index = hits.findIndex(x => x.info.name === visIndex);
     //console.log(index);
+    if(hits[index].info.sampleCounts.hasOwnProperty("ID")){
+      this.accessionDetails = hits[index].info.sampleCounts.ID;
+      console.log(this.accessionDetails);
+    }
     let locationDetails = hits[index].info.sampleCounts.Location;
     let locationDateCounts = hits[index].info.sampleCounts.Location_SampleCollectionDate;
     let stateDateCounts = hits[index].info.sampleCounts.State_SampleCollectionDate;

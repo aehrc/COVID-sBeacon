@@ -22,6 +22,7 @@ import { OktaAuthModule } from '@okta/okta-angular';
 import { JwPaginationComponent } from 'jw-angular-pagination';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {MatIconModule} from '@angular/material/icon';
+import { DownloadService } from './components/main/main.service';
 
 @NgModule({
   declarations: [
@@ -63,7 +64,7 @@ import {MatIconModule} from '@angular/material/icon';
           return appConfigService.loadAppConfig();
         };
       }
-    }
+    },DownloadService
   ],
   bootstrap: [AppComponent]
 })
