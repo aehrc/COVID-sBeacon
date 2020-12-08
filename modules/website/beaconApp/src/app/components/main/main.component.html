@@ -122,9 +122,9 @@
 						<td mat-cell  *matCellDef="let element"> {{element.info.name}} </td>
 					</ng-container>
 
-					<ng-container matColumnDef="description">
-						<th title="Dataset description" mat-header-cell *matHeaderCellDef > Description </th>
-						<td mat-cell *matCellDef="let element"> {{element.info.description}} </td>
+					<ng-container matColumnDef="updateDateTime">
+						<th title="Dataset Last Update date and time" mat-header-cell *matHeaderCellDef > Dataset Last Updated </th>
+						<td mat-cell *matCellDef="let element"> {{element.info.updateDateTime.split('T')[0]}} | {{element.info.updateDateTime.split('T')[1]}} </td>
 					</ng-container>
 
 					<ng-container matColumnDef="variantCount">

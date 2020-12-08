@@ -60,7 +60,7 @@ export class MainComponent implements AfterViewInit {
   url: string ='';
   expandedElement: Beacon | null;
   warning: string = '';
-  displayedColumns: string[] = ['expand','name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency', 'accessions'];
+  displayedColumns: string[] = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency', 'accessions'];
   innerDisplayedColumns: string[] = ['pos', 'ref', 'alt', 'SIFT_score', 'subSampleCount', 'subFrequency'];
   sampleData:{ code: string, value: any, breakup: any}[] = [];
   dateData:{ date: string, value: any, breakup: any, location: string}[] = [];
