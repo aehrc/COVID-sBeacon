@@ -4,12 +4,16 @@ import ftplib
 import pathlib
 import re
 import sys
+import time
 
 import requests
 
 
+FTP_RETRY_ERRORS = ftplib.all_errors + (AttributeError,)
+FTP_CLOSE_AFTER = 30
 GFF3_FTP_HOST = 'download.big.ac.cn'
 GFF3_FTP_DIRECTORY = 'GVM/Coronavirus/gff3'
+GFF3_FTP_TIMEOUT = 10
 GFF3_FILE_TEMPLATE = '2019-nCoV_{}_variants.gff3'
 
 anchor_prefix = (
@@ -33,6 +37,77 @@ VCF_HEADER_LINES = (
 )
 
 valid_alt = re.compile('[ACGTUMRWSYKVHDBN]+')
+
+
+class RetryFTP:
+    def __init__(self, *args, **kwargs):
+        self.ftp_args = args
+        self.ftp_kwargs = kwargs
+        self.ftp = None
+        self.call_time = None
+        self._set_new_ftp()
+
+    def cwd(self, *args, **kwargs):
+        try:
+            resp = self.ftp.cwd(*args, **kwargs)
+        except FTP_RETRY_ERRORS as e:
+            log_print(e)
+            self._set_new_ftp()
+            return self.cwd(*args, **kwargs)
+        self._reset_call_time()
+        return resp
+
+    def nlst(self, *args, **kwargs):
+        try:
+            resp = self.ftp.nlst(*args, **kwargs)
+        except FTP_RETRY_ERRORS as e:
+            log_print(e)
+            self._set_new_ftp()
+            return self.nlst(*args, **kwargs)
+        self._reset_call_time()
+        return resp
+
+    def quit(self, *args, **kwargs):
+        if self.ftp is None:
+            resp = None
+        else:
+            try:
+                resp = self.ftp.quit(*args, **kwargs)
+            except ftplib.all_errors + (AttributeError,) as e:
+                log_print(e)
+                resp = self.ftp.close()
+            self.ftp = None
+        self._reset_call_time()
+        return resp
+
+    def retrlines(self, *args, **kwargs):
+        try:
+            resp = self.ftp.retrlines(*args, **kwargs)
+        except FTP_RETRY_ERRORS as e:
+            log_print(e)
+            self._set_new_ftp()
+            return self.retrlines(*args, **kwargs)
+        self._reset_call_time()
+        return resp
+
+    def _reset_call_time(self):
+        self.call_time = time.time()
+
+    def _set_new_ftp(self):
+        if self.ftp is not None:
+            log_print("Restarting ftp client...")
+            self.quit()
+        else:
+            log_print("Initialising ftp client...")
+        try:
+            self.ftp = ftplib.FTP(*self.ftp_args, **self.ftp_kwargs)
+            self.ftp.cwd(GFF3_FTP_DIRECTORY)
+        except FTP_RETRY_ERRORS as e:
+            log_print(e)
+            log_print("Waiting 5 minutes before trying again...")
+            time.sleep(300)
+            self._set_new_ftp()
+        self._reset_call_time()
 
 
 def convert_to_vcf(gff_file, accession_id, sequence, output_file_name, ftp):
@@ -110,12 +185,6 @@ def get_gff_from_web(accession_id):
     gff_start = anchor_index + len_anchor_prefix
     gff_end = content.index(b'"', gff_start)
     return content[gff_start:gff_end].decode()
-
-
-def get_ftp_connection():
-    ftp = ftplib.FTP(host=GFF3_FTP_HOST, user='anonymous')
-    ftp.cwd(GFF3_FTP_DIRECTORY)
-    return ftp
 
 
 def get_variant_string(gff3_line, sequence):
@@ -208,9 +277,12 @@ def run(fasta_file_path, metadata_file_path, output_directory,
     with open(fasta_file_path, 'r') as fasta_file_obj:
         sequence = get_fasta_sequence(fasta_file_obj)['1']
     valid_rows = get_valid_rows(metadata_file_path, gisaid, start)
-    ftp = get_ftp_connection()
+    ftp = RetryFTP(host=GFF3_FTP_HOST, user='anonymous',
+                   timeout=GFF3_FTP_TIMEOUT)
     gff_files = get_locations(ftp)
     for row in valid_rows:
+        if time.time() - ftp.call_time > FTP_CLOSE_AFTER:
+            ftp.quit()
         accession_id = row['Accession ID']
         output_file = f'{output_directory}/{accession_id}.vcf'
         print(f"processing {accession_id}", file=sys.stderr)
