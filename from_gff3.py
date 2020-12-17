@@ -155,8 +155,11 @@ def get_variant_string(gff3_line, sequence):
                 padding_base = sequence[end]
                 ref = ref + padding_base
                 alt = padding_base
+        elif alt == 'X':
+            # Probably not able to be aligned, ignore
+            return None
         else:
-            raise Exception(f"Unknown alt in line\n{gff3_line}")
+            raise Exception(f"Unknown alt {alt} in line\n{gff3_line}")
     return '\t'.join([
         '1',
         str(start),
