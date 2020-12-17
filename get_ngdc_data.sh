@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e -x
+set -euxo pipefail
 
 REFERENCE_FILE=$1
 METADATA_FILE=$2
