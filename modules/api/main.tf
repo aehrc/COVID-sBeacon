@@ -110,7 +110,7 @@ module "lambda-summariseSlice" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 60
+  timeout = 120
   policy = {
     json = data.aws_iam_policy_document.lambda-summariseSlice.json
   }
