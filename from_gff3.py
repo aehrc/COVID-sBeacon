@@ -41,14 +41,16 @@ def convert_to_vcf(gff_file, accession_id, sequence, output_file_name, ftp):
     if not gff_file:
         print("\tIs reference, producing empty VCF", file=sys.stderr)
     else:
+        records = []
         ftp_command = 'RETR ' + gff_file
         print('\t' + ftp_command, file=sys.stderr)
 
         def update_local_vcf(line):
-            update_vcf(sequence, lines, line)
+            update_vcf(sequence, records, line)
 
         ftp.retrlines(ftp_command, update_local_vcf)
-
+        records.sort(key=lambda r: int(r.split('\t')[1]))
+        lines += records
     with open(output_file_name, 'w') as vcf_file:
         vcf_file.writelines(lines)
 
