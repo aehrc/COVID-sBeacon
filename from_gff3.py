@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import csv
+from datetime import datetime
 import ftplib
 import pathlib
 import re
@@ -114,11 +115,11 @@ def convert_to_vcf(gff_file, accession_id, sequence, output_file_name, ftp):
     lines = list(VCF_HEADER_LINES)
     lines[-1] += accession_id + '\n'
     if not gff_file:
-        print("\tIs reference, producing empty VCF", file=sys.stderr)
+        log_print("\tIs reference, producing empty VCF")
     else:
         records = []
         ftp_command = 'RETR ' + gff_file
-        print('\t' + ftp_command, file=sys.stderr)
+        log_print('\t' + ftp_command)
 
         def update_local_vcf(line):
             update_vcf(sequence, records, line)
@@ -173,7 +174,7 @@ def get_fasta_sequence(fasta_file_iterable):
 
 def get_gff_from_web(accession_id):
     web_url = WEBPAGE_TEMPLATE.format(accession_id)
-    print(f"\tLooking up file on {web_url}", file=sys.stderr)
+    log_print(f"\tLooking up file on {web_url}")
     response = requests.get(web_url)
     assert response.status_code == 200
     content = response.content
@@ -199,20 +200,19 @@ def get_variant_string(gff3_line, sequence):
     assert alt_str.startswith('ALT=')
     alt = alt_str[4:]
     if sequence[start-1:end] != ref:
-        print(f"\tLine does not match reference sequence "
-              f"'{sequence[start-1:end]}'\n\t{gff3_line}", file=sys.stderr)
+        log_print(f"\tLine does not match reference sequence "
+                  f"'{sequence[start-1:end]}'\n\t{gff3_line}")
         if (start == 1 and ref[1:] == sequence[start-1:end]
                 and alt == '-'):
             # Deletes at the start add a base before the sequence
             ref = ref[1:]
-            print(f"\tChanging reference to '{ref}'", file=sys.stderr)
+            log_print(f"\tChanging reference to '{ref}'")
         elif ref == '-' and alt.startswith('-') and start == end:
             # Some insertions seem to use '-' as the ref
             # fasta shows Alt should start with 'N'
             ref = sequence[start-1]
             alt = ref + 'N' + alt[1:]
-            print(f"\tChanging reference to '{ref}' and alt to '{alt}'",
-                  file=sys.stderr)
+            log_print(f"\tChanging reference to '{ref}' and alt to '{alt}'")
         else:
             raise Exception("Unhandled reference mismatch")
     if not valid_alt.fullmatch(alt):
@@ -272,6 +272,11 @@ def get_locations(ftp):
     return accessions
 
 
+def log_print(out_string):
+    print(datetime.now().strftime('[%Y-%m-%d %H:%M:%S.%f] '), out_string,
+          file=sys.stderr)
+
+
 def run(fasta_file_path, metadata_file_path, output_directory,
         gisaid, start):
     with open(fasta_file_path, 'r') as fasta_file_obj:
@@ -285,7 +290,7 @@ def run(fasta_file_path, metadata_file_path, output_directory,
             ftp.quit()
         accession_id = row['Accession ID']
         output_file = f'{output_directory}/{accession_id}.vcf'
-        print(f"processing {accession_id}", file=sys.stderr)
+        log_print(f"processing {accession_id}")
         vcf_path = pathlib.Path(output_file)
         try:
             # Check if file already exists and is not corrupt
@@ -296,16 +301,16 @@ def run(fasta_file_path, metadata_file_path, output_directory,
             if (vcf_characters.endswith('\t.\t.\tGT\t1\n')
                     or vcf_characters.endswith(
                         f'FORMAT\t{accession_id}\n')):
-                print(f"File {output_file} is already complete.", file=sys.stderr)
+                log_print(f"File {output_file} is already complete.")
                 print(output_file, file=sys.stdout)
                 continue
             else:
-                print(f"File {output_file} exists but appears to be"
-                      " corrupted.", file=sys.stderr)
-        print(f"Searching for gff3 file for {accession_id}", file=sys.stderr)
+                log_print(f"File {output_file} exists but appears to be"
+                          " corrupted.")
+        log_print(f"Searching for gff3 file for {accession_id}")
         gff_file = find_gff_file(gff_files, accession_id, row['Related ID'])
         if gff_file is None:
-            print("\tWebsite does not contain link to gff3 file, skipping", file=sys.stderr)
+            log_print("\tWebsite does not contain link to gff3 file, skipping")
             continue
         convert_to_vcf(gff_file, accession_id, sequence, output_file, ftp)
         print(output_file, file=sys.stdout)
