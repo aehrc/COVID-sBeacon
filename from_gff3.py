@@ -333,7 +333,7 @@ if __name__ == '__main__':
         metadata_file,
         output_dir,
         gisaid_str,
-    ) = sys.argv[1:6]
-    start_accession_id = sys.argv[6] if len(sys.argv) > 6 else None
+    ) = sys.argv[1:5]
+    start_accession_id = sys.argv[5] if len(sys.argv) > 5 else None
     run(fasta_file, metadata_file, output_dir, bool(int(gisaid_str)),
         start_accession_id)
