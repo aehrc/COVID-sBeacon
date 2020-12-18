@@ -1,4 +1,5 @@
 from collections import Counter
+from itertools import combinations
 import json
 import math
 from operator import itemgetter
@@ -14,6 +15,8 @@ EXTRA_ANNOTATION_FIELDS = [
 ]
 GET_ANNOTATIONS = os.environ['GET_ANNOTATIONS_LAMBDA']
 GET_SAMPLE_METADATA = os.environ['GET_SAMPLE_METADATA_LAMBDA']
+MAX_SUBCOMBINATIONS_TO_CHECK = 4000000
+MAX_SUBCOMBINATIONS_TO_RETURN = 100
 SPLIT_QUERY = os.environ['SPLIT_QUERY_LAMBDA']
 
 dynamodb = DynamodbClient()
@@ -94,8 +97,9 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
     variants_info = annotate_variants(variant_counts, all_annotations,
                                       dataset_sample_count)
     pages, variants_subset = process_page(variants_info, page_details)
-    samples = combine_queries(all_splits, query_combination,
-                              all_sample_metadata['samples'].keys())
+    samples, subcombinations = get_fuzzy_combinations(
+        all_splits, query_combination, all_sample_metadata['samples'].keys(),
+    )
     sample_count = len(samples)
     exists = bool(samples)
     sample_metadata_counts = get_sample_metadata_counts(samples, all_sample_metadata)
@@ -120,6 +124,7 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
                 'updateDateTime': dataset['updateDateTime'],
                 'pages': pages,
                 'sampleCounts': sample_metadata_counts,
+                'subcombinations': subcombinations,
                 'variants': variants_subset,
             },
             'note': None,
@@ -135,46 +140,34 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
     return response_dict
 
 
-def combine_queries(all_splits, query_combination, all_sample_metadata_samples):
-    split_samples = [
-        {
-            sample
-            for variant_samples in all_splits[i]['variant_samples'].values()
-            for sample in variant_samples
-        }
-        for i in range(len(all_splits))
-    ]
-    if query_combination is None:
-        return list(split_samples[0].intersection(*split_samples[1:]))
-    else:
-        all_sample_set = set(all_sample_metadata_samples)
-        samples = [None]
-        operators = [lambda x: x]
-        number_string = ''
-        for c in query_combination:
-            if c in '0123456789':
-                number_string += c
-                continue
-            elif number_string:
-                index = int(number_string)
-                samples[-1] = operators.pop()(split_samples[index])
-                number_string = ''
-            if c in '&:':
-                operators.append(samples[-1].intersection)
-            elif c == '|':
-                operators.append(samples[-1].union)
-            elif c == '!':
-                last_operator = operators.pop()
-                operators.append(lambda x: last_operator(all_sample_set-x))
-            elif c == '(':
-                samples.append(None)
-                operators.append(lambda x: x)
-            elif c == ')':
-                samples[-1] = operators.pop()(samples.pop())
-        if number_string:
+def combine_queries(split_samples, query_combination, all_sample_set):
+    samples = [None]
+    operators = [lambda x: x]
+    number_string = ''
+    for c in query_combination:
+        if c in '0123456789':
+            number_string += c
+            continue
+        elif number_string:
             index = int(number_string)
             samples[-1] = operators.pop()(split_samples[index])
-        return list(samples.pop())
+            number_string = ''
+        if c in '&:':
+            operators.append(samples[-1].intersection)
+        elif c == '|':
+            operators.append(samples[-1].union)
+        elif c == '!':
+            last_operator = operators.pop()
+            operators.append(lambda x: last_operator(all_sample_set-x))
+        elif c == '(':
+            samples.append(None)
+            operators.append(lambda x: x)
+        elif c == ')':
+            samples[-1] = operators.pop()(samples.pop())
+    if number_string:
+        index = int(number_string)
+        samples[-1] = operators.pop()(split_samples[index])
+    return samples.pop()
 
 
 def get_frequency(samples, total_samples):
@@ -184,6 +177,117 @@ def get_frequency(samples, total_samples):
     if decimal_places <= 0:
         rounded = int(rounded)
     return rounded
+
+
+def get_fuzzy_combinations(all_splits, query_combination,
+                           all_sample_metadata_samples):
+    print("Starting sample set operations")
+    split_samples = [
+        {
+            sample
+            for variant_samples in all_splits[i]['variant_samples'].values()
+            for sample in variant_samples
+        }
+        for i in range(len(all_splits))
+    ]
+    all_sample_set = set(all_sample_metadata_samples)
+    if query_combination is None:
+        query_combination = '&'.join(str(n) for n in range(len(all_splits)))
+    all_part_samples = {
+        part: combine_queries(split_samples, part, all_sample_set)
+        for part in get_combination_parts(query_combination)
+    }
+    # we sort the sets because running set.intersection can be thousands of
+    # times faster on sorted sets.
+    all_part_samples = {
+        part: samples
+        for part, samples in sorted(all_part_samples.items(), key=lambda x: len(x[1]))
+    }
+    combination_samples = set.intersection(*all_part_samples.values())
+    num_samples = len(combination_samples)
+    print(f"Finished main sample set analysis, found {num_samples} samples in common.")
+    subcombinations = {}
+    # Remove empty parts
+    part_samples = {
+        part: samples
+        for part, samples in all_part_samples.items()
+        if samples
+    }
+    print(f"Removed {len(all_part_samples) - len(part_samples)} empty queries")
+
+    min_parts = {
+        part: samples
+        for part, samples in part_samples.items()
+        if not any(
+            (other_samples < samples) or (other_samples == samples and other_part < part)
+            for other_part, other_samples in part_samples.items()
+        )
+    }
+
+    num_samples_from_min_parts = len(set.intersection(*min_parts.values()))
+    if num_samples_from_min_parts:
+        subcombinations[tuple(min_parts.keys())] = num_samples_from_min_parts
+    print(f"Finished minimum sample set analysis, removed {len(part_samples) - len(min_parts)}"
+          f" extraneous parts and found {num_samples_from_min_parts} samples in common.")
+
+    subcombinations_checked = 0
+    subcombinations_tested = 0
+    subcombinations_returned = 0
+    part_list = list(part_samples.keys())
+    parts_completed = list()
+    parts_removed = 1
+    num_parts = len(part_list)
+    print(f"Checking subcombinations with {num_parts} different parts")
+    while (subcombinations_checked < MAX_SUBCOMBINATIONS_TO_CHECK
+           and subcombinations_returned < MAX_SUBCOMBINATIONS_TO_RETURN
+           and parts_removed < num_parts
+           ):
+        print(f"Testing reducing number of queries by {parts_removed}")
+        old_subcombinations_tested = subcombinations_tested
+        for subcombination in combinations(part_list, num_parts - parts_removed):
+            subcombinations_checked += 1
+            part_set = set(subcombination)
+            if any(
+                    part_set <= other_part_set
+                    for other_part_set in parts_completed
+            ):
+                continue
+            # TODO: Calculate which sets to check instead of brute-forcing it
+            # There should be a better way of ensuring we only check sets of
+            # parts that are not subsets of existing completed part sets. The
+            # above code is a brute-force approach that does not allow
+            # substantial search depth. It takes around 7 seconds for a
+            # combination with 21 parts, the vast majority of which is spent in
+            # the above code.
+            subcombination_num_samples = len(set.intersection(*(
+                part_samples[part]
+                for part in subcombination
+            )))
+            subcombinations_tested += 1
+            if subcombination_num_samples > num_samples:
+                subcombinations_returned += 1
+                subcombinations[subcombination] = subcombination_num_samples
+                parts_completed.append(part_set)
+        if subcombinations_tested == old_subcombinations_tested:
+            print("No more valid combinations to check.")
+        parts_removed += 1
+    print(f"Checked {subcombinations_checked} subcombinations,"
+          f" ran sample set operations on {subcombinations_tested} subcombinations,"
+          f" found {subcombinations_returned} improved combinations")
+    return (
+        list(combination_samples),
+        [
+            {
+                'query_combination': '&'.join(subcombination),
+                'removed_combination': '&'.join(
+                    part for part in all_part_samples.keys()
+                    if part not in subcombination
+                ),
+                'sample_count': sample_count,
+            }
+            for subcombination, sample_count in subcombinations.items()
+        ]
+    )
 
 
 def get_results(responses):
@@ -239,6 +343,25 @@ def get_sample_metadata_counts(samples, all_sample_metadata):
             for sample in sample_metadata
         ]
     return counts
+
+
+def get_combination_parts(query_combination):
+    parts = []
+    # Just get top level elements that are separated by AND
+    last_part = ''
+    depth = 0
+    for c in query_combination:
+        if c in ':&' and depth == 0:
+            parts.append(last_part)
+            last_part = ''
+        else:
+            last_part += c
+            if c == '(':
+                depth += 1
+            elif c == ')':
+                depth -= 1
+    parts.append(last_part)
+    return parts
 
 
 def get_variants(all_splits):
