@@ -4,9 +4,11 @@ import { Injectable } from '@angular/core';
 @Injectable()
 export class DownloadService {
 
-    downloadFile(data, filename='accesionIDs') {
+    downloadFile(data, updateDateTime, inputText, filename='metadata') {
         //let csvData = this.ConvertToCSV(data, ['accessionIDs']);
-        let csvData = 'accesionIDs' + "\n";
+        let csvData = "Query String - "+ inputText+ "\n";
+        csvData += "Dataset Last update Date and time - " +updateDateTime.split('T')[0]+' | '+ updateDateTime.split('T')[1]+ "\n";
+        csvData += 'accesionIDs' + "\n";
         for (let i =0; i<data.length; i++){
           csvData += data[i] + "\n";
         }

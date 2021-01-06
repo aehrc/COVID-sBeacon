@@ -11,6 +11,7 @@ import * as d3 from 'd3';
 import d3Tip from "d3-tip";
 import * as topoJson from 'topojson-client';
 import { DownloadService } from './main.service';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-main',
@@ -31,7 +32,7 @@ export class MainComponent implements AfterViewInit {
   @ViewChild(MatSort, { static: false }) sort: MatSort;
   //@ViewChild(MatPaginator, { static: false }) paginator: MatPaginator;
 
-  constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService) {
+  constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService, private router: Router) {
   }
   ngOnInit() {
     this.hits.sort = this.sort;
@@ -68,6 +69,7 @@ export class MainComponent implements AfterViewInit {
   states=[];
   filteredArray=[];
   accessionDetails=[];
+  updateDateTime;
   ids: string[] =["SampleCollectionDate","Location"];
   queryData = new HttpParams()
   .set('assemblyId','hCoV-19')
@@ -77,11 +79,14 @@ export class MainComponent implements AfterViewInit {
   statePageOfItems: Array<any>;
 
   download(){
-    this.downloadService.downloadFile(this.accessionDetails);
+    this.downloadService.downloadFile(this.accessionDetails, this.updateDateTime, this.inputText);
   }
 
   compare(a: number | string, b: number | string, isAsc: boolean) {
   return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
+  }
+  similaritySearch(){
+    this.router.navigate(['search', this.inputText]);
   }
   sortData(sort: Sort, element) {
     console.log(element);
@@ -166,6 +171,9 @@ export class MainComponent implements AfterViewInit {
     this.states = [];
     if(searchTerm == "USA"){
       searchTerm = "United States";
+    }
+    if(searchTerm == "Ivory Coast"){
+      searchTerm = "CotedIvoire";
     }
     var condition = new RegExp(searchTerm);
     let stateCounts = this.hits[0].info.sampleCounts.State;
@@ -381,10 +389,12 @@ export class MainComponent implements AfterViewInit {
   graphDataGenerator(hits, visIndex,location=null,state=null){
     //console.log(visIndex);
     let index = hits.findIndex(x => x.info.name === visIndex);
+    let NGDCindex = hits.findIndex(x => x.info.name === "National Genomics Data Center");
     //console.log(index);
-    if(hits[index].info.sampleCounts.hasOwnProperty("ID")){
-      this.accessionDetails = hits[index].info.sampleCounts.ID;
-      console.log(this.accessionDetails);
+    if(hits[NGDCindex].info.sampleCounts.hasOwnProperty("ID")){
+      this.accessionDetails = hits[NGDCindex].info.sampleCounts.ID;
+      this.updateDateTime = hits[NGDCindex].info.updateDateTime;
+      //console.log(this.accessionDetails);
     }
     let locationDetails = hits[index].info.sampleCounts.Location;
     let locationDateCounts = hits[index].info.sampleCounts.Location_SampleCollectionDate;

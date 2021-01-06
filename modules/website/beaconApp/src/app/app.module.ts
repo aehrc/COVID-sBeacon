@@ -23,6 +23,7 @@ import { JwPaginationComponent } from 'jw-angular-pagination';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {MatIconModule} from '@angular/material/icon';
 import { DownloadService } from './components/main/main.service';
+import { SearchComponent } from './components/search/search.component';
 
 @NgModule({
   declarations: [
@@ -30,7 +31,8 @@ import { DownloadService } from './components/main/main.service';
     MainComponent,
     AboutComponent,
     LoginComponent,
-    JwPaginationComponent
+    JwPaginationComponent,
+    SearchComponent
   ],
   imports: [
     BrowserModule,
