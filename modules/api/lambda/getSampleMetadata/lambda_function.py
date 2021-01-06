@@ -57,6 +57,8 @@ class CalculatedFieldId(CalculatedField):
 
     @staticmethod
     def set_json(accession_id, related_id):
+        if related_id is None:
+            return accession_id
         for related in related_id.split(','):
             if related.startswith('EPI_ISL_'):
                 return related
