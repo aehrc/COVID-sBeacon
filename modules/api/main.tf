@@ -110,7 +110,7 @@ module "lambda-summariseSlice" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 120
+  timeout = 180
   policy = {
     json = data.aws_iam_policy_document.lambda-summariseSlice.json
   }
@@ -199,7 +199,7 @@ module "lambda-queryDatasets" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 29
+  timeout = 63
   policy = {
     json = data.aws_iam_policy_document.lambda-queryDatasets.json
   }
@@ -230,7 +230,7 @@ module "lambda-collateQueries" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.8"
   memory_size = 2048
-  timeout = 28
+  timeout = 62
   policy = {
     json = data.aws_iam_policy_document.lambda-collateQueries.json
   }
@@ -261,7 +261,7 @@ module "lambda-splitQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 27
+  timeout = 61
   policy = {
     json = data.aws_iam_policy_document.lambda-splitQuery.json
   }
@@ -290,7 +290,7 @@ module "lambda-performQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 26
+  timeout = 61
   policy = {
     json = data.aws_iam_policy_document.lambda-performQuery.json
   }

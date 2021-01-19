@@ -15,7 +15,7 @@ SUMMARISE_SLICE_SNS_TOPIC_ARN = os.environ['SUMMARISE_SLICE_SNS_TOPIC_ARN']
 VCF_SUMMARIES_TABLE_NAME = os.environ['VCF_SUMMARIES_TABLE']
 
 # If only this much time remains, split the task
-MILLISECONDS_BEFORE_SPLIT = 15000
+MILLISECONDS_BEFORE_SPLIT = 25000
 
 # How many records/milliseconds between each performance sample
 MAX_RECORDS_PER_SAMPLE = 10000
@@ -78,14 +78,14 @@ def get_affected_datasets(location):
     return dataset_ids
 
 
-def get_calls_and_variants(location, chrom, start, end, time_assigned,
+def get_calls_and_variants(location, chrom, start, end, time_assigned, initial_time,
                            gvcf=False):
 
     counts_process = get_counts_process(location, chrom, start, end,
                                         gvcf=gvcf)
     counts_handle = counts_process.stdout
     call_count, variant_count, slices = sum_counts(counts_handle, start, end,
-                                                   time_assigned, gvcf=gvcf)
+                                                   time_assigned, initial_time, gvcf=gvcf)
     counts_handle.close()
     error_code = counts_process.wait(timeout=1)
     if error_code != 0 and not slices:  # complains when pipe is closed
@@ -94,7 +94,7 @@ def get_calls_and_variants(location, chrom, start, end, time_assigned,
             # This happens in the case of gVCFs, so try again using only GT.
             print("Got error when querying, trying gVCF mode...")
             call_count, variant_count, slices = get_calls_and_variants(
-                location, chrom, start, end, time_assigned, gvcf=True)
+                location, chrom, start, end, time_assigned, initial_time, gvcf=True)
         else:
             assert error_code == 0, ("query returned error code"
                                      " {}".format(error_code))
@@ -102,6 +102,7 @@ def get_calls_and_variants(location, chrom, start, end, time_assigned,
 
 
 def get_counts_process(location, chrom, start, end, gvcf=False):
+    print(chrom,start,)
     args = [
         'bcftools', 'query',
         '--regions', '{chrom}:{start}-{end}'.format(
@@ -114,7 +115,7 @@ def get_counts_process(location, chrom, start, end, gvcf=False):
     return query_process
 
 
-def get_slices_to_complete(time_assigned, start_time, start, end, current_pos):
+def get_slices_to_complete(time_assigned, start_time, start, end, current_pos, initial_time_passed):
     """
     Calculate the number of slices that will be required to complete the task
     in time.
@@ -124,9 +125,12 @@ def get_slices_to_complete(time_assigned, start_time, start, end, current_pos):
         # Just return, if we can't get through a single position, we have larger
         # problems.
         return None
-    time_passed = (time.time() - start_time) * 1000
+    time_passed = ((time.time() - start_time) * 1000) + initial_time_passed
+
     time_to_complete = time_passed / fraction_complete
+
     slices = ceil(time_to_complete / time_assigned)
+
     return slices
 
 
@@ -198,13 +202,15 @@ def summarise_datasets(datasets):
         print('Received Response: {}'.format(json.dumps(response)))
 
 
-def sum_counts(counts_handle, start, end, time_assigned, gvcf=False):
+def sum_counts(counts_handle, start, end, time_assigned, initial_time, gvcf=False):
     call_count = 0
     variant_count = 0
     records = 0
     start_time = 0
     next_sample_record = 0
     next_sample_time = time.time()
+    initial_time_passed = (time.time() - initial_time) * 1000
+
     for record in counts_handle:
         record_parts = record.split('\t')
         pos = int(record_parts[0])
@@ -217,19 +223,24 @@ def sum_counts(counts_handle, start, end, time_assigned, gvcf=False):
         if (records == next_sample_record
                 or time.time() >= next_sample_time):
             next_sample_record += MAX_RECORDS_PER_SAMPLE
+
             next_sample_time = time.time() + MAX_SECONDS_BETWEEN_SAMPLES
+
             if start_time == 0:
                 start_time = time.time()
                 print("starting timer at {}".format(start_time))
             else:
                 slices = get_slices_to_complete(time_assigned, start_time,
-                                                start, end, pos)
+                                                start, end, pos, initial_time_passed)
                 if slices > 1:
                     return None, None, slices
         records += 1
 
         if gvcf:
+            time_passed = (time.time() - start_time) * 1000
+
             genotype_str = record_parts[1]
+
             # As AN is often not present, simply manually count all the calls
             calls = get_all_calls(genotype_str)
             call_count += len(calls)
@@ -248,12 +259,12 @@ def sum_counts(counts_handle, start, end, time_assigned, gvcf=False):
     return call_count, variant_count, None
 
 
-def summarise_slice(location, region, slice_size_mbp, time_assigned):
+def summarise_slice(location, region, slice_size_mbp, time_assigned,initial_time):
     chrom, start_str = region.split(':')
     start = round(1000000 * float(start_str) + 1)
     end = start + round(1000000 * slice_size_mbp - 1)
     call_count, variant_count, slices = get_calls_and_variants(
-        location, chrom, start, end, time_assigned)
+        location, chrom, start, end, time_assigned, initial_time)
     if call_count is not None:
         update_complete = update_vcf(location, region, variant_count, call_count)
         if update_complete:
@@ -276,8 +287,10 @@ def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
     time_assigned = (context.get_remaining_time_in_millis()
                      - MILLISECONDS_BEFORE_SPLIT)
+    print('Time assigned: {}'.format(time_assigned))
+    initial_time = time.time()
     message = json.loads(event['Records'][0]['Sns']['Message'])
     location = message['location']
     region = message['region']
     slice_size_mbp = message['slice_size_mbp']
-    summarise_slice(location, region, slice_size_mbp, time_assigned)
+    summarise_slice(location, region, slice_size_mbp, time_assigned, initial_time)

@@ -93,7 +93,13 @@ class CalculatedFieldLocation(CalculatedField):
             # Convert to Country only
             # Clean data of known errors
             country = location.split('/')[0].strip(' \u200e').lower()
-            return country_codes[country]
+            finalCountry  = country_codes.get(country)
+
+            if finalCountry:
+                return finalCountry
+            else:
+                return "null"
+
         else:
             return "null"
 
