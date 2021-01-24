@@ -389,11 +389,11 @@ export class MainComponent implements AfterViewInit {
   graphDataGenerator(hits, visIndex,location=null,state=null){
     //console.log(visIndex);
     let index = hits.findIndex(x => x.info.name === visIndex);
-    let NGDCindex = hits.findIndex(x => x.info.name === "National Genomics Data Center");
-    //console.log(index);
-    if(hits[NGDCindex].info.sampleCounts.hasOwnProperty("ID")){
-      this.accessionDetails = hits[NGDCindex].info.sampleCounts.ID;
-      this.updateDateTime = hits[NGDCindex].info.updateDateTime;
+    let gisaidIndex = hits.findIndex(x => x.info.name === "GISAID data");
+
+    if(hits[gisaidIndex].info.sampleCounts.hasOwnProperty("ID")){
+      this.accessionDetails = hits[gisaidIndex].info.sampleCounts.ID;
+      this.updateDateTime = hits[gisaidIndex].info.updateDateTime;
       //console.log(this.accessionDetails);
     }
     let locationDetails = hits[index].info.sampleCounts.Location;

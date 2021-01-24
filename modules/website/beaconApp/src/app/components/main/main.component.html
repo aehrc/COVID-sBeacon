@@ -159,7 +159,7 @@
 					<ng-container matColumnDef="accessions" >
 						<th mat-header-cell title ="Download gisaid metadata" *matHeaderCellDef > Metadata Download </th>
 						<td mat-cell *matCellDef="let element">
-							<span *ngIf="element.datasetId === 'cn'"> <a href="javascript: void(0);" (click)="download()"><mat-icon>vertical_align_bottom</mat-icon></a> </span>
+							<span *ngIf="element.datasetId === 'gisaid'"> <a href="javascript: void(0);" (click)="download()"><mat-icon>vertical_align_bottom</mat-icon></a> </span>
 							</td>
 					</ng-container>
 
