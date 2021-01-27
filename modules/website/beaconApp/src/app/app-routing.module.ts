@@ -22,6 +22,12 @@ export function onAuthRequired({ oktaAuth, router }) {
       data: { onAuthRequired }
     },
     {
+      path: 'main/:input',
+      component: MainComponent,
+      canActivate: [OktaAuthGuard],
+      data: { onAuthRequired }
+    },
+    {
       path: 'search',
       component: SearchComponent,
     },
@@ -31,6 +37,10 @@ export function onAuthRequired({ oktaAuth, router }) {
     },
     {
       path: 'query',
+      component: MainComponent
+    },
+    {
+      path: 'query/:input',
       component: MainComponent
     },
     {

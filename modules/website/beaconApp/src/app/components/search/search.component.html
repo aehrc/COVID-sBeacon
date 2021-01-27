@@ -24,6 +24,7 @@
 						<button mat-raised-button color="primary" class="button" [disabled]="!profileText " (click)="profileSearch()">Search</button>
 						<!--<button mat-raised-button color="primary" class="button" (click)="this.queryVisible = !this.queryVisible">Query Builder</button>-->
 						<button mat-raised-button color="primary" class="button" (click)="this.refresh()">Reset</button>
+						<button mat-raised-button color="primary" class="copyButton"  ngbTooltip="Copied!" triggers="click:blur" [autoClose]="true" (click)="this.share()">Share</button>
 					</div>
         </mat-card-content>
   </mat-card>
@@ -50,7 +51,7 @@
 				</thead>
 				<tbody>
 					<tr   *ngFor="let item of pageOfItems ">
-						<td > {{item.query_combination}} </td>
+						<td (click)="this.querySearch(item.query_combination)" > <a>{{item.query_combination}} </a></td>
 						<td > {{ item.removed_combination }} </td>
 						<td > {{ item.sample_count }} </td>
 					</tr>

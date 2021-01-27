@@ -3,6 +3,7 @@ import { animate, state, style, transition, trigger } from '@angular/animations'
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource } from '@angular/material';
 import {MatSort, Sort} from '@angular/material/sort';
+import { ActivatedRoute } from '@angular/router';
 //import { JwPaginationComponent } from 'jw-angular-pagination';
 //import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Beacon, Dataset } from './main.interfaces';
@@ -27,12 +28,17 @@ import { Router } from '@angular/router';
 })
 
 export class MainComponent implements AfterViewInit {
-
+  inputText: string = "";
   hits = new MatTableDataSource<Dataset>();
   @ViewChild(MatSort, { static: false }) sort: MatSort;
   //@ViewChild(MatPaginator, { static: false }) paginator: MatPaginator;
 
-  constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService, private router: Router) {
+  constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService, private router: Router, private route: ActivatedRoute) {
+    this.route.params.subscribe( params => this.inputText = params.input);
+    if(this.inputText){
+      this.query();
+    }
+
   }
   ngOnInit() {
     this.hits.sort = this.sort;
@@ -43,7 +49,7 @@ export class MainComponent implements AfterViewInit {
   }
 
   loading: boolean = false;
-  inputText: string = "";
+  copyText: string = "";
   sMin: any = null;
   sMax: any = null;
   eMin: any = null;
@@ -87,6 +93,17 @@ export class MainComponent implements AfterViewInit {
   }
   similaritySearch(){
     this.router.navigate(['search', this.inputText]);
+  }
+  share(){
+    var location = window.location;
+    if(location.toString().split("/").pop() === "main" || location.toString().split("/").pop() === "query"){
+      this.copyText = window.location + "/"+this.inputText;
+      navigator.clipboard.writeText(this.copyText).then().catch(e => console.error(e));
+    }else{
+      navigator.clipboard.writeText(location.toString()).then().catch(e => console.error(e));
+    }
+
+
   }
   sortData(sort: Sort, element) {
     console.log(element);

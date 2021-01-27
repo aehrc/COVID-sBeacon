@@ -5,6 +5,7 @@ import { AppConfigService } from '../../app.config.service';
 import { Beacon, Dataset } from './search.interfaces';
 import { MatTableDataSource } from '@angular/material';
 import {MatSort, Sort} from '@angular/material/sort';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-search',
@@ -13,6 +14,7 @@ import {MatSort, Sort} from '@angular/material/sort';
 })
 export class SearchComponent implements OnInit {
   profileText: string = "";
+  copyText: string = "";
   loading: boolean = false;
   splittedText= [];
   splitText= [];
@@ -28,7 +30,7 @@ export class SearchComponent implements OnInit {
 
 
 
-  constructor( private route: ActivatedRoute, private http: HttpClient, private appConfigService: AppConfigService,) {
+  constructor( private route: ActivatedRoute, private http: HttpClient, private router: Router, private appConfigService: AppConfigService,) {
     this.route.params.subscribe( params => this.profileText = params.profile);
     if(this.profileText){
       this.profileSearch()
@@ -39,6 +41,7 @@ export class SearchComponent implements OnInit {
   }
 
   rootUrl: string = this.appConfigService.apiBaseUrl;
+  login: boolean = this.appConfigService.login;
   url: string ='';
   onChangePage(pageOfItems: Array<any>) {
           // update current page of items
@@ -47,8 +50,28 @@ export class SearchComponent implements OnInit {
   compare(a: number | string , b: number | string , isAsc: boolean) {
     return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
   }
+
+  querySearch(text){
+    if(this.login){
+      this.router.navigate(['main', text]);
+    }else{
+      this.router.navigate(['query', text]);
+    }
+  }
+
   refresh(){
     window.location.reload();
+  }
+  share(){
+    var location = window.location;
+    console.log(location.toString().split("/").pop())
+    if(location.toString().split("/").pop() === "search"){
+      this.copyText = window.location + "/"+this.profileText;
+      navigator.clipboard.writeText(this.copyText).then().catch(e => console.error(e));
+    }else{
+      navigator.clipboard.writeText(location.toString()).then().catch(e => console.error(e));
+    }
+
   }
   sortData(sort: Sort) {
     console.log(sort);
