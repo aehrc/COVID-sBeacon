@@ -60,7 +60,12 @@ export class SearchComponent implements OnInit {
   }
 
   refresh(){
-    window.location.reload();
+    var location = window.location;
+    if(location.toString().split("/").pop() === "search" ){
+      window.location.reload();
+    }else{
+        this.router.navigate(['search']);
+    }
   }
   share(){
     var location = window.location;

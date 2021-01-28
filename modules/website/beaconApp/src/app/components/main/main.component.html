@@ -85,7 +85,7 @@
 						<button mat-raised-button color="primary" class="button" [disabled]="!inputText && !sMin && !sMax && !eMin && !eMax && !ref " (click)="query()">Search</button>
 						<button mat-raised-button color="primary" class="button" (click)="this.ShowHide()">Advanced Parameters</button>
 						<button mat-raised-button color="primary" class="button" (click)="this.refresh()">Reset</button>
-						<button mat-raised-button color="primary" class="copyButton"  ngbTooltip="Copied!" triggers="click:blur" [autoClose]="true" (click)="this.share()">Share</button>
+						<button mat-raised-button color="primary" class="copyButton"  ngbTooltip="Copied!" triggers="click:blur" [autoClose]="true" (click)="this.share()" [disabled]="!inputText">Share</button>
 					</div>
         </mat-card-content>
   </mat-card>

@@ -38,7 +38,6 @@ export class MainComponent implements AfterViewInit {
     if(this.inputText){
       this.query();
     }
-
   }
   ngOnInit() {
     this.hits.sort = this.sort;
@@ -102,8 +101,6 @@ export class MainComponent implements AfterViewInit {
     }else{
       navigator.clipboard.writeText(location.toString()).then().catch(e => console.error(e));
     }
-
-
   }
   sortData(sort: Sort, element) {
     console.log(element);
@@ -169,7 +166,16 @@ export class MainComponent implements AfterViewInit {
     this.isVisible = !this.isVisible;
   }
   refresh(){
-    window.location.reload();
+    var location = window.location;
+    if(location.toString().split("/").pop() === "main" || location.toString().split("/").pop() === "query"){
+      window.location.reload();
+    }else{
+      if(this.login){
+        this.router.navigate(['main']);
+      }else{
+        this.router.navigate(['query']);
+      }
+    }
   }
   stateHistogram(state){
     this.graphDataGenerator(this.hits,this.visualIndex,null,state=state);

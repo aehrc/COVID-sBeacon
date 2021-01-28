@@ -24,7 +24,7 @@
 						<button mat-raised-button color="primary" class="button" [disabled]="!profileText " (click)="profileSearch()">Search</button>
 						<!--<button mat-raised-button color="primary" class="button" (click)="this.queryVisible = !this.queryVisible">Query Builder</button>-->
 						<button mat-raised-button color="primary" class="button" (click)="this.refresh()">Reset</button>
-						<button mat-raised-button color="primary" class="copyButton"  ngbTooltip="Copied!" triggers="click:blur" [autoClose]="true" (click)="this.share()">Share</button>
+						<button mat-raised-button color="primary" class="copyButton"  ngbTooltip="Copied!" triggers="click:blur" [autoClose]="true" (click)="this.share()" [disabled]="!profileText">Share</button>
 					</div>
         </mat-card-content>
   </mat-card>
