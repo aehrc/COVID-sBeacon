@@ -1,4 +1,5 @@
 import datetime
+import dateutil.tz
 import json
 import os
 import re
@@ -135,7 +136,8 @@ def flush_cache():
 
 
 def get_current_time():
-    return datetime.datetime.now().isoformat(timespec='seconds')
+    tz = dateutil.tz.gettz('Australia/Sydney')
+    return datetime.datetime.now(tz).isoformat(timespec='seconds')
 
 
 def submit_dataset(body_dict, method):
