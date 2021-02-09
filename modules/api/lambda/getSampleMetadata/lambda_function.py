@@ -98,8 +98,7 @@ class CalculatedFieldLocation(CalculatedField):
             if finalCountry:
                 return finalCountry
             else:
-                return "null"
-
+                return "None"
         else:
             return "null"
 
