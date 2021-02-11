@@ -4,7 +4,7 @@ import json
 STATIC_SECURITY_HEADERS = {
     'Content-Security-Policy': '; '.join([
         "base-uri 'self'",
-        "connect-src 'self' API_DOMAIN",
+        "connect-src 'self' https://*.okta.com/ API_DOMAIN",
         "default-src 'none'",
         "font-src 'self'",
         "form-action 'none'",

@@ -613,7 +613,7 @@ ul.contact li a.icon-rss:before
 #header-wrapper
 {
 	overflow: auto;
-	background: url(assets/images/header.jpg) no-repeat right ;
+	background: url(assets/images/header.png) no-repeat right ;
 	background-size: contain;
 }
 
