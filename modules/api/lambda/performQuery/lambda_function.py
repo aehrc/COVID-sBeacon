@@ -139,7 +139,7 @@ def name_variant(pos, ref, alt):
 
 
 def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
-                  variant_type, vcf_location):
+                  variant_type, vcf_location, IUPAC):
     args = [
         'bcftools', 'query',
         '--regions', region,
@@ -154,8 +154,13 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     approx = reference_bases == 'N' and variant_type
     variant_samples = defaultdict(list)
     call_count = 0
-    reference_matches = get_possible_codes(reference_bases)
-    alternate_matches = get_possible_codes(alternate_bases)
+    if (IUPAC == 'True'):
+        reference_matches = get_possible_codes(reference_bases)
+        alternate_matches = get_possible_codes(alternate_bases)
+    else:
+        reference_matches = reference_bases
+        alternate_matches = alternate_bases
+
     for line in query_process.stdout:
         try:
             position, reference, all_alts, genotypes = line.split('\t')
@@ -270,8 +275,9 @@ def lambda_handler(event, context):
     alternate_bases = event['alternate_bases']
     variant_type = event['variant_type']
     vcf_location = event['vcf_location']
+    IUPAC = event['IUPAC']
     raw_response = perform_query(reference_bases, region, end_min, end_max,
-                                 alternate_bases, variant_type, vcf_location)
+                                 alternate_bases, variant_type, vcf_location, IUPAC)
     response = cache_response(event, raw_response, dynamodb, s3)
     print('Returning response: {}'.format(json.dumps(response)))
     return response

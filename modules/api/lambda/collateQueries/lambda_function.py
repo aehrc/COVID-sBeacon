@@ -62,7 +62,7 @@ def call_get_sample_metadata(responses, vcf_locations, sample_fields):
     )
 
 
-def call_split_query(responses, vcf_locations, query_details_list):
+def call_split_query(responses, vcf_locations, query_details_list, IUPAC):
     for i, details in enumerate(query_details_list):
         kwargs = {
             'vcf_locations': {
@@ -70,6 +70,7 @@ def call_split_query(responses, vcf_locations, query_details_list):
                 for vcf, chroms in vcf_locations.items()
             },
             'query_details': details,
+            'IUPAC': IUPAC,
         }
         responses.put(
             function_name=SPLIT_QUERY,
@@ -79,7 +80,7 @@ def call_split_query(responses, vcf_locations, query_details_list):
 
 
 def collate_query(dataset, query_details_list, query_combination, sample_fields,
-                  page_details, include_datasets):
+                  page_details, include_datasets, IUPAC):
     vcf_locations = dataset['vcf_locations']
     dataset_sample_count = dataset['sample_count']
     responses = Caches(
@@ -87,7 +88,7 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
         lambda_client=aws_lambda,
         s3_client=s3,
     )
-    call_split_query(responses, vcf_locations, query_details_list)
+    call_split_query(responses, vcf_locations, query_details_list, IUPAC)
     call_get_sample_metadata(responses, list(vcf_locations), sample_fields)
     call_get_annotations(responses, dataset['annotation_location'])
 
@@ -401,6 +402,7 @@ def lambda_handler(event, context):
     page_details = event['page_details']
     sample_fields = event['sample_fields']
     include_datasets = event['include_datasets']
+    IUPAC = event['IUPAC']
     raw_response = collate_query(
         dataset=dataset,
         query_details_list=query_details_list,
@@ -408,6 +410,7 @@ def lambda_handler(event, context):
         page_details=page_details,
         sample_fields=sample_fields,
         include_datasets=include_datasets,
+        IUPAC=IUPAC,
     )
     response = cache_response(event, raw_response, dynamodb, s3)
     print('Returning response: {}'.format(json.dumps(response)))

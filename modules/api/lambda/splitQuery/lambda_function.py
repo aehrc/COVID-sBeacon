@@ -17,7 +17,7 @@ aws_lambda = LambdaClient()
 s3 = S3Client()
 
 
-def call_perform_query(vcf_locations, query_details, responses):
+def call_perform_query(vcf_locations, query_details, IUPAC, responses):
     end_min = query_details['end_min']
     end_max = query_details['end_max']
     if end_min > end_max:
@@ -29,6 +29,7 @@ def call_perform_query(vcf_locations, query_details, responses):
         'end_max': end_max,
         'alternate_bases': query_details['alternate_bases'],
         'variant_type': query_details['variant_type'],
+        'IUPAC': IUPAC,
     }
     region_start = max(query_details['region_start'], MIN_COORD)
     region_end = min(query_details['region_end'], MAX_COORD)
@@ -66,13 +67,13 @@ def read_query_results(responses):
     return call_count, variant_samples
 
 
-def split_query(vcf_locations, query_details):
+def split_query(vcf_locations, query_details, IUPAC):
     responses = Caches(
         dynamodb_client=dynamodb,
         lambda_client=aws_lambda,
         s3_client=s3,
     )
-    call_perform_query(vcf_locations, query_details, responses)
+    call_perform_query(vcf_locations, query_details, IUPAC, responses)
     call_count, variant_samples = read_query_results(responses)
     return {
         'call_count': call_count,
@@ -84,9 +85,11 @@ def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
     vcf_locations = event['vcf_locations']
     query_details = event['query_details']
+    IUPAC = event['IUPAC']
     raw_response = split_query(
         vcf_locations=vcf_locations,
         query_details=query_details,
+        IUPAC=IUPAC,
     )
     response = cache_response(event, raw_response, dynamodb, s3)
     print('Returning response: {}'.format(json.dumps(response)))
