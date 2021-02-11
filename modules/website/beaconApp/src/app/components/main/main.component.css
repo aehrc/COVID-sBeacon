@@ -45,7 +45,9 @@
 {
 	font-weight: 700;
 	color: #0f4b7d;
-
+}
+#iupac_input{
+  margin-left: 8px ;
 }
 
 .mat-column-accessions{
@@ -122,7 +124,11 @@ tr.example-element-row:not(.example-expanded-row):active {
 #t03, p:first-letter{
     text-transform:capitalize;
 }
-
+#alertMessage{
+  font-weight: 100;
+  color: red;
+  font-size: 15px;
+}
 
 th[sortable] {
   cursor: pointer;

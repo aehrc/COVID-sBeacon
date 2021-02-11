@@ -48,6 +48,8 @@ export class MainComponent implements AfterViewInit {
   }
 
   loading: boolean = false;
+  iupac: boolean = false;
+  iupac_input: string = "False";
   copyText: string = "";
   sMin: any = null;
   sMax: any = null;
@@ -63,9 +65,11 @@ export class MainComponent implements AfterViewInit {
   isVisible:boolean = true;
   stateVisilble:boolean = false;
   rootUrl: string = this.appConfigService.apiBaseUrl;
+  login: boolean = this.appConfigService.login;
   url: string ='';
   expandedElement: Beacon | null;
   warning: string = '';
+  alertMessage: string = '';
   displayedColumns: string[] = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency', 'accessions'];
   innerDisplayedColumns: string[] = ['pos', 'ref', 'alt', 'SIFT_score', 'subSampleCount', 'subFrequency'];
   sampleData:{ code: string, value: any, breakup: any}[] = [];
@@ -83,6 +87,17 @@ export class MainComponent implements AfterViewInit {
   pageOfItems: Array<any>;
   statePageOfItems: Array<any>;
 
+  onChange(){
+    if(!this.iupac){
+      this.iupac = true;
+      this.iupac_input = "True"
+    }
+    else{
+      this.iupac = false;
+      this.iupac_input = "False"
+    }
+
+  }
   download(){
     this.downloadService.downloadFile(this.accessionDetails, this.updateDateTime, this.inputText);
   }
@@ -254,13 +269,13 @@ export class MainComponent implements AfterViewInit {
 
           if(this.varType != null ){
             this.alt = null;
-              this.queryData = this.queryData.append('referenceName','1').append("referenceBases",this.ref.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append('variantType',this.varType.toUpperCase()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID");
+              this.queryData = this.queryData.append('referenceName','1').append("referenceBases",this.ref.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append('variantType',this.varType.toUpperCase()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
             //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"variantType":this.varType.toUpperCase(),"sampleFields":["SampleCollectionDate","Location"]};
           }
           if(this.alt != null ){
             this.alt = this.alt.map(function(x){ return x.toUpperCase(); })
             this.varType = null;
-            this.queryData = this.queryData.append('referenceName','1').append('referenceBases',this.ref.join(', ')).append('alternateBases',this.alt.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID");
+            this.queryData = this.queryData.append('referenceName','1').append('referenceBases',this.ref.join(', ')).append('alternateBases',this.alt.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
             //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"sampleFields":["SampleCollectionDate","Location"]};
           }
       }else if( this.inputText != null){
@@ -306,7 +321,7 @@ export class MainComponent implements AfterViewInit {
         }
 
         //console.log(this.alt);
-        this.queryData = this.queryData.append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID");
+        this.queryData = this.queryData.append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
         //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "start":this.sPos-1,"variantType":this.varType,"sampleFields":["SampleCollectionDate","Location"]};
       }
 
@@ -376,6 +391,7 @@ export class MainComponent implements AfterViewInit {
           this.loading = false;
           const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
           this.visualIndex = maxDatasetId.info.name;
+          console.log(this.visualIndex);
           this.graphDataGenerator(this.hits, this.visualIndex);
           this.statesData("Australia","AUS");
           this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
@@ -410,10 +426,10 @@ export class MainComponent implements AfterViewInit {
 
   };
   graphDataGenerator(hits, visIndex,location=null,state=null){
-    //console.log(visIndex);
+    console.log(visIndex);
     let index = hits.findIndex(x => x.info.name === visIndex);
     let gisaidIndex = hits.findIndex(x => x.info.name === "GISAID data");
-
+    console.log(gisaidIndex);
     if(hits[gisaidIndex].info.sampleCounts.hasOwnProperty("ID")){
       this.accessionDetails = hits[gisaidIndex].info.sampleCounts.ID;
       this.updateDateTime = hits[gisaidIndex].info.updateDateTime;
@@ -477,6 +493,11 @@ export class MainComponent implements AfterViewInit {
       }
       this.generateMap(this.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       this.generateHistogram(this.dateData);
+    }
+    var non = this.sampleData.find( o => o.code === "Non");
+    var breakValue = non["breakup"].split("/")[0];
+    if (breakValue != 0){
+      this.alertMessage = breakValue + " samples have inconsistent country name."
     }
     console.log(this.sampleData);
     //console.log(this.dateData);
