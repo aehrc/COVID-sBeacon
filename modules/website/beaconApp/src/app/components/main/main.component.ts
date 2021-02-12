@@ -356,7 +356,7 @@ export class MainComponent implements AfterViewInit {
                 return itm.datasetId == 'cn';
               });
               if(this.filteredArray.length == 0){
-                this.displayedColumns = ['expand','name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
+                this.displayedColumns = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
               }
 
             }else{
@@ -398,7 +398,7 @@ export class MainComponent implements AfterViewInit {
             return itm.datasetId == 'cn';
           });
           if(this.filteredArray.length == 0){
-            this.displayedColumns = ['expand','name', 'description', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
+            this.displayedColumns = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
           }
 
         }else{
