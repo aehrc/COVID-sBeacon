@@ -494,12 +494,13 @@ export class MainComponent implements AfterViewInit {
       this.generateMap(this.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       this.generateHistogram(this.dateData);
     }
-    var non = this.sampleData.find( o => o.code === "Non");
+    console.log(this.sampleData);
+    var non = this.sampleData.find( o => o.code === "None");
     var breakValue = non["breakup"].split("/")[0];
     if (breakValue != 0){
       this.alertMessage = breakValue + " samples have inconsistent country name."
     }
-    console.log(this.sampleData);
+
     //console.log(this.dateData);
     //console.log(this.dateData);
   }
