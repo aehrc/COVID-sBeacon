@@ -199,7 +199,7 @@ module "lambda-queryDatasets" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 63
+  timeout = 123
   policy = {
     json = data.aws_iam_policy_document.lambda-queryDatasets.json
   }
@@ -230,7 +230,7 @@ module "lambda-collateQueries" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.8"
   memory_size = 2048
-  timeout = 62
+  timeout = 122
   policy = {
     json = data.aws_iam_policy_document.lambda-collateQueries.json
   }
@@ -261,7 +261,7 @@ module "lambda-splitQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 61
+  timeout = 121
   policy = {
     json = data.aws_iam_policy_document.lambda-splitQuery.json
   }
@@ -290,7 +290,7 @@ module "lambda-performQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 61
+  timeout = 121
   policy = {
     json = data.aws_iam_policy_document.lambda-performQuery.json
   }
@@ -345,5 +345,31 @@ module "lambda-getAnnotations" {
 
   environment = {
     variables = local.cache_env_vars
+  }
+}
+
+
+#
+# updateData Lambda Function
+#
+module "lambda-updateData" {
+  source = "../lambda"
+
+  function_name = "updateData"
+  description = "Initiate a path command on s3 bucket file upload"
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.6"
+  memory_size = 2048
+  timeout = 28
+  policy = {
+    json = data.aws_iam_policy_document.lambda-updateData.json
+  }
+  source_path = "${path.module}/lambda/updateData"
+  tags = var.common-tags
+
+  environment = {
+    variables = {
+      BEACON_URL = aws_api_gateway_deployment.BeaconApi.invoke_url
+    }
   }
 }
