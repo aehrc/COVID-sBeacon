@@ -36,3 +36,8 @@ variable production {
   type = bool
   default = false
 }
+
+variable bucket-name{
+  type = string
+  default = "arn:aws:s3:::covid19-vcfs-dev"
+}

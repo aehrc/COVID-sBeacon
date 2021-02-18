@@ -15,6 +15,12 @@ module beacon_api {
   organisation-name = var.organisation-name
 }
 
+module update_data {
+  source = "./modules/update"
+  bucket-name = var.bucket-name
+  beacon_api_url = module.beacon_api.api_url
+}
+
 module beacon_website {
   source = "./modules/website"
   beacon_api_url = module.beacon_api.api_url
