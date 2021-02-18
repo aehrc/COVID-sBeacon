@@ -407,6 +407,22 @@ data aws_iam_policy_document lambda-getAnnotations {
     resources = ["*"]
   }
 }
+#
+# updateData Lambda Function
+#
+data aws_iam_policy_document lambda-updateData {
+  statement {
+    effect  = "Allow"
+    actions = [
+      "execute-api:Invoke",
+    ]
+    resources = [
+      "*",
+    ]
+  }
+}
+
+
 
 #
 # API: / GET
