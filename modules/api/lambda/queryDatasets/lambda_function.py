@@ -51,14 +51,13 @@ def call_collate_queries(datasets, query_details_list, query_combination,
 
 
 def check_size(response, context):
-    response_length = len(json.dumps(response))
+    response_length = len(json.dumps(response, separators=(',', ':')))
     print(f"Response is {response_length} characters")
     if response_length > MAXIMUM_RESPONSE_SIZE:
         print("Response is too large, uploading to S3...")
         response_key = f'{context.aws_request_id}.json'
         key = f'{context.function_name}/{response_key}'
-        s3.put_object(RESPONSE_BUCKET, key,
-                      json.dumps(response).encode())
+        s3.put_object_from_dict(RESPONSE_BUCKET, key, response)
         return {
             's3Response': {
                 'key': response_key,
