@@ -122,7 +122,9 @@ def truncate_ref_alt(ref, alt):
     return ref, alt
 
 
-def get_possible_codes(code):
+def get_possible_codes(code, iupac=True):
+    if not iupac:
+        return {code}
     possible_codes = {''}
     if code is not None:
         for base in code:
@@ -154,12 +156,9 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     approx = reference_bases == 'N' and variant_type
     variant_samples = defaultdict(list)
     call_count = 0
-    if (IUPAC == 'True'):
-        reference_matches = get_possible_codes(reference_bases)
-        alternate_matches = get_possible_codes(alternate_bases)
-    else:
-        reference_matches = reference_bases
-        alternate_matches = alternate_bases
+    iupac = IUPAC == 'True'
+    reference_matches = get_possible_codes(reference_bases, iupac)
+    alternate_matches = get_possible_codes(alternate_bases, iupac)
 
     for line in query_process.stdout:
         try:
