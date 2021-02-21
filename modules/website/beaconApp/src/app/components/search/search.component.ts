@@ -147,9 +147,9 @@ export class SearchComponent implements OnInit {
         //console.log(response);
         if(response.hasOwnProperty('s3Response')){
           console.log(response);
-          var newUrl = this.rootUrl +"/s3response/"+response.s3Response.key;
+          var newUrl = response.s3Response.presignedUrl;
           console.log(newUrl);
-          this.http.get(newUrl,{params : qData})
+          this.http.get(newUrl)
           .subscribe((response: Beacon) => {
             console.log(response);
             if( response.hasOwnProperty('exists')  && response.exists == true){

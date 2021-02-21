@@ -15,7 +15,13 @@ variable production {
   type = bool
   default = false
 }
+
 variable login {
   type = bool
   default = false
+}
+
+variable response_bucket_domain {
+  type = string
+  description = "Domain used to access responses that are too large to be served by the API gateway. Does not include the https:// prefix."
 }

@@ -62,6 +62,20 @@ class S3Client:
     def __init__(self):
         self.client = boto3.client('s3')
 
+    def generate_presigned_get_url(self, bucket, key, expires=3600):
+        kwargs = {
+            'ClientMethod': 'get_object',
+            'Params': {
+                'Bucket': bucket,
+                'Key': key,
+            },
+            'ExpiresIn': expires,
+        }
+        print(f"Calling s3.generate_presigned_url with kwargs: {json.dumps(kwargs)}")
+        response = self.client.generate_presigned_url(**kwargs)
+        print(f"Received response: {json.dumps(response, default=str)}")
+        return response
+
     def get_object(self, bucket, key):
         kwargs = {
             'Bucket': bucket,

@@ -4,7 +4,7 @@ import json
 STATIC_SECURITY_HEADERS = {
     'Content-Security-Policy': '; '.join([
         "base-uri 'self'",
-        "connect-src 'self' https://*.okta.com/ API_DOMAIN",
+        "connect-src 'self' https://*.okta.com/ API_DOMAIN S3_DOMAIN",
         "default-src 'none'",
         "font-src 'self'",
         "form-action 'none'",
@@ -26,11 +26,15 @@ STATIC_SECURITY_HEADERS = {
 }
 
 
-def add_security_headers(headers, api_url):
+def add_security_headers(headers, api_url, s3_domain):
     api_domain = api_url[:api_url.find('/', 8)]
     for header, value in STATIC_SECURITY_HEADERS.items():
         if header == 'Content-Security-Policy':
-            value = value.replace('API_DOMAIN', api_domain)
+            value = value.replace(
+                'API_DOMAIN', api_domain
+            ).replace(
+                'S3_DOMAIN', f'https://{s3_domain}'
+            )
         headers[header] = [{
             'key': header,
             'value': value,
@@ -43,6 +47,7 @@ def lambda_handler(event, context):
     response = cf['response']
     custom_headers = cf['request']['origin']['s3']['customHeaders']
     api_url = custom_headers['api_url'][0]['value']
-    add_security_headers(response['headers'], api_url)
+    s3_domain = custom_headers['large_response_domain'][0]['value']
+    add_security_headers(response['headers'], api_url, s3_domain)
     print(f'Returning Response: {json.dumps(response)}')
     return response

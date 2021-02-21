@@ -27,6 +27,7 @@ module beacon_website {
   domain_name = var.domain_name
   max_web_requests_per_ip_in_five_minutes = var.max_website_requests_per_ip_in_five_minutes
   production = var.production
+  response_bucket_domain = module.beacon_api.response_bucket_url
 
   providers = {
     aws = aws

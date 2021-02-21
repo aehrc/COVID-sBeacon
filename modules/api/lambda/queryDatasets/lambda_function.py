@@ -55,12 +55,12 @@ def check_size(response, context):
     print(f"Response is {response_length} characters")
     if response_length > MAXIMUM_RESPONSE_SIZE:
         print("Response is too large, uploading to S3...")
-        response_key = f'{context.aws_request_id}.json'
-        key = f'{context.function_name}/{response_key}'
+        key = f'{context.function_name}/{context.aws_request_id}.json'
         s3.put_object_from_dict(RESPONSE_BUCKET, key, response)
+        presigned_url = s3.generate_presigned_get_url(RESPONSE_BUCKET, key)
         return {
             's3Response': {
-                'key': response_key,
+                'presignedUrl': presigned_url,
             },
         }
     return response
