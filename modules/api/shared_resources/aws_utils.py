@@ -94,14 +94,15 @@ class S3Client:
 
     def put_object_from_dict(self, bucket, key, data):
         body = json.dumps(data, separators=(',', ':')).encode()
-        self.put_object(bucket, key, body)
+        self.put_object(bucket, key, body, ContentType='application/json')
 
-    def put_object(self, bucket, key, body):
-        kwargs = {
-            'Bucket': bucket,
-            'Key': key,
-            'Body': self.truncate_body(body),
-        }
+    def put_object(self, bucket, key, body, **other_kwargs):
+        kwargs = dict(
+            Bucket=bucket,
+            Key=key,
+            Body=self.truncate_body(body),
+            **other_kwargs
+        )
         print(f"Calling s3.put_item with kwargs: {json.dumps(kwargs)}")
         kwargs['Body'] = body
         s3_response = self.client.put_object(**kwargs)
