@@ -135,9 +135,12 @@ class Caches:
         self.num_threads += 1
 
     def collect_responses(self) -> typing.Generator[CachedInvoke, None, None]:
+        total_threads = 0
         while self.num_threads > 0:
             yield self.queue.get()
             self.num_threads -= 1
+            total_threads += 1
+        print(f"All {total_threads} responses collected.")
 
 
 def cache_response(kwargs, response, dynamodb_client, s3_client):
