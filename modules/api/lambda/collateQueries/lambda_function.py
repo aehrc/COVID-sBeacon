@@ -224,8 +224,11 @@ def get_fuzzy_combinations(all_splits, query_combination,
             for other_part, other_samples in part_samples.items()
         )
     }
-
-    num_samples_from_min_parts = len(set.intersection(*min_parts.values()))
+    num_samples_from_min_parts = (
+        len(set.intersection(*min_parts.values()))
+        if min_parts
+        else 0
+    )
     if num_samples_from_min_parts:
         subcombinations[tuple(min_parts.keys())] = num_samples_from_min_parts
     print(f"Finished minimum sample set analysis, removed {len(part_samples) - len(min_parts)}"
