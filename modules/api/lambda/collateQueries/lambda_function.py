@@ -184,11 +184,7 @@ def get_fuzzy_combinations(all_splits, query_combination,
                            all_sample_metadata_samples):
     print("Starting sample set operations")
     split_samples = [
-        {
-            sample
-            for variant_samples in all_splits[i]['variant_samples'].values()
-            for sample in variant_samples
-        }
+        set(all_splits[i]['hit_samples'])
         for i in range(len(all_splits))
     ]
     all_sample_set = set(all_sample_metadata_samples)
@@ -371,10 +367,7 @@ def get_combination_parts(query_combination):
 def get_variants(all_splits):
     variants = {}
     for split in all_splits:
-        variants.update({
-            variant: len(samples)
-            for variant, samples in split['variant_samples'].items()
-        })
+        variants.update(split['variant_samplenum'])
     return variants
 
 

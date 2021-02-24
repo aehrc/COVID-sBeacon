@@ -53,18 +53,29 @@ def call_perform_query(vcf_locations, query_details, IUPAC, responses):
 
 
 def read_query_results(responses):
-    variant_samples = defaultdict(list)
     call_count = 0
+    vcf_variant_samples = defaultdict(lambda: defaultdict(list))
     for query in responses.collect_responses():
         vcf_i, _ = query.call_id
         query_result = query.result
         call_count += query_result['call_count']
         for variant, samples in query_result['variant_samples'].items():
-            variant_samples[variant] += [
-                f'{vcf_i}:{sample_i}'
-                for sample_i in samples
-            ]
-    return call_count, variant_samples
+            vcf_variant_samples[vcf_i][variant].append(samples)
+    hit_samples = []
+    variant_samplenum = defaultdict(int)
+    for vcf_i, variant_samples in vcf_variant_samples.items():
+        vcf_sample_set = set()
+        for variant, samples in variant_samples.items():
+            sample_set = set().union(*samples)
+            variant_samplenum[variant] += len(sample_set)
+            vcf_sample_set |= sample_set
+        hit_samples += [
+            f'{vcf_i}:{sample}'
+            for sample
+            in vcf_sample_set
+        ]
+
+    return call_count, variant_samplenum, hit_samples
 
 
 def split_query(vcf_locations, query_details, IUPAC):
@@ -74,10 +85,11 @@ def split_query(vcf_locations, query_details, IUPAC):
         s3_client=s3,
     )
     call_perform_query(vcf_locations, query_details, IUPAC, responses)
-    call_count, variant_samples = read_query_results(responses)
+    call_count, variant_samplenum, hit_samples = read_query_results(responses)
     return {
         'call_count': call_count,
-        'variant_samples': variant_samples,
+        'variant_samplenum': variant_samplenum,
+        'hit_samples': hit_samples,
     }
 
 
