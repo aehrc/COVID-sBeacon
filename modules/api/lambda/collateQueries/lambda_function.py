@@ -369,7 +369,7 @@ def get_combination_parts(query_combination):
 
 
 def get_variants(all_splits):
-    variants = Counter()
+    variants = {}
     for split in all_splits:
         variants.update({
             variant: len(samples)
