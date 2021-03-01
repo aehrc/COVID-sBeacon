@@ -282,6 +282,15 @@ data aws_iam_policy_document lambda-collateQueries {
       "${aws_s3_bucket.cache.arn}/*",
     ]
   }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.dataset_artifacts.arn}/*",
+    ]
+  }
 }
 
 #
