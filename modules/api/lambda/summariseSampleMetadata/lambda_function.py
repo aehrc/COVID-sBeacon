@@ -3,12 +3,13 @@ import csv
 import json
 import os
 
-from aws_utils import DynamodbClient, S3Client
-from cache_utils import cache_response
+from aws_utils import S3Client
 
-
+ALL_SAMPLE_FIELDS = os.environ['SAMPLE_FIELDS']
+ARTIFACT_BUCKET = os.environ['ARTIFACT_BUCKET']
 COMPOSITE_FIELD_SEPARATOR = '_'
 COUNTRY_CODES_PATH = os.environ['LAMBDA_TASK_ROOT'] + '/country_codes.json'
+KEY_SUFFIX = os.environ['SAMPLE_METADATA_SUFFIX']
 STATE_SYNONYMS_RAW = {
     'Australia / Northern Territory': {
         'Australia / Northern territory',
@@ -27,7 +28,6 @@ state_synonyms = {
 with open(COUNTRY_CODES_PATH) as country_codes_json:
     country_codes = json.load(country_codes_json)
 
-dynamodb = DynamodbClient()
 s3 = S3Client()
 
 
@@ -237,12 +237,15 @@ def get_vcf_metadata(vcf_location, fields):
 
 def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
-    vcf_locations = event['vcf_locations']
-    sample_fields = event['sample_fields']
-    raw_response = get_sample_metadata(
+    event_dict = json.loads(event['Records'][0]['Sns']['Message'])
+    dataset_id = event_dict['dataset_id']
+    vcf_locations = event_dict['vcf_locations']
+    response = get_sample_metadata(
         vcf_locations=vcf_locations,
-        sample_fields=sample_fields,
+        sample_fields=ALL_SAMPLE_FIELDS.split('&'),
     )
-    response = cache_response(event, raw_response, dynamodb, s3)
-    print('Returning response: {}'.format(json.dumps(response)))
-    return response
+    s3.put_object_from_dict(
+        bucket=ARTIFACT_BUCKET,
+        key=f'{dataset_id}/{KEY_SUFFIX}',
+        data=response,
+    )

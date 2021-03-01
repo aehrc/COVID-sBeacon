@@ -76,6 +76,7 @@ data aws_iam_policy_document lambda-summariseDataset {
     ]
     resources = [
       aws_sns_topic.summariseVcf.arn,
+      aws_sns_topic.summariseSampleMetadata.arn,
     ]
   }
 
@@ -258,7 +259,6 @@ data aws_iam_policy_document lambda-collateQueries {
     ]
     resources = [
       module.lambda-splitQuery.function_arn,
-      module.lambda-getSampleMetadata.function_arn,
       module.lambda-getAnnotations.function_arn,
     ]
   }
@@ -350,24 +350,15 @@ data aws_iam_policy_document lambda-performQuery {
 }
 
 #
-# getSampleMetadata Lambda Function
+# summariseSampleMetadata Lambda Function
 #
-data aws_iam_policy_document lambda-getSampleMetadata {
+data aws_iam_policy_document lambda-summariseSampleMetadata {
   statement {
     actions = [
       "s3:PutObject",
     ]
     resources = [
-      "${aws_s3_bucket.cache.arn}/*",
-    ]
-  }
-
-  statement {
-    actions = [
-      "dynamodb:PutItem",
-    ]
-    resources = [
-      aws_dynamodb_table.cache.arn,
+      "${aws_s3_bucket.dataset_artifacts.arn}/*",
     ]
   }
 

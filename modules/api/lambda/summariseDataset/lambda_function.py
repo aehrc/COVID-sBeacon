@@ -4,7 +4,9 @@ import os
 
 import boto3
 
+
 DATASETS_TABLE_NAME = os.environ['DATASETS_TABLE']
+SUMMARISE_SAMPLE_METADATA_SNS_TOPIC_ARN = os.environ['SUMMARISE_SAMPLE_METADATA_SNS_TOPIC_ARN']
 SUMMARISE_VCF_SNS_TOPIC_ARN = os.environ['SUMMARISE_VCF_SNS_TOPIC_ARN']
 VCF_SUMMARIES_TABLE_NAME = os.environ['VCF_SUMMARIES_TABLE']
 
@@ -110,6 +112,8 @@ def summarise_dataset(dataset):
     if new_locations:
         updated = False
     if updated:
+        # Update sample metadata here to avoid running it twice
+        update_sample_metadata(dataset, list(vcf_locations))
         values = {':'+count: {'N': str(counts[count])} for count in COUNTS}
     else:
         values = {':'+count: {'NULL': True} for count in COUNTS}
@@ -142,6 +146,19 @@ def update_dataset(dataset_id, values):
     }
     print('Updating item: {}'.format(json.dumps(kwargs)))
     dynamodb.update_item(**kwargs)
+
+
+def update_sample_metadata(dataset_id, vcf_locations):
+    kwargs = {
+        'TopicArn': SUMMARISE_SAMPLE_METADATA_SNS_TOPIC_ARN,
+        'Message': json.dumps({
+            'dataset_id': dataset_id,
+            'vcf_locations': vcf_locations,
+        }),
+    }
+    print('Publishing to SNS: {}'.format(json.dumps(kwargs)))
+    response = sns.publish(**kwargs)
+    print('Received Response: {}'.format(json.dumps(response)))
 
 
 def lambda_handler(event, context):

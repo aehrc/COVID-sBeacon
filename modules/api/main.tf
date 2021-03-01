@@ -6,6 +6,7 @@ locals {
   cache_expiry_key = "expires"
   cache_key = "cacheString"
   cache_loc = "s3Location"
+  sample_metadata_suffix = "sample_metadata.json"
 }
 
 locals {
@@ -67,6 +68,7 @@ module "lambda-summariseDataset" {
   environment = {
     variables = {
       DATASETS_TABLE = aws_dynamodb_table.datasets.name
+      SUMMARISE_SAMPLE_METADATA_SNS_TOPIC_ARN = aws_sns_topic.summariseSampleMetadata.arn
       SUMMARISE_VCF_SNS_TOPIC_ARN = aws_sns_topic.summariseVcf.arn
       VCF_SUMMARIES_TABLE = aws_dynamodb_table.vcf_summaries.name
     }
@@ -240,8 +242,9 @@ module "lambda-collateQueries" {
   environment = {
     variables = merge(
       {
+        ARTIFACT_BUCKET = aws_s3_bucket.dataset_artifacts.bucket
         GET_ANNOTATIONS_LAMBDA = module.lambda-getAnnotations.function_name
-        GET_SAMPLE_METADATA_LAMBDA = module.lambda-getSampleMetadata.function_name
+        SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
         SPLIT_QUERY_LAMBDA = module.lambda-splitQuery.function_name
       },
       local.cache_env_vars,
@@ -303,25 +306,38 @@ module "lambda-performQuery" {
 }
 
 #
-# getSampleMetadata Lambda Function
+# summariseSampleMetadata Lambda Function
 #
-module "lambda-getSampleMetadata" {
+module "lambda-summariseSampleMetadata" {
   source = "../lambda"
 
-  function_name = "getSampleMetadata"
-  description = "Collects desired metadata of all samples in a dataset."
+  function_name = "summariseSampleMetadata"
+  description = "Summarises metadata of all samples in a dataset."
   handler = "lambda_function.lambda_handler"
   runtime = "python3.8"
   memory_size = 2048
-  timeout = 27
+  timeout = 120
   policy = {
-    json = data.aws_iam_policy_document.lambda-getSampleMetadata.json
+    json = data.aws_iam_policy_document.lambda-summariseSampleMetadata.json
   }
-  source_path = "${path.module}/lambda/getSampleMetadata"
+  source_path = "${path.module}/lambda/summariseSampleMetadata"
   tags = var.common-tags
 
   environment = {
-    variables = local.cache_env_vars
+    variables = {
+      ARTIFACT_BUCKET = aws_s3_bucket.dataset_artifacts.bucket
+      SAMPLE_FIELDS = join("&",
+        [
+          "SampleCollectionDate",
+          "Location",
+          "State",
+          "Location_SampleCollectionDate",
+          "State_SampleCollectionDate",
+          "ID",
+        ]
+      )
+      SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
+    }
   }
 }
 

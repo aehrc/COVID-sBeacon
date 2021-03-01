@@ -21,6 +21,17 @@ resource aws_lambda_permission SNSSummariseDataset {
 }
 
 #
+# summariseSampleMetadata Lambda Function
+#
+resource aws_lambda_permission SNSSummariseSampleMetadata {
+  statement_id = "AllowSNSSummariseSampleMetadataInvoke"
+  action = "lambda:InvokeFunction"
+  function_name = module.lambda-summariseSampleMetadata.function_name
+  principal = "sns.amazonaws.com"
+  source_arn = aws_sns_topic.summariseSampleMetadata.arn
+}
+
+#
 # summariseVcf Lambda Function
 #
 resource aws_lambda_permission SNSSummariseVcf {
@@ -106,17 +117,6 @@ resource aws_lambda_permission SplitQueryLambdaPerformQuery {
   function_name = module.lambda-performQuery.function_name
   principal = "lambda.amazonaws.com"
   source_arn = module.lambda-splitQuery.function_arn
-}
-
-#
-# getSampleMetadata Lambda Function
-#
-resource aws_lambda_permission CollateQueriesLambdaGetSampleMetadata {
-  statement_id = "AllowCollateQueriesLambdaGetSampleMetadataInvoke"
-  action = "lambda:InvokeFunction"
-  function_name = module.lambda-getSampleMetadata.function_name
-  principal = "lambda.amazonaws.com"
-  source_arn = module.lambda-collateQueries.function_arn
 }
 
 #

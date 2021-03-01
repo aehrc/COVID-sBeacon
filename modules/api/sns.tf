@@ -8,6 +8,16 @@ resource aws_sns_topic_subscription summariseDataset {
   endpoint = module.lambda-summariseDataset.function_arn
 }
 
+resource aws_sns_topic summariseSampleMetadata {
+  name = "summariseSampleMetadata"
+}
+
+resource aws_sns_topic_subscription summariseSampleMetadata {
+  topic_arn = aws_sns_topic.summariseSampleMetadata.arn
+  protocol  = "lambda"
+  endpoint  = module.lambda-summariseSampleMetadata.function_arn
+}
+
 resource aws_sns_topic summariseVcf {
   name = "summariseVcf"
 }

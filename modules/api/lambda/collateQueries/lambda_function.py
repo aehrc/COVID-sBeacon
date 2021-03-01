@@ -10,13 +10,14 @@ from aws_utils import DynamodbClient, LambdaClient, S3Client
 from cache_utils import Caches, cache_response
 
 
+ARTIFACT_BUCKET = os.environ['ARTIFACT_BUCKET']
 EXTRA_ANNOTATION_FIELDS = [
     'SIFT_score',
 ]
 GET_ANNOTATIONS = os.environ['GET_ANNOTATIONS_LAMBDA']
-GET_SAMPLE_METADATA = os.environ['GET_SAMPLE_METADATA_LAMBDA']
 MAX_SUBCOMBINATIONS_TO_CHECK = 4000000
 MAX_SUBCOMBINATIONS_TO_RETURN = 100
+SAMPLE_METADATA_SUFFIX = os.environ['SAMPLE_METADATA_SUFFIX']
 SPLIT_QUERY = os.environ['SPLIT_QUERY_LAMBDA']
 
 dynamodb = DynamodbClient()
@@ -51,17 +52,6 @@ def call_get_annotations(responses, annotation_location):
     )
 
 
-def call_get_sample_metadata(responses, vcf_locations, sample_fields):
-    kwargs = {
-        'vcf_locations': vcf_locations,
-        'sample_fields': sample_fields,
-    }
-    responses.put(
-        function_name=GET_SAMPLE_METADATA,
-        function_kwargs=kwargs,
-    )
-
-
 def call_split_query(responses, vcf_locations, query_details_list, IUPAC):
     for i, details in enumerate(query_details_list):
         kwargs = {
@@ -89,15 +79,16 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
         s3_client=s3,
     )
     call_split_query(responses, vcf_locations, query_details_list, IUPAC)
-    call_get_sample_metadata(responses, list(vcf_locations), sample_fields)
     call_get_annotations(responses, dataset['annotation_location'])
 
-    all_splits, all_sample_metadata, all_annotations = get_results(responses)
+    all_splits, all_annotations = get_results(responses)
 
     variant_counts = get_variants(all_splits.values())
     variants_info = annotate_variants(variant_counts, all_annotations,
                                       dataset_sample_count)
     pages, variants_subset = process_page(variants_info, page_details)
+    dataset_id = dataset['dataset_id']
+    all_sample_metadata = get_all_sample_metadata(dataset_id, sample_fields)
     samples, subcombinations = get_fuzzy_combinations(
         all_splits, query_combination, all_sample_metadata['samples'].keys(),
     )
@@ -111,7 +102,7 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
                 split['call_count']
                 for split in all_splits.values()
             ]),
-            'datasetId': dataset['dataset_id'],
+            'datasetId': dataset_id,
             'error': None,
             'exists': exists,
             'externalUrl': None,
@@ -169,6 +160,14 @@ def combine_queries(split_samples, query_combination, all_sample_set):
         index = int(number_string)
         samples[-1] = operators.pop()(split_samples[index])
     return samples.pop()
+
+
+def get_all_sample_metadata(dataset_id, sample_fields):
+    streaming_body = s3.get_object(ARTIFACT_BUCKET,
+                                   f'{dataset_id}/{SAMPLE_METADATA_SUFFIX}')
+    all_metadata = json.load(streaming_body)
+    # TODO: Allow sample_fields filtering by refactoring the input payload
+    return all_metadata
 
 
 def get_frequency(samples, total_samples):
@@ -292,7 +291,6 @@ def get_fuzzy_combinations(all_splits, query_combination,
 
 def get_results(responses):
     all_splits = {}
-    all_sample_metadata = {}
     all_annotations = {}
     for response in responses.collect_responses():
         result = response.result
@@ -302,12 +300,10 @@ def get_results(responses):
             raise Exception(repr(response.error))
         if function_name == GET_ANNOTATIONS:
             all_annotations = result
-        elif function_name == GET_SAMPLE_METADATA:
-            all_sample_metadata = result
         else:
             assert function_name == SPLIT_QUERY, "Unknown function name"
             all_splits[response.call_id] = response.result
-    return all_splits, all_sample_metadata, all_annotations
+    return all_splits, all_annotations
 
 
 def get_sample_metadata_counts(samples, all_sample_metadata):
