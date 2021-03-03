@@ -82,14 +82,16 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
     call_split_query(responses, vcf_locations, query_details_list, IUPAC)
     call_get_annotations(responses, dataset['annotation_location'])
 
+    dataset_id = dataset['dataset_id']
+    # Call this while we're waiting on splitQuery
+    all_sample_metadata = get_all_sample_metadata(dataset_id, sample_fields)
+
     all_splits, all_annotations = get_results(responses)
 
     variant_counts = get_variants(all_splits.values())
     variants_info = annotate_variants(variant_counts, all_annotations,
                                       dataset_sample_count)
     pages, variants_subset = process_page(variants_info, page_details)
-    dataset_id = dataset['dataset_id']
-    all_sample_metadata = get_all_sample_metadata(dataset_id, sample_fields)
     samples, subcombinations = get_fuzzy_combinations(
         all_splits, query_combination, all_sample_metadata['samples'].keys(),
     )
