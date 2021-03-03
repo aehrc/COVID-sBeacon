@@ -275,7 +275,7 @@ module "lambda-splitQuery" {
     variables = merge(
       {
         PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
-        SPLIT_SIZE = 300
+        SPLIT_SIZE = 1500
       },
       local.cache_env_vars,
     )
