@@ -151,8 +151,6 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
     query_process = subprocess.Popen(args, stdout=subprocess.PIPE, cwd='/tmp',
                                      encoding='ascii')
     v_prefix = '<{}'.format(variant_type)
-    first_bp = int(region[region.find(':')+1: region.find('-')])
-    last_bp = int(region[region.find('-')+1:])
     approx = reference_bases == 'N' and variant_type
     variant_samples = defaultdict(list)
     call_count = 0
@@ -168,9 +166,6 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             raise e
 
         pos = int(position)
-        # Ensure each variant will only be found by one process
-        if not first_bp <= pos <= last_bp:
-            continue
 
         ref_alts = [
             truncate_ref_alt(reference, alt)
@@ -248,6 +243,7 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             continue
         all_calls = get_all_calls(genotypes)
         hit_set = set(str(i+1) for i in hit_indexes)
+        # TODO: Account for deletions that may be caught by multiple invocations
         call_count += sum(1 for call in all_calls if call in hit_set)
         if call_count:
             genotype_samples = defaultdict(list)
