@@ -6,12 +6,14 @@ import re
 from api_response import bad_request, bundle_response, missing_parameter
 from aws_utils import DynamodbClient, LambdaClient, S3Client
 from cache_utils import Caches
-from chrom_matching import CHROMOSOMES, get_matching_chromosome, get_vcf_chromosomes
 
 BEACON_ID = os.environ['BEACON_ID']
 DATASETS_TABLE_NAME = os.environ['DATASETS_TABLE']
 MAXIMUM_RESPONSE_SIZE = 6000000
 RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
+CHROMOSOMES = [
+    "1"
+]
 COLLATE_QUERIES = os.environ['COLLATE_QUERIES_LAMBDA']
 
 INCLUDE_DATASETS_VALUES = {
@@ -198,11 +200,10 @@ def get_vcf_chromosome_map(datasets, chromosomes):
     ))
     vcf_chromosome_map = {}
     for vcf in all_vcfs:
-        vcf_chromosomes = get_vcf_chromosomes(vcf).keys()
-
         vcf_chromosome_map[vcf] = [
-            get_matching_chromosome(vcf_chromosomes, chromosome)
-            for chromosome in chromosomes
+            "1"
+            # We know each VCF contains only one chromosome, "1"
+            for _ in chromosomes
         ]
     return vcf_chromosome_map
 
