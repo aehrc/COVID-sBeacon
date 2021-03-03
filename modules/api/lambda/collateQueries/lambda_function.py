@@ -17,6 +17,7 @@ EXTRA_ANNOTATION_FIELDS = [
 GET_ANNOTATIONS = os.environ['GET_ANNOTATIONS_LAMBDA']
 MAX_SUBCOMBINATIONS_TO_CHECK = 4000000
 MAX_SUBCOMBINATIONS_TO_RETURN = 100
+MAX_SUBCOMBINATIONS_DEPTH = 1
 SAMPLE_METADATA_SUFFIX = os.environ['SAMPLE_METADATA_SUFFIX']
 SPLIT_QUERY = os.environ['SPLIT_QUERY_LAMBDA']
 
@@ -240,6 +241,7 @@ def get_fuzzy_combinations(all_splits, query_combination,
     while (subcombinations_checked < MAX_SUBCOMBINATIONS_TO_CHECK
            and subcombinations_returned < MAX_SUBCOMBINATIONS_TO_RETURN
            and parts_removed < num_parts
+           and parts_removed <= MAX_SUBCOMBINATIONS_DEPTH
            ):
         print(f"Testing reducing number of queries by {parts_removed}")
         old_subcombinations_tested = subcombinations_tested
