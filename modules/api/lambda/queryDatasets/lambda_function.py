@@ -312,6 +312,8 @@ def validate_queries(queries):
                 return "end may not be specified if start is not specified"
             if not isinstance(end, int):
                 return "end must be an integer"
+            if end < start:
+                return "end must not be less than start"
 
         start_min = parameters.get('startMin')
         if start_min is None:
@@ -331,6 +333,8 @@ def validate_queries(queries):
             missing_parameters.add('startMax')
         elif not isinstance(start_max, int):
             return "startMax must be an integer"
+        elif start_max < start_min:
+            return "startMax must not be less than startMin"
 
         end_min = parameters.get('endMin')
         if end_min is None:
@@ -339,6 +343,8 @@ def validate_queries(queries):
             missing_parameters.add('endMin')
         elif not isinstance(end_min, int):
             return "endMin must be an integer"
+        elif end_min < start_min:
+            return "endMin must not be less than startMin"
 
         end_max = parameters.get('endMax')
         if end_max is None:
@@ -347,6 +353,10 @@ def validate_queries(queries):
             missing_parameters.add('endMax')
         elif not isinstance(end_max, int):
             return "endMax must be an integer"
+        elif end_max < end_min:
+            return "endMax must not be less than endMin"
+        elif end_max < start_max:
+            return "endMax must not be less than startMax"
 
         alternate_bases = parameters.get('alternateBases')
         if alternate_bases is None:
