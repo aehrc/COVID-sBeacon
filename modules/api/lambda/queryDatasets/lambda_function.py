@@ -159,12 +159,16 @@ def get_query_details_list(queries):
     for query_parameters in queries:
         start = query_parameters.get('start')
         if start is None:
-            region_start = query_parameters['startMin']
-            region_end = query_parameters['startMax']
+            start_min = query_parameters['startMin']
+            start_max = query_parameters['startMax']
             end_min = query_parameters['endMin']
             end_max = query_parameters['endMax']
+            # Rely on bcftools to find anything that impacts the region
+            # Even if it starts before region_start.
+            region_start = min(start_max, end_min)
+            region_end = start_max
         else:
-            region_start = region_end = start
+            start_min = region_start = region_end = start
             end = query_parameters.get('end')
             if end is None:
                 end = start
@@ -183,6 +187,7 @@ def get_query_details_list(queries):
         query_details_list.append({
             'region_start': region_start,
             'region_end': region_end,
+            'start_min': start_min,
             'end_min': end_min,
             'end_max': end_max,
             'reference_bases': reference_bases,

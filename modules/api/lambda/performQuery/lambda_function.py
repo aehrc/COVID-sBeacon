@@ -140,7 +140,7 @@ def name_variant(pos, ref, alt):
     return f'{ref}{pos}{alt}'
 
 
-def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
+def perform_query(reference_bases, region, start_min, end_min, end_max, alternate_bases,
                   variant_type, vcf_location, IUPAC):
     args = [
         'bcftools', 'query',
@@ -166,6 +166,10 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             raise e
 
         pos = int(position)
+        if pos < start_min:
+            # This variant will either have been found by an earlier search,
+            # or the start/startMin parameter precludes it.
+            continue
 
         ref_alts = [
             truncate_ref_alt(reference, alt)
@@ -243,7 +247,6 @@ def perform_query(reference_bases, region, end_min, end_max, alternate_bases,
             continue
         all_calls = get_all_calls(genotypes)
         hit_set = set(str(i+1) for i in hit_indexes)
-        # TODO: Account for deletions that may be caught by multiple invocations
         call_count += sum(1 for call in all_calls if call in hit_set)
         if call_count:
             genotype_samples = defaultdict(list)
@@ -265,13 +268,14 @@ def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
     reference_bases = event['reference_bases']
     region = event['region']
+    start_min = event['start_min']
     end_min = event['end_min']
     end_max = event['end_max']
     alternate_bases = event['alternate_bases']
     variant_type = event['variant_type']
     vcf_location = event['vcf_location']
     IUPAC = event['IUPAC']
-    raw_response = perform_query(reference_bases, region, end_min, end_max,
+    raw_response = perform_query(reference_bases, region, start_min, end_min, end_max,
                                  alternate_bases, variant_type, vcf_location, IUPAC)
     response = cache_response(event, raw_response, dynamodb, s3)
     print('Returning response: {}'.format(json.dumps(response)))

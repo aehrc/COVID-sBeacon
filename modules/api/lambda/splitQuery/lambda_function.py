@@ -20,6 +20,7 @@ s3 = S3Client()
 def call_perform_query(vcf_locations, query_details, IUPAC, responses):
     end_min = query_details['end_min']
     end_max = query_details['end_max']
+    start_min = query_details['start_min']
     if end_min > end_max:
         # Region search will find nothing, don't bother.
         return
@@ -33,6 +34,9 @@ def call_perform_query(vcf_locations, query_details, IUPAC, responses):
     }
     region_start = max(query_details['region_start'], MIN_COORD)
     region_end = min(query_details['region_end'], MAX_COORD)
+    # Allow valid variants (read: deletions and CNVs) that start before
+    # the searched region. Only need the first region split to find these.
+    start_earlier = True
     while region_start <= region_end:
         split_end = min(region_start + SPLIT_SIZE - 1, region_end)
         for vcf_i, (vcf_location, chrom) in enumerate(vcf_locations.items()):
@@ -41,6 +45,7 @@ def call_perform_query(vcf_locations, query_details, IUPAC, responses):
                 function_name=PERFORM_QUERY,
                 function_kwargs={
                     'region': region,
+                    'start_min': start_min if start_earlier else region_start,
                     'vcf_location': vcf_location,
                     **kwargs,
                 },
@@ -50,6 +55,7 @@ def call_perform_query(vcf_locations, query_details, IUPAC, responses):
                 ),
             )
         region_start += SPLIT_SIZE
+        start_earlier = False
 
 
 def read_query_results(responses):
