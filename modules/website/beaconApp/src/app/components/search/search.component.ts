@@ -19,12 +19,14 @@ export class SearchComponent implements OnInit {
   splittedText= [];
   splitText= [];
   textDict = {};
-  queryData = new HttpParams()
-  .set('assemblyId','hCoV-19')
-  .set('includeDatasetResponses','ALL');
+  queryData = {};
+  start = [];
+  refBases = [];
+  altBases = [];
+  refName = [];
   warning: string = '';
   hits = new MatTableDataSource<Dataset>();
-  filteredArray=new MatTableDataSource<Dataset>();
+  filteredArray=[];
   subcombination:string[] = [];
   pageOfItems: Array<any>;
 
@@ -99,10 +101,12 @@ export class SearchComponent implements OnInit {
   }
 
   profileSearch(){
+    this.start = [];
+    this.refBases = [];
+    this.altBases = [];
+    this.refName = [];
     this.loading = true;
-    this.queryData = new HttpParams()
-    .set('assemblyId','hCoV-19')
-    .set('includeDatasetResponses','ALL');
+
 
     try {
       let text = this.profileText.replace(/\&/g, ':');
@@ -112,19 +116,21 @@ export class SearchComponent implements OnInit {
       if(this.splittedText.length == 1){
         var regex = /([a-z]+)(\d+)([a-z]+)/gi;
         var match = regex.exec(this.profileText);
-        this.queryData = this.queryData.append('start',(parseInt(match[2])-1).toString());
-        this.queryData = this.queryData.append('referenceBases',(match[1].trim()).toUpperCase());
-        this.queryData = this.queryData.append('alternateBases',(match[3].trim()).toUpperCase());
-        this.queryData = this.queryData.append('referenceName',"1");
+
+        this.start.push((parseInt(match[2])-1).toString());
+        this.refBases.push((match[1].trim()).toUpperCase());
+        this.altBases.push((match[3].trim()).toUpperCase());
+        this.refName.push("1");
       }else{
 
         for(var i = 0; i < this.splittedText.length; i++){
           var regex = /([a-z]+)(\d+)([a-z]+)/gi;
           var match = regex.exec(this.splittedText[i]);
-          this.queryData = this.queryData.append('start',(parseInt(match[2])-1).toString());
-          this.queryData = this.queryData.append('referenceBases',(match[1].trim()).toUpperCase());
-          this.queryData = this.queryData.append('alternateBases',(match[3].trim()).toUpperCase());
-          this.queryData = this.queryData.append('referenceName',"1");
+
+          this.start.push((parseInt(match[2])-1).toString());
+          this.refBases.push((match[1].trim()).toUpperCase());
+          this.altBases.push((match[3].trim()).toUpperCase());
+          this.refName.push("1");
         }
       }
 
@@ -135,14 +141,16 @@ export class SearchComponent implements OnInit {
       return;
     }
 
-    this.queryData = this.queryData.append("sampleFields", "SampleCollectionDate");
+    this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": this.refName, "start": this.start, "referenceBases": this.refBases, "alternateBases": this.altBases,"sampleFields":["SampleCollectionDate"]};
+
+
     this.url = this.rootUrl+ "/query";
     console.log(this.queryData);
     this.getData(this.url,this.queryData);
 
   }
   getData(url, qData){
-    this.http.get(url,{params : qData})
+    this.http.post(url, qData)
       .subscribe((response: Beacon) => {
         //console.log(response);
         if(response.hasOwnProperty('s3Response')){
@@ -170,9 +178,15 @@ export class SearchComponent implements OnInit {
               this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
                 return itm.datasetId == 'gisaid';
               });
-              this.subcombination = this.filteredArray[0].info.subcombinations;
-              this.fixSubcombination(this.subcombination, this.profileText);
-              this.loading = false;
+              if(this.filteredArray.length == 0){
+                this.warning = " No Gisaid data in the database. Contact administrator."
+                this.loading = false;
+              }else{
+                this.subcombination = this.filteredArray[0].info.subcombinations;
+                this.fixSubcombination(this.subcombination, this.profileText);
+                this.loading = false;
+              }
+
             }
           },
           error => {
@@ -190,11 +204,16 @@ export class SearchComponent implements OnInit {
           this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
             return itm.datasetId == 'gisaid';
           });
-          console.log(this.filteredArray);
-          this.subcombination = this.filteredArray[0].info.subcombinations;
-          console.log(this.subcombination);
-          this.fixSubcombination(this.subcombination, this.profileText);
-          this.loading = false;
+          if(this.filteredArray.length == 0){
+            this.warning = " No Gisaid data in the database. Contact administrator."
+            this.loading = false;
+          }else{
+            console.log(this.filteredArray);
+            this.subcombination = this.filteredArray[0].info.subcombinations;
+            console.log(this.subcombination);
+            this.fixSubcombination(this.subcombination, this.profileText);
+            this.loading = false;
+          }
 
         }else{
           console.log(response);

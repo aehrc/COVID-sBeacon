@@ -375,10 +375,11 @@ export class MainComponent implements AfterViewInit {
               this.graphDataGenerator(this.hits, this.visualIndex);
               this.statesData("Australia","AUS");
               this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
-                return itm.datasetId == 'cn';
+                return itm.datasetId == 'gisaid';
               });
+              console.log(this.filteredArray.length);
               if(this.filteredArray.length == 0){
-                this.displayedColumns = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency', 'accessions'];
+                this.displayedColumns = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
               }
 
             }else{
@@ -413,14 +414,15 @@ export class MainComponent implements AfterViewInit {
           this.loading = false;
           const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
           this.visualIndex = maxDatasetId.info.name;
-          //console.log(this.visualIndex);
+          console.log(this.visualIndex);
           this.graphDataGenerator(this.hits, this.visualIndex);
           this.statesData("Australia","AUS");
           this.filteredArray = response.datasetAlleleResponses.filter(function(itm){
-            return itm.datasetId == 'cn';
+            return itm.datasetId == 'gisaid';
           });
+          console.log(this.filteredArray);
           if(this.filteredArray.length == 0){
-            this.displayedColumns = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency', 'accessions'];
+            this.displayedColumns = ['expand','name', 'updateDateTime', 'variantCount', 'callCount', 'sampleCount', 'totalSamples', 'frequency'];
           }
 
         }else{
@@ -450,11 +452,11 @@ export class MainComponent implements AfterViewInit {
   graphDataGenerator(hits, visIndex,location=null,state=null){
     //console.log(visIndex);
     let index = hits.findIndex(x => x.info.name === visIndex);
-    let gisaidIndex = hits.findIndex(x => x.info.name === "GISAID data");
+    //let gisaidIndex = hits.findIndex(x => x.info.name === "GISAID data");
     //console.log(gisaidIndex);
-    if(hits[gisaidIndex].info.sampleCounts.hasOwnProperty("ID")){
-      this.accessionDetails = hits[gisaidIndex].info.sampleCounts.ID;
-      this.updateDateTime = hits[gisaidIndex].info.updateDateTime;
+    if(hits[index].info.sampleCounts.hasOwnProperty("ID")){
+      this.accessionDetails = hits[index].info.sampleCounts.ID;
+      this.updateDateTime = hits[index].info.updateDateTime;
       //console.log(this.accessionDetails);
     }
     let locationDetails = hits[index].info.sampleCounts.Location;
@@ -518,12 +520,16 @@ export class MainComponent implements AfterViewInit {
     }
     //console.log(this.sampleData);
     var non = this.sampleData.find( o => o.code === "None");
-    var breakValue = non["breakup"].split("/")[0];
-    if (breakValue != 0){
-      this.alertMessage = breakValue + " samples have inconsistent country name."
-    }else{
-      this.alertMessage = ''
+    console.log(non);
+    if( typeof non !== 'undefined'){
+      var breakValue = non["breakup"].split("/")[0];
+      if (breakValue != 0){
+        this.alertMessage = breakValue + " samples have inconsistent country name."
+      }else{
+        this.alertMessage = ''
+      }
     }
+
 
     //console.log(this.dateData);
     //console.log(this.dateData);
