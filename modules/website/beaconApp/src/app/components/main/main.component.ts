@@ -58,8 +58,8 @@ export class MainComponent implements AfterViewInit {
   sPos= [];
   splittedText= [];
   visualIndex: number;
-  ref =[];
-  alt = [];
+  ref = "";
+  alt = "";
   referenceName = [];
   start = [];
   refBases = [];
@@ -237,12 +237,16 @@ export class MainComponent implements AfterViewInit {
       this.sMin = this.sMax = this.eMin = this.eMax  = null;
       this.isVisible = true;
       this.inputText = "A23403G";
+      this.iupac = false;
+      this.iupac_input = "False"
       this.query();
     }
     if(searches == 'Y453F'){
       this.sMin = this.sMax = this.eMin = this.eMax  = null;
       this.isVisible = true;
       this.inputText = "A22920T";
+      this.iupac = false;
+      this.iupac_input = "False"
       this.query();
     }
     if(searches == 'spike'){
@@ -250,7 +254,9 @@ export class MainComponent implements AfterViewInit {
       this.isVisible = false;
       this.sMin = this.eMin = 21563;
       this.sMax = this.eMax = 25384;
-      this.ref = this.alt = ["N"];
+      this.ref = this.alt = "N";
+      this.iupac = true;
+      this.iupac_input = "True"
       this.query();
     }
     if(searches == 'ORF6'){
@@ -258,7 +264,9 @@ export class MainComponent implements AfterViewInit {
       this.isVisible = false;
       this.sMin = this.eMin = 27202;
       this.sMax = this.eMax = 27387;
-      this.ref = this.alt = ["N"];
+      this.ref = this.alt = "N";
+      this.iupac = true;
+      this.iupac_input = "True"
       this.query();
     }
   }
@@ -275,18 +283,18 @@ export class MainComponent implements AfterViewInit {
       //.set('includeDatasetResponses','ALL');
       if( this.sMin  || this.sMax  || this.eMin || this.eMax ){
         this.inputText= null;
-        this.ref = this.ref.map(function(x){ return x.toUpperCase(); })
+        //this.ref = this.ref.split("").map(function(x){ return x.toUpperCase(); })
 
           if(this.varType != null ){
             this.alt = null;
-            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.join(', '), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "variantType": this.varType.toUpperCase(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
+            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "variantType": this.varType.toUpperCase(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
               //this.queryData = this.queryData.append('referenceName','1').append("referenceBases",this.ref.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append('variantType',this.varType.toUpperCase()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
             //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"variantType":this.varType.toUpperCase(),"sampleFields":["SampleCollectionDate","Location"]};
           }
           if(this.alt != null ){
-            this.alt = this.alt.map(function(x){ return x.toUpperCase(); })
+            //this.alt = this.alt.split("").map(function(x){ return x.toUpperCase(); })
             this.varType = null;
-            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.join(', '), "alternateBases": this.alt.join(', '), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
+            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "alternateBases": this.alt.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
             //this.queryData = this.queryData.append('referenceName','1').append('referenceBases',this.ref.join(', ')).append('alternateBases',this.alt.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
             //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"sampleFields":["SampleCollectionDate","Location"]};
           }
@@ -384,10 +392,10 @@ export class MainComponent implements AfterViewInit {
 
             }else{
               console.log(response);
-              this.warning = null;
-              this.hits = response.datasetAlleleResponses;
+              this.warning = "No Hits to display";
+              this.hits = new MatTableDataSource<Dataset>();
               this.loading = false;
-              const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
+              //const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
               this.visualIndex = 0;
               this.accessionDetails = [];
             }
@@ -401,7 +409,7 @@ export class MainComponent implements AfterViewInit {
             }else{
               this.warning = error.error.error.errorMessage;
             }
-            this.hits = new MatTableDataSource<Dataset>();
+            this.hits = new MatTableDataSource<Dataset>([]);
             this.loading = false;
           }
         );
@@ -427,10 +435,10 @@ export class MainComponent implements AfterViewInit {
 
         }else{
           console.log(response);
-          this.warning = null;
-          this.hits = response.datasetAlleleResponses;
+          this.warning = "No Hits to display";
+          this.hits = new MatTableDataSource<Dataset>([]);
           this.loading = false;
-          const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
+          //const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
           this.visualIndex = 0;
           this.accessionDetails =[];
         }
