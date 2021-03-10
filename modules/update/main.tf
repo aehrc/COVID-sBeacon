@@ -11,7 +11,7 @@ module "lambda-updateData" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 28
+  timeout = 88
   policy = {
     json = data.aws_iam_policy_document.lambda-updateData.json
   }
