@@ -258,8 +258,8 @@ data aws_iam_policy_document lambda-collateQueries {
       "lambda:InvokeFunction",
     ]
     resources = [
-      module.lambda-splitQuery.function_arn,
       module.lambda-getAnnotations.function_arn,
+      module.lambda-performQuery.function_arn,
     ]
   }
 
@@ -294,25 +294,15 @@ data aws_iam_policy_document lambda-collateQueries {
 }
 
 #
-# splitQuery Lambda Function
+# performQuery Lambda Function
 #
-data aws_iam_policy_document lambda-splitQuery {
+data aws_iam_policy_document lambda-performQuery {
   statement {
     actions = [
       "lambda:InvokeFunction",
     ]
     resources = [
       module.lambda-performQuery.function_arn,
-    ]
-  }
-
-  statement {
-    actions = [
-      "dynamodb:PutItem",
-      "dynamodb:GetItem",
-    ]
-    resources = [
-      aws_dynamodb_table.cache.arn,
     ]
   }
 
@@ -325,24 +315,11 @@ data aws_iam_policy_document lambda-splitQuery {
       "${aws_s3_bucket.cache.arn}/*",
     ]
   }
-}
-
-#
-# performQuery Lambda Function
-#
-data aws_iam_policy_document lambda-performQuery {
-  statement {
-    actions = [
-      "s3:PutObject",
-    ]
-    resources = [
-      "${aws_s3_bucket.cache.arn}/*",
-    ]
-  }
 
   statement {
     actions = [
       "dynamodb:PutItem",
+      "dynamodb:GetItem",
     ]
     resources = [
       aws_dynamodb_table.cache.arn,

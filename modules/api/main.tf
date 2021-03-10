@@ -244,38 +244,8 @@ module "lambda-collateQueries" {
       {
         ARTIFACT_BUCKET = aws_s3_bucket.dataset_artifacts.bucket
         GET_ANNOTATIONS_LAMBDA = module.lambda-getAnnotations.function_name
-        SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
-        SPLIT_QUERY_LAMBDA = module.lambda-splitQuery.function_name
-      },
-      local.cache_env_vars,
-    )
-  }
-}
-
-
-#
-# splitQuery Lambda Function
-#
-module "lambda-splitQuery" {
-  source = "../lambda"
-
-  function_name = "splitQuery"
-  description = "Splits a dataset into smaller slices of VCFs and invokes performQuery on each."
-  handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
-  memory_size = 2048
-  timeout = 121
-  policy = {
-    json = data.aws_iam_policy_document.lambda-splitQuery.json
-  }
-  source_path = "${path.module}/lambda/splitQuery"
-  tags = var.common-tags
-
-  environment = {
-    variables = merge(
-      {
         PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
-        SPLIT_SIZE = 1500
+        SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
       },
       local.cache_env_vars,
     )
@@ -301,7 +271,12 @@ module "lambda-performQuery" {
   tags = var.common-tags
 
   environment = {
-    variables = local.cache_env_vars
+    variables = merge(
+    {
+      SPLIT_SIZE = 1500
+    },
+    local.cache_env_vars,
+    )
   }
 }
 
