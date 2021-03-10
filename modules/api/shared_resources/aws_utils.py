@@ -1,11 +1,22 @@
 import json
+import time
 
 import boto3
+import botocore
+
+
+THROTTLE_DELAY = 1
 
 
 class DynamodbClient:
     def __init__(self):
-        self.client = boto3.client('dynamodb')
+        dynamodb_config = botocore.config.Config(
+            max_pool_connections=200,
+            retries={
+                'total_max_attempts': 1,
+            }
+        )
+        self.client = boto3.client('dynamodb', config=dynamodb_config)
 
     def get_item(self, table, key, projection_expression):
         kwargs = {
@@ -45,22 +56,48 @@ class DynamodbClient:
 
 class LambdaClient:
     def __init__(self):
-        self.client = boto3.client('lambda')
+        lambda_config = botocore.config.Config(
+            read_timeout=300,
+            max_pool_connections=200,
+            retries={
+                'total_max_attempts': 1,
+            }
+        )
+        self.client = boto3.client('lambda', config=lambda_config)
 
     def invoke(self, name, kwargs):
         payload = json.dumps(kwargs)
-        print(f"Invoking {name} with payload: {payload}")
-        response = self.client.invoke(
-            FunctionName=name,
-            Payload=payload,
-        )
-        print(f"Received response {json.dumps(response, default=str)}")
-        return response['Payload']
+        while True:
+            print(f"Invoking {name} with payload: {payload}")
+            try:
+                response = self.client.invoke(
+                    FunctionName=name,
+                    Payload=payload,
+                )
+            except botocore.exceptions.ClientError as error:
+                response = error.response
+                print(f"Received error {json.dumps(response, default=str)}")
+                if response['Error']['Code'] == 'TooManyRequestsException':
+                    print(f"Invocation was throttled, waiting {THROTTLE_DELAY}"
+                          " second(s) before calling again.")
+                    time.sleep(THROTTLE_DELAY)
+                    continue
+                else:
+                    raise error
+            else:
+                print(f"Received response {json.dumps(response, default=str)}")
+                return response['Payload']
 
 
 class S3Client:
     def __init__(self):
-        self.client = boto3.client('s3')
+        s3_config = botocore.config.Config(
+            max_pool_connections=200,
+            retries={
+                'total_max_attempts': 1,
+            }
+        )
+        self.client = boto3.client('s3', config=s3_config)
 
     def generate_presigned_get_url(self, bucket, key, expires=3600):
         kwargs = {

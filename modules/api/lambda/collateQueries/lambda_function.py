@@ -19,7 +19,7 @@ MAX_SUBCOMBINATIONS_TO_CHECK = 10000
 MAX_SUBCOMBINATIONS_TO_RETURN = 100
 MAX_SUBCOMBINATIONS_DEPTH = 9
 SAMPLE_METADATA_SUFFIX = os.environ['SAMPLE_METADATA_SUFFIX']
-SPLIT_QUERY = os.environ['SPLIT_QUERY_LAMBDA']
+PERFORM_QUERY = os.environ['PERFORM_QUERY_LAMBDA']
 
 dynamodb = DynamodbClient()
 aws_lambda = LambdaClient()
@@ -53,18 +53,18 @@ def call_get_annotations(responses, annotation_location):
     )
 
 
-def call_split_query(responses, vcf_locations, query_details_list, IUPAC):
+def call_perform_query(responses, vcf_locations, query_details_list, IUPAC):
     for i, details in enumerate(query_details_list):
         kwargs = {
-            'vcf_locations': {
-                vcf: chroms[i]
-                for vcf, chroms in vcf_locations.items()
-            },
-            'query_details': details,
+            'vcf_locations': [
+                [vcf_i, vcf, chroms[i]]
+                for vcf_i, (vcf, chroms) in enumerate(vcf_locations.items())
+            ],
             'IUPAC': IUPAC,
+            **details,
         }
         responses.put(
-            function_name=SPLIT_QUERY,
+            function_name=PERFORM_QUERY,
             function_kwargs=kwargs,
             call_id=i,
         )
@@ -79,7 +79,7 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
         lambda_client=aws_lambda,
         s3_client=s3,
     )
-    call_split_query(responses, vcf_locations, query_details_list, IUPAC)
+    call_perform_query(responses, vcf_locations, query_details_list, IUPAC)
     call_get_annotations(responses, dataset['annotation_location'])
 
     dataset_id = dataset['dataset_id']
@@ -305,7 +305,7 @@ def get_results(responses):
         if function_name == GET_ANNOTATIONS:
             all_annotations = result
         else:
-            assert function_name == SPLIT_QUERY, "Unknown function name"
+            assert function_name == PERFORM_QUERY, "Unknown function name"
             all_splits[response.call_id] = response.result
     return all_splits, all_annotations
 

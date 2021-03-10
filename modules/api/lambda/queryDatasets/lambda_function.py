@@ -9,7 +9,9 @@ from cache_utils import Caches
 
 BEACON_ID = os.environ['BEACON_ID']
 DATASETS_TABLE_NAME = os.environ['DATASETS_TABLE']
-MAXIMUM_RESPONSE_SIZE = 6000000
+MAX_COORD = 32000
+MAXIMUM_RESPONSE_SIZE = 5000000
+MIN_COORD = -1
 RESPONSE_BUCKET = os.environ['RESPONSE_BUCKET']
 CHROMOSOMES = [
     "1"
@@ -179,6 +181,9 @@ def get_query_details_list(queries):
         region_end += 1
         end_min += 1
         end_max += 1
+        # Don't allow arbitrarily large region queries
+        region_start = max(region_start, MIN_COORD)
+        region_end = min(region_end, MAX_COORD)
         if reference_bases != 'N':
             # For specific reference bases region may be smaller
             max_offset = len(reference_bases) - 1

@@ -1,11 +1,11 @@
-from collections import defaultdict
+from collections import Counter, defaultdict
 import json
 import os
 import re
 import subprocess
 
-from aws_utils import DynamodbClient, S3Client
-from cache_utils import cache_response
+from aws_utils import DynamodbClient, LambdaClient, S3Client
+from cache_utils import Caches, cache_response
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 IUPAC_AMBIGUITY_CODES = {
@@ -83,11 +83,14 @@ IUPAC_MATCHES = {
     } for code1, bases1 in IUPAC_AMBIGUITY_CODES.items()
 }
 
+SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
+
 all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
 regular_alt = re.compile(f'[{"".join(IUPAC_AMBIGUITY_CODES.keys())}]+')
 
 dynamodb = DynamodbClient()
+aws_lambda = LambdaClient()
 s3 = S3Client()
 
 
@@ -107,6 +110,34 @@ class VariantGenotypes:
 
 
 variant_genotypes = VariantGenotypes()
+
+
+def call_perform_query(region_start, region_end, start_min, vcf_locations, base_query, responses, this_name):
+    if base_query['end_min'] > base_query['end_max'] or max(region_start, start_min) > region_end:
+        # Region search will find nothing, don't bother.
+        return
+    # Allow valid variants (read: deletions and CNVs) that start before
+    # the searched region. Only need the first region split to find these.
+    start_earlier = True
+    while region_start <= region_end:
+        split_end = min(region_start + SPLIT_SIZE - 1, region_end)
+        for vcf_i, vcf_location, contig in vcf_locations:
+            responses.put(
+                function_name=this_name,
+                function_kwargs={
+                    'region_start': region_start,
+                    'region_end': split_end,
+                    'start_min': start_min if start_earlier else region_start,
+                    'vcf_locations': [[vcf_i, vcf_location, contig]],
+                    **base_query,
+                },
+                call_id=(
+                    vcf_i,
+                    f'{contig}:{region_start}-{region_end}',
+                ),
+            )
+        region_start += SPLIT_SIZE
+        start_earlier = False
 
 
 def truncate_ref_alt(ref, alt):
@@ -141,7 +172,7 @@ def name_variant(pos, ref, alt):
 
 
 def perform_query(reference_bases, region, start_min, end_min, end_max, alternate_bases,
-                  variant_type, vcf_location, IUPAC):
+                  variant_type, vcf_i, vcf_location, IUPAC):
     args = [
         'bcftools', 'query',
         '--regions', region,
@@ -152,7 +183,8 @@ def perform_query(reference_bases, region, start_min, end_min, end_max, alternat
                                      encoding='ascii')
     v_prefix = '<{}'.format(variant_type)
     approx = reference_bases == 'N' and variant_type
-    variant_samples = defaultdict(list)
+    hit_samples = set()
+    variant_samples = defaultdict(set)
     call_count = 0
     iupac = IUPAC == 'True'
     reference_matches = get_possible_codes(reference_bases, iupac)
@@ -255,28 +287,79 @@ def perform_query(reference_bases, region, start_min, end_min, end_max, alternat
             for genotype, samples in genotype_samples.items():
                 all_hits = variant_genotypes.alt_indexes(genotype)
                 for hit in all_hits & hit_indexes:
+                    hit_samples.update(samples)
                     name = name_variant(position, *ref_alts[hit])
-                    variant_samples[name] += samples
+                    variant_samples[name].update(samples)
+
     query_process.stdout.close()
     return {
-        'variant_samples': variant_samples,
         'call_count': call_count,
+        'variant_samplenum': {
+            variant: len(samples)
+            for variant, samples in variant_samples.items()
+        },
+        'hit_samples': [
+            f'{vcf_i}:{sample_i}'
+            for sample_i in hit_samples
+        ],
+    }
+
+
+def read_query_results(responses):
+    call_count = 0
+    variant_samplenum = Counter()
+    hit_samples = set()
+    for query in responses.collect_responses():
+        vcf_i, _ = query.call_id
+        query_result = query.result
+        call_count += query_result['call_count']
+        variant_samplenum.update(query_result['variant_samplenum'])
+        hit_samples.update(query_result['hit_samples'])
+    return call_count, variant_samplenum, list(hit_samples)
+
+
+def split_query(region_start, region_end, start_min, vcf_locations, base_query, this_name):
+    responses = Caches(
+        dynamodb_client=dynamodb,
+        lambda_client=aws_lambda,
+        s3_client=s3,
+    )
+    call_perform_query(region_start, region_end, start_min, vcf_locations, base_query, responses, this_name)
+    call_count, variant_samplenum, hit_samples = read_query_results(responses)
+    return {
+        'call_count': call_count,
+        'variant_samplenum': variant_samplenum,
+        'hit_samples': hit_samples,
     }
 
 
 def lambda_handler(event, context):
     print('Event Received: {}'.format(json.dumps(event)))
-    reference_bases = event['reference_bases']
-    region = event['region']
+    region_start = event['region_start']
+    region_end = event['region_end']
     start_min = event['start_min']
-    end_min = event['end_min']
-    end_max = event['end_max']
-    alternate_bases = event['alternate_bases']
-    variant_type = event['variant_type']
-    vcf_location = event['vcf_location']
-    IUPAC = event['IUPAC']
-    raw_response = perform_query(reference_bases, region, start_min, end_min, end_max,
-                                 alternate_bases, variant_type, vcf_location, IUPAC)
+    vcf_locations = event['vcf_locations']
+    base_query = {
+        'reference_bases': event['reference_bases'],
+        'end_min': event['end_min'],
+        'end_max': event['end_max'],
+        'alternate_bases': event['alternate_bases'],
+        'variant_type': event['variant_type'],
+        'IUPAC': event['IUPAC'],
+    }
+    if len(vcf_locations) == 1 and region_end - region_start + 1 <= SPLIT_SIZE:
+        vcf_i, vcf_location, contig = vcf_locations[0]
+        raw_response = perform_query(
+            region=f'{contig}:{region_start}-{region_end}',
+            start_min=start_min,
+            vcf_i=vcf_i,
+            vcf_location=vcf_location,
+            **base_query,
+        )
+    else:
+        raw_response = split_query(region_start, region_end, start_min, vcf_locations, base_query,
+                                   context.function_name)
+
     response = cache_response(event, raw_response, dynamodb, s3)
     print('Returning response: {}'.format(json.dumps(response)))
     return response
