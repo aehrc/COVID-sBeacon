@@ -1,5 +1,6 @@
 from collections import Counter, defaultdict
 import json
+import math
 import os
 import re
 import subprocess
@@ -83,7 +84,8 @@ IUPAC_MATCHES = {
     } for code1, bases1 in IUPAC_AMBIGUITY_CODES.items()
 }
 
-SPLIT_SIZE = int(os.environ['SPLIT_SIZE'])
+MAX_SPLIT_SIZE = int(os.environ['MAX_SPLIT_SIZE'])
+RECURSION_FACTOR = int(os.environ['RECURSION_FACTOR'])
 
 all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
@@ -112,32 +114,36 @@ class VariantGenotypes:
 variant_genotypes = VariantGenotypes()
 
 
-def call_perform_query(region_start, region_end, start_min, vcf_locations, base_query, responses, this_name):
-    if base_query['end_min'] > base_query['end_max'] or max(region_start, start_min) > region_end:
+def call_perform_query(full_region_start, full_region_end, full_start_min,
+                       full_vcf_locations, base_query, responses, this_name):
+    if (base_query['end_min'] > base_query['end_max']
+            or max(full_region_start, full_start_min) > full_region_end):
         # Region search will find nothing, don't bother.
         return
-    # Allow valid variants (read: deletions and CNVs) that start before
-    # the searched region. Only need the first region split to find these.
-    start_earlier = True
-    while region_start <= region_end:
-        split_end = min(region_start + SPLIT_SIZE - 1, region_end)
-        for vcf_i, vcf_location, contig in vcf_locations:
-            responses.put(
-                function_name=this_name,
-                function_kwargs={
-                    'region_start': region_start,
-                    'region_end': split_end,
-                    'start_min': start_min if start_earlier else region_start,
-                    'vcf_locations': [[vcf_i, vcf_location, contig]],
-                    **base_query,
-                },
-                call_id=(
-                    vcf_i,
-                    f'{contig}:{region_start}-{region_end}',
-                ),
-            )
-        region_start += SPLIT_SIZE
-        start_earlier = False
+    subquery_iterator = get_subquery_iterator(
+        full_region_start,
+        full_region_end,
+        full_start_min,
+        full_vcf_locations
+    )
+    for region_start, region_end, start_min, vcf_locations in subquery_iterator:
+        vcf_i_range = str(vcf_locations[0][0])
+        if len(vcf_locations) > 1:
+            vcf_i_range += f'-{vcf_locations[-1][0]}'
+        responses.put(
+            function_name=this_name,
+            function_kwargs={
+                'region_start': region_start,
+                'region_end': region_end,
+                'start_min': start_min,
+                'vcf_locations': vcf_locations,
+                **base_query,
+            },
+            call_id=(
+                vcf_i_range,
+                f'{region_start}-{region_end}',
+            ),
+        )
 
 
 def truncate_ref_alt(ref, alt):
@@ -165,6 +171,40 @@ def get_possible_codes(code, iupac=True):
                     next_possible_codes.add(possible_code + iupac_code)
             possible_codes = next_possible_codes
     return possible_codes
+
+
+def get_subquery_iterator(region_start, region_end, start_min, vcf_locations):
+    region_length = region_end - region_start + 1
+    num_subregions = math.ceil(region_length / MAX_SPLIT_SIZE)
+    print(f"Number of subregions: {num_subregions}")
+    num_vcfs = len(vcf_locations)
+    print(f"Number of VCFs: {num_vcfs}")
+    total_splits = num_subregions * num_vcfs
+    recursion_levels = math.log(total_splits, RECURSION_FACTOR)
+    # take the fractional part, but 1 if a whole number
+    this_level_recursion = (recursion_levels - int(recursion_levels)) or 1
+    this_level_splits = max(math.ceil(RECURSION_FACTOR**this_level_recursion), 2)
+    num_region_splits = min(num_subregions, this_level_splits)
+    print(f"Splitting region into {num_region_splits} part(s)")
+    num_vcf_splits = min(num_vcfs, round(this_level_splits/num_region_splits))
+    print(f"Splitting VCFs into {num_vcf_splits} part(s)")
+    split_region_size = math.ceil(region_length / num_subregions)
+    vcfs_per_split = math.ceil(num_vcfs / num_vcf_splits)
+
+    split_start = region_start
+    split_start_min = start_min
+    while split_start <= region_end:
+        split_end = min(split_start + split_region_size, region_end)
+        for i in range(num_vcf_splits):
+            yield (
+                split_start,
+                split_end,
+                split_start_min,
+                vcf_locations[vcfs_per_split*i:vcfs_per_split*(i+1)]
+            )
+        # Allow valid variants (read: deletions and CNVs) that start before
+        # the searched region. Only need the first region split to find these.
+        split_start = split_start_min = split_end + 1
 
 
 def name_variant(pos, ref, alt):
@@ -347,7 +387,7 @@ def lambda_handler(event, context):
         'variant_type': event['variant_type'],
         'IUPAC': event['IUPAC'],
     }
-    if len(vcf_locations) == 1 and region_end - region_start + 1 <= SPLIT_SIZE:
+    if len(vcf_locations) == 1 and region_end - region_start + 1 <= MAX_SPLIT_SIZE:
         vcf_i, vcf_location, contig = vcf_locations[0]
         raw_response = perform_query(
             region=f'{contig}:{region_start}-{region_end}',
