@@ -1,0 +1,276 @@
+<div id="wrapper">
+	<div  class="wrapper-style1">
+
+    <mat-card class="example-card">
+        <mat-card-title>
+            <span class="md-headline">Search engine for SARS-CoV-2 mutations </span>
+        </mat-card-title>
+        <mat-card-content>
+          <div layout="row">
+            <label id="popular">Popular Search:</label>
+            <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('D614G')"> D614G </a></label>
+						<label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Y453F')"> Y453F </a></label>
+						<label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('spike')"> Spike Protein </a></label>
+						<label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('ORF6')"> ORF6 </a></label>
+						<input id="iupac_input" type="checkbox" [name]="iupac" [checked]="iupac" (change)="onChange()" > Enable ambiguity codes search
+          </div>
+        </mat-card-content>
+
+        <mat-card-content>
+          <div layout="row">
+
+              <mat-form-field class="full-width-field" appearance="legacy" *ngIf="sMin == null && sMax == null && eMin == null && eMax == null">
+                <!--<label>Query Position REF>ALT</label>-->
+                <div data-tip="(REF)(Start coordinate position)(ALT)-separate multiple variants with ':' or '&'.">
+                  <textarea matInput  rows="2" cols="60" type="text" placeholder="A23403G:C8782T" name="inputText" [(ngModel)]="inputText"  ></textarea>
+                  <!--<input matInput id="search" placeholder="8782 C>T" ng-model="inputText" ng-required="'true'" ng-keyup="$event.keyCode == 13 && query()"">-->
+                </div>
+              </mat-form-field>
+
+          </div>
+					<div [hidden]="isVisible">
+					  <div layout="row">
+
+					      <mat-form-field>
+					        <div data-tip="for querying imprecise positions (e.g. identifying all structural variants starting anywhere between startMin <-> startMax, and ending anywhere between endMin <-> endMax">
+					          <input matInput placeholder="Start Min" [(ngModel)]="sMin" [required]="'true'">
+					        </div>
+					      </mat-form-field>
+
+					      <mat-form-field>
+
+					        <div data-tip="Maximum start coordinate">
+					          <input  matInput placeholder="Start Max" [(ngModel)]="sMax" [required]="'true'">
+					        </div>
+					      </mat-form-field>
+
+					      <mat-form-field>
+
+					        <div data-tip="Minimum end coordinate">
+					          <input  matInput placeholder="End Min" [(ngModel)]="eMin" [required]="'true'">
+					        </div>
+					      </mat-form-field>
+
+					      <mat-form-field>
+
+					        <div data-tip="Maximum end coordinate">
+					          <input  matInput placeholder="End Max" [(ngModel)]="eMax" [required]="'true'">
+					        </div>
+					      </mat-form-field>
+
+					      <mat-form-field>
+
+					        <div data-tip="Reference bases for this variant (starting from start).">
+					          <input  type="text"  matInput placeholder="Reference" [(ngModel)]="ref" [required]="'true'">
+					        </div>
+					      </mat-form-field>
+
+					      <mat-form-field>
+
+					        <div data-tip="The bases that appear instead of the reference bases.">
+					          <input type="text" matInput placeholder="Alternate" [(ngModel)]="alt"  [required]="!varType">
+					        </div>
+					      </mat-form-field>
+
+								<mat-form-field appearance="legacy">
+
+							    <mat-select matInput placeholder="Variant Type" [(ngModel)]="varType">
+										<mat-option value="INS">Insertion</mat-option>
+                    <mat-option value="DEL">Deletion</mat-option>
+							    </mat-select>
+							  </mat-form-field>
+
+					  </div>
+					</div>
+					<div class="example-button-row">
+						<button mat-raised-button color="primary" class="button" [disabled]="!inputText && !sMin && !sMax && !eMin && !eMax && !ref " (click)="query()">Search</button>
+						<button mat-raised-button color="primary" class="button" (click)="this.ShowHide()">Advanced Parameters</button>
+						<button mat-raised-button color="primary" class="button" (click)="this.refresh()">Reset</button>
+						<button mat-raised-button color="primary" class="copyButton"  ngbTooltip="Copied!" triggers="click:blur" [autoClose]="true" (click)="this.share()" [disabled]="!inputText">Share</button>
+					</div>
+        </mat-card-content>
+  </mat-card>
+
+	<div  *ngIf="loading">
+				 <div class="row justify-content-center spinner-container">
+					 <div id="spinner"></div>
+				 </div>
+	</div>
+	<mat-card class="example-card" *ngIf="warning">
+		<mat-card-content [hidden]= "warning == null">
+			<span> {{warning}}</span>
+		</mat-card-content>
+	</mat-card>
+
+	<mat-card class="example-card" *ngIf="hits.length">
+    <mat-card-content *ngIf="!warning">
+			<mat-card-title>
+					<button mat-raised-button color="accent" (click)="this.similaritySearch()" ><span>Similarity search</span></button>
+					<span id="alertMessage"> {{alertMessage}}</span>
+			</mat-card-title>
+
+			<div class="example-container mat-elevation-z8">
+        <table mat-table [dataSource]="hits" matSort multiTemplateDataRows>
+
+					<ng-container matColumnDef="expand">
+						<th mat-header-cell  *matHeaderCellDef >  </th>
+						<td mat-cell   *matCellDef="let element">
+				      <div *ngIf="!expanded" >
+				        <button  *ngIf="element.position!==1" [class.example-expanded-row]="expandedElement === element"
+				      (click)="expandedElement = expandedElement === element ? null : element;">
+				      	<span *ngIf="expandedElement !==element" >+</span>
+								<span *ngIf="expandedElement ===element" >-</span>
+				        </button>
+				        </div>
+        		</td>
+					</ng-container>
+
+					<ng-container matColumnDef="name">
+						<th mat-header-cell title="Dataset or clade name"   *matHeaderCellDef > Dataset name </th>
+						<td mat-cell  *matCellDef="let element"> {{element.info.name}} </td>
+					</ng-container>
+
+					<ng-container matColumnDef="updateDateTime">
+						<th title="Dataset Last Update date and time" mat-header-cell *matHeaderCellDef > Dataset Last Updated </th>
+						<td mat-cell *matCellDef="let element"> {{element.info.updateDateTime.split('T')[0]}} | {{element.info.updateDateTime.split('T')[1]}} </td>
+					</ng-container>
+
+					<ng-container matColumnDef="variantCount">
+						<th mat-header-cell title="Number of variants within searched genomic profiles (including ambiguous variants)" *matHeaderCellDef > Variant Count</th>
+						<td mat-cell *matCellDef="let element"> {{element.variantCount}} </td>
+					</ng-container>
+
+					<ng-container matColumnDef="callCount">
+						<th mat-header-cell title="Total number of hits for a searched variants. Sum of hits of individual variants for genomic profiles." *matHeaderCellDef > Call Count</th>
+						<td mat-cell *matCellDef="let element"> {{element.callCount}} </td>
+					</ng-container>
+
+					<ng-container matColumnDef="sampleCount">
+						<th mat-header-cell title ="Total number of hits for a genomic profile."*matHeaderCellDef > Samples </th>
+						<td mat-cell *matCellDef="let element"> {{element.sampleCount}} </td>
+					</ng-container>
+
+					<ng-container matColumnDef="totalSamples">
+						<th mat-header-cell title ="Total number of samples within this dataset." *matHeaderCellDef > Total Samples </th>
+						<td mat-cell *matCellDef="let element"> {{element.info.datasetSampleCount}} </td>
+					</ng-container>
+
+					<ng-container matColumnDef="frequency">
+						<th mat-header-cell title ="Samples/Total Samples" *matHeaderCellDef > Frequency </th>
+						<td mat-cell *matCellDef="let element"> {{element.frequency}} % </td>
+					</ng-container>
+
+					<ng-container matColumnDef="accessions" >
+						<th mat-header-cell title ="Download gisaid metadata" *matHeaderCellDef > Metadata Download </th>
+						<td mat-cell *matCellDef="let element">
+							<span *ngIf="element.datasetId === 'gisaid'"> <a href="javascript: void(0);" (click)="download()"><mat-icon>vertical_align_bottom</mat-icon></a> </span>
+							</td>
+					</ng-container>
+
+					<ng-container matColumnDef="expandedDetail">
+						<td mat-cell *matCellDef="let element" [attr.colspan]="10">
+							<div class="example-element-detail" *ngIf="element.info.variants?.length" [@detailExpand]="element == expandedElement ? 'expanded' : 'collapsed'">
+								<div class="inner-table mat-elevation-z8" *ngIf="expandedElement">
+									<table class="table table-striped table-bordered table-hover" id="t03" matSort (matSortChange)="sortData($event, element)">
+										<th mat-sort-header="position" title ="Searched variants position.">Position</th>
+									  <th mat-sort-header="ref" title ="Searched reference variants.">Ref</th>
+									  <th mat-sort-header="alt" title ="Searched alternate variants.">Alt</th>
+									  <th mat-sort-header="SIFT_score" title ="Predicted SIFT score for variants.">Sift</th>
+									  <th mat-sort-header="sampleCount" title ="Number of samples hits for corresponding variants.">Samples</th>
+									  <th mat-sort-header="frequency" title ="Samples/Total samples for this variant">Frequency</th>
+										<tbody *ngIf="element.info.variants.length < 10">
+										  <tr   *ngFor="let item of element.info.variants">
+										    <td > {{item.pos}} </td>
+										    <td > {{ item.ref }} </td>
+										    <td > {{ item.alt }} </td>
+												<td><span *ngIf="item.SIFT_score"> {{item.SIFT_score }} </span><span *ngIf="!item.SIFT_score"> - </span></td>
+										    <td > {{ item.sampleCount }} </td>
+										    <td > {{ item.frequency }} </td>
+										  </tr>
+										</tbody>
+										<tbody *ngIf="element.info.variants.length > 10">
+										  <tr   *ngFor="let item of pageOfItems;">
+										    <td > {{item.pos}} </td>
+										    <td > {{ item.ref }} </td>
+										    <td > {{ item.alt }} </td>
+												<td><span *ngIf="item.SIFT_score"> {{item.SIFT_score }} </span><span *ngIf="!item.SIFT_score"> - </span></td>
+										    <td > {{ item.sampleCount }} </td>
+										    <td > {{ item.frequency }} </td>
+										  </tr>
+										</tbody>
+								</table>
+
+									<div class=" pagination pb-0 pt-3">
+							        <jw-pagination [items]="element.info.variants" [pageSize]="10" (changePage)="onChangePage($event)"></jw-pagination>
+							    </div>
+								</div>
+							</div>
+						</td>
+					</ng-container>
+
+					<tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+			    <tr mat-row *matRowDef="let element;  columns: displayedColumns;"
+			            class="example-element-row"></tr>
+					<tr mat-row *matRowDef="let row; columns: ['expandedDetail']" class="example-detail-row"></tr>
+
+				</table>
+		</div>
+		<div *ngIf="visualIndex == 0">
+			<mat-card class="example-card" >
+				<mat-card-content >
+					<span> No samples matching the search criteria, refine search by checking the missing variant/s</span>
+				</mat-card-content>
+			</mat-card>
+		</div>
+		<div *ngIf="visualIndex != 0">
+			<section layout="row" layout-sm="column" layout-align="left center" layout-wrap>
+			<!--<button mat-raised-button color="primary" class="button" (click)="stateVisilble = !stateVisilble">Toggle State Data</button>-->
+			<mat-card class="example-card" >
+				<mat-card-content *ngIf="states.length">
+				<table  class="table table-striped table-bordered table-hover" matSort (matSortChange)="stateSortData($event)" >
+					<thead>
+						<tr>
+							<th mat-sort-header="regions" title="Country and Regions"> Country / Region</th>
+							<th  mat-sort-header="count" title="Number of hits specific to this region."> Count </th>
+							<th  mat-sort-header="frequency" title="Count/Total count of variants specific to this region."> Frequency </th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr   *ngFor="let item of statePageOfItems " (click)="stateHistogram(item.regions)">
+							<td > {{item.regions}} </td>
+							<td > {{ item.count }} </td>
+							<td > {{ item.frequency }}% </td>
+						</tr>
+					</tbody>
+				</table>
+				<div class=" pagination pb-0 pt-3">
+						<jw-pagination [items]="states"  (changePage)="onChangeStatePage($event)"></jw-pagination>
+				</div>
+				</mat-card-content >
+				<mat-card-content *ngIf="!states.length">
+					<span> No Regions data available for the searched variants</span>
+				</mat-card-content>
+			</mat-card>
+			<button mat-raised-button color="primary" class="button" (click)="this.visual()" *ngIf="!vis" >Generate Visual</button>
+			  <mat-form-field appearance="legacy">
+			    <div data-tip="Change Dataset to update visualisation">
+			      <mat-select id="dropDown2" name="type" [(ngModel)]="visualIndex" (selectionChange)="graphDataGenerator(hits,visualIndex);" >
+			        <mat-option *ngFor="let hit of hits" [value]="hit.info.name">
+			        {{hit.info.name}}
+			        </mat-option>
+			      </mat-select>
+			    </div>
+			  </mat-form-field>
+				<button mat-raised-button color="primary" class="button" (click)="this.refreshGraph()" *ngIf="vis" >Reset</button>
+
+				</section>
+			    <div id="choropleth" ></div>
+			    <div id="histogram"></div>
+		</div>
+		</mat-card-content>
+
+	</mat-card>
+
+
+	</div>
+</div>

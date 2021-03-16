@@ -21,6 +21,17 @@ resource aws_lambda_permission SNSSummariseDataset {
 }
 
 #
+# summariseSampleMetadata Lambda Function
+#
+resource aws_lambda_permission SNSSummariseSampleMetadata {
+  statement_id = "AllowSNSSummariseSampleMetadataInvoke"
+  action = "lambda:InvokeFunction"
+  function_name = module.lambda-summariseSampleMetadata.function_name
+  principal = "sns.amazonaws.com"
+  source_arn = aws_sns_topic.summariseSampleMetadata.arn
+}
+
+#
 # summariseVcf Lambda Function
 #
 resource aws_lambda_permission SNSSummariseVcf {
@@ -73,26 +84,4 @@ resource aws_lambda_permission APIQueryDatasets {
   function_name = module.lambda-queryDatasets.function_name
   principal = "apigateway.amazonaws.com"
   source_arn = "${aws_api_gateway_rest_api.BeaconApi.execution_arn}/*/*/${aws_api_gateway_resource.query.path_part}"
-}
-
-#
-# splitQuery Lambda Function
-#
-resource aws_lambda_permission QueryDatasetsLambdaSplitQuery {
-  statement_id = "AllowQueryDatasetsLambdaSplitQueryInvoke"
-  action = "lambda:InvokeFunction"
-  function_name = module.lambda-splitQuery.function_name
-  principal = "lambda.amazonaws.com"
-  source_arn = module.lambda-queryDatasets.function_arn
-}
-
-#
-# performQuery Lambda Function
-#
-resource aws_lambda_permission SplitQueryLambdaPerformQuery {
-  statement_id = "AllowSplitQueryLambdaPerformQueryInvoke"
-  action = "lambda:InvokeFunction"
-  function_name = module.lambda-performQuery.function_name
-  principal = "lambda.amazonaws.com"
-  source_arn = module.lambda-splitQuery.function_arn
 }

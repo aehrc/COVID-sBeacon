@@ -22,18 +22,6 @@ resource aws_api_gateway_resource query {
   path_part = "query"
 }
 
-resource aws_api_gateway_resource s3response {
-  rest_api_id = aws_api_gateway_rest_api.BeaconApi.id
-  parent_id = aws_api_gateway_rest_api.BeaconApi.root_resource_id
-  path_part = "s3response"
-}
-
-resource aws_api_gateway_resource responseKey {
-  rest_api_id = aws_api_gateway_rest_api.BeaconApi.id
-  parent_id = aws_api_gateway_resource.s3response.id
-  path_part = "{responseKey}"
-}
-
 resource aws_api_gateway_method root-options {
   rest_api_id = aws_api_gateway_rest_api.BeaconApi.id
   resource_id = aws_api_gateway_rest_api.BeaconApi.root_resource_id
@@ -430,122 +418,6 @@ resource aws_api_gateway_integration_response query-post {
 }
 
 
-resource aws_api_gateway_method s3response-options {
-  rest_api_id = aws_api_gateway_rest_api.BeaconApi.id
-  resource_id = aws_api_gateway_resource.responseKey.id
-  http_method = "OPTIONS"
-  authorization = "NONE"
-}
-
-resource aws_api_gateway_method_response s3response-options {
-  rest_api_id = aws_api_gateway_method.s3response-options.rest_api_id
-  resource_id = aws_api_gateway_method.s3response-options.resource_id
-  http_method = aws_api_gateway_method.s3response-options.http_method
-  status_code = "200"
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true
-    "method.response.header.Access-Control-Allow-Methods" = true
-    "method.response.header.Access-Control-Allow-Origin" = true
-  }
-
-  response_models = {
-    "application/json" = "Empty"
-  }
-}
-
-resource aws_api_gateway_integration s3response-options {
-  rest_api_id = aws_api_gateway_method.s3response-options.rest_api_id
-  resource_id = aws_api_gateway_method.s3response-options.resource_id
-  http_method = aws_api_gateway_method.s3response-options.http_method
-  type = "MOCK"
-
-  request_templates = {
-    "application/json" = <<TEMPLATE
-      {
-        "statusCode": 200
-      }
-    TEMPLATE
-  }
-}
-
-resource aws_api_gateway_integration_response s3response-options {
-  rest_api_id = aws_api_gateway_method.s3response-options.rest_api_id
-  resource_id = aws_api_gateway_method.s3response-options.resource_id
-  http_method = aws_api_gateway_method.s3response-options.http_method
-  status_code = aws_api_gateway_method_response.s3response-options.status_code
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type'"
-    "method.response.header.Access-Control-Allow-Methods" = "'OPTIONS,GET'"
-    "method.response.header.Access-Control-Allow-Origin" = "'*'"
-  }
-
-  response_templates = {
-    "application/json" = ""
-  }
-
-  depends_on = [aws_api_gateway_integration.s3response-options]
-}
-
-
-resource aws_api_gateway_method s3response {
-  rest_api_id = aws_api_gateway_rest_api.BeaconApi.id
-  resource_id = aws_api_gateway_resource.responseKey.id
-  http_method = "GET"
-  authorization = "NONE"
-
-  request_parameters = {
-    "method.request.path.responseKey" = true
-  }
-}
-
-resource aws_api_gateway_method_response s3response {
-  rest_api_id = aws_api_gateway_method.s3response.rest_api_id
-  resource_id = aws_api_gateway_method.s3response.resource_id
-  http_method = aws_api_gateway_method.s3response.http_method
-  status_code = "200"
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = true
-  }
-
-  response_models = {
-    "application/json" = "Empty"
-  }
-}
-
-resource aws_api_gateway_integration s3response {
-  rest_api_id = aws_api_gateway_method.s3response.rest_api_id
-  resource_id = aws_api_gateway_method.s3response.resource_id
-  http_method = aws_api_gateway_method.s3response.http_method
-  type = "AWS"
-  credentials = aws_iam_role.api_s3_get_proxy.arn
-  uri = "arn:aws:apigateway:${data.aws_region.current.name}:s3:path/${aws_s3_bucket.large_response_bucket.id}/${module.lambda-queryDatasets.function_name}/{responseKey}"
-  integration_http_method = "GET"
-
-  request_parameters = {
-    "integration.request.path.responseKey" = "method.request.path.responseKey"
-  }
-}
-
-resource aws_api_gateway_integration_response s3response {
-  rest_api_id = aws_api_gateway_method.s3response.rest_api_id
-  resource_id = aws_api_gateway_method.s3response.resource_id
-  http_method = aws_api_gateway_method.s3response.http_method
-  status_code = aws_api_gateway_method_response.s3response.status_code
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Origin" = "'*'"
-  }
-
-  response_templates = {
-    "application/json" = ""
-  }
-
-  depends_on = [aws_api_gateway_integration.s3response]
-}
-
 #
 # Deployment
 #
@@ -587,13 +459,5 @@ resource aws_api_gateway_deployment BeaconApi {
     aws_api_gateway_integration.query-post.id,
     aws_api_gateway_integration_response.query-post.id,
     aws_api_gateway_method_response.query-post.id,
-    aws_api_gateway_method.s3response-options.id,
-    aws_api_gateway_integration.s3response-options.id,
-    aws_api_gateway_integration_response.s3response-options.id,
-    aws_api_gateway_method_response.s3response-options.id,
-    aws_api_gateway_method.s3response.id,
-    aws_api_gateway_integration.s3response.id,
-    aws_api_gateway_integration_response.s3response.id,
-    aws_api_gateway_method_response.s3response.id,
   )))
 }

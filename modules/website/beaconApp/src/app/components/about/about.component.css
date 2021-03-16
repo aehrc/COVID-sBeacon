@@ -1,0 +1,15 @@
+.aboutText{
+	text-align: justify;
+	font-weight: 500;
+	font-size: 1em;
+	color: #8E8E8E;
+	font: 16px Arial;
+}
+
+.example-card {
+  max-width: auto;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  margin: 8px;
+}

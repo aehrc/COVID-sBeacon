@@ -1,0 +1,30 @@
+.mat-form-field{
+      width:150px !important;
+      padding: 2px 5px 1px !important;
+}
+.full-width-field {
+   width: 60% !important;
+}
+
+.button{
+  margin: 8px 8px;
+}
+
+.mat-column-query_combination{
+  max-width:60%;
+  justify-content: center;
+  text-align: center;
+
+}
+.mat-column-removed_combination{
+  max-width:30%;
+  justify-content: center;
+  text-align: center;
+}
+
+.mat-column-sample_count{
+  max-width:10%;
+  justify-content: center;
+  text-align: center;
+
+}

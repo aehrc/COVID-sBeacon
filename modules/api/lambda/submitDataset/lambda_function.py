@@ -1,4 +1,5 @@
 import datetime
+import dateutil.tz
 import json
 import os
 import re
@@ -124,10 +125,10 @@ def create_dataset(attributes):
     dynamodb.put_item(**kwargs)
 
 
-def flush_cache(dataset_id):
+def flush_cache():
     kwargs = {
         'TopicArn': FLUSH_CACHE_SNS_TOPIC_ARN,
-        'Message': dataset_id
+        'Message': '{}'
     }
     print(f"Calling sns.publish with kwargs {json.dumps(kwargs)}")
     response = sns.publish(**kwargs)
@@ -135,7 +136,8 @@ def flush_cache(dataset_id):
 
 
 def get_current_time():
-    return datetime.datetime.now().isoformat(timespec='seconds')
+    tz = dateutil.tz.gettz('Australia/Sydney')
+    return datetime.datetime.now(tz).isoformat(timespec='seconds')
 
 
 def submit_dataset(body_dict, method):
@@ -157,7 +159,7 @@ def submit_dataset(body_dict, method):
     dataset_id = body_dict['id']
     if summarise:
         summarise_dataset(dataset_id)
-    flush_cache(dataset_id)
+    flush_cache()
     return bundle_response(200, {})
 
 

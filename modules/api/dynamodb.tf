@@ -1,18 +1,17 @@
 resource aws_dynamodb_table cache {
   billing_mode = "PAY_PER_REQUEST"
-  hash_key = "datasetId"
-  range_key = "queryArgs"
+  hash_key = local.cache_key
   name = "QueryCache"
   tags = var.common-tags
 
   attribute {
-    name = "queryArgs"
+    name = local.cache_key
     type = "S"
   }
 
-  attribute {
-    name = "datasetId"
-    type = "S"
+  ttl {
+    attribute_name = local.cache_expiry_key
+    enabled = true
   }
 }
 
@@ -42,6 +41,7 @@ resource aws_dynamodb_table datasets {
       "annotationLocation",
       "id",
       "name",
+      "updateDateTime",
     ]
     projection_type = "INCLUDE"
   }

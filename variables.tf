@@ -36,3 +36,7 @@ variable production {
   type = bool
   default = false
 }
+
+variable bucket-name{
+  type = string
+}

@@ -2,6 +2,22 @@ data "aws_region" "current" {}
 
 locals {
   api_version = "v1.0.0"
+  cache_days = 1
+  cache_expiry_key = "expires"
+  cache_key = "cacheString"
+  cache_loc = "s3Location"
+  sample_metadata_suffix = "sample_metadata.json"
+}
+
+locals {
+  cache_env_vars = {
+    CACHE_DAYS = local.cache_days
+    CACHE_EXPIRY_KEY = local.cache_expiry_key
+    CACHE_KEY = local.cache_key
+    CACHE_LOC = local.cache_loc
+    CACHE_BUCKET = aws_s3_bucket.cache.bucket
+    CACHE_TABLE = aws_dynamodb_table.cache.name
+  }
 }
 
 #
@@ -15,7 +31,7 @@ module lambda-submitDataset {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 5
+  timeout = 29
   policy = {
     json = data.aws_iam_policy_document.lambda-submitDataset.json
   }
@@ -52,6 +68,7 @@ module "lambda-summariseDataset" {
   environment = {
     variables = {
       DATASETS_TABLE = aws_dynamodb_table.datasets.name
+      SUMMARISE_SAMPLE_METADATA_SNS_TOPIC_ARN = aws_sns_topic.summariseSampleMetadata.arn
       SUMMARISE_VCF_SNS_TOPIC_ARN = aws_sns_topic.summariseVcf.arn
       VCF_SUMMARIES_TABLE = aws_dynamodb_table.vcf_summaries.name
     }
@@ -95,7 +112,7 @@ module "lambda-summariseSlice" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 60
+  timeout = 210
   policy = {
     json = data.aws_iam_policy_document.lambda-summariseSlice.json
   }
@@ -132,10 +149,14 @@ module "lambda-flushCache" {
   tags = var.common-tags
 
   environment = {
-    variables = {
-      CACHE_BUCKET = aws_s3_bucket.cache.bucket
-      CACHE_TABLE = aws_dynamodb_table.cache.name
-    }
+    variables = merge(
+      {
+        CACHE_KEY = local.cache_key
+        CACHE_LOC = local.cache_loc
+        CACHE_BUCKET = aws_s3_bucket.cache.bucket
+        CACHE_TABLE = aws_dynamodb_table.cache.name
+      }
+    )
   }
 }
 
@@ -180,7 +201,7 @@ module "lambda-queryDatasets" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 28
+  timeout = 123
   policy = {
     json = data.aws_iam_policy_document.lambda-queryDatasets.json
   }
@@ -188,41 +209,46 @@ module "lambda-queryDatasets" {
   tags = var.common-tags
 
   environment = {
-    variables = {
+    variables = merge(
+    {
       BEACON_ID = var.beacon-id
       DATASETS_TABLE = aws_dynamodb_table.datasets.name
       RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
-      SPLIT_QUERY_LAMBDA = module.lambda-splitQuery.function_name
-    }
+      COLLATE_QUERIES_LAMBDA = module.lambda-collateQueries.function_name
+    },
+    local.cache_env_vars,
+    )
   }
 }
 
 #
-# splitQuery Lambda Function
+# collateQueries Lambda Function
 #
-module "lambda-splitQuery" {
+module "lambda-collateQueries" {
   source = "../lambda"
 
-  function_name = "splitQuery"
-  description = "Splits a dataset into smaller slices of VCFs and invokes performQuery on each."
+  function_name = "collateQueries"
+  description = "Calls splitQuery for each component query, and assigns metadata."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.8"
   memory_size = 2048
-  timeout = 26
+  timeout = 122
   policy = {
-    json = data.aws_iam_policy_document.lambda-splitQuery.json
+    json = data.aws_iam_policy_document.lambda-collateQueries.json
   }
-  source_path = "${path.module}/lambda/splitQuery"
+  source_path = "${path.module}/lambda/collateQueries"
   tags = var.common-tags
 
   environment = {
-    variables = {
-      CACHE_BUCKET = aws_s3_bucket.cache.bucket
-      CACHE_TABLE = aws_dynamodb_table.cache.name
-      PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
-      RESPONSE_BUCKET = aws_s3_bucket.large_response_bucket.bucket
-      SPLIT_SIZE = 300
-    }
+    variables = merge(
+      {
+        ARTIFACT_BUCKET = aws_s3_bucket.dataset_artifacts.bucket
+        GET_ANNOTATIONS_LAMBDA = module.lambda-getAnnotations.function_name
+        PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
+        SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
+      },
+      local.cache_env_vars,
+    )
   }
 }
 
@@ -237,10 +263,79 @@ module "lambda-performQuery" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.6"
   memory_size = 2048
-  timeout = 24
+  timeout = 121
   policy = {
     json = data.aws_iam_policy_document.lambda-performQuery.json
   }
   source_path = "${path.module}/lambda/performQuery"
   tags = var.common-tags
+
+  environment = {
+    variables = merge(
+    {
+      MAX_SPLIT_SIZE = 1500
+      RECURSION_FACTOR = 64
+    },
+    local.cache_env_vars,
+    )
+  }
+}
+
+#
+# summariseSampleMetadata Lambda Function
+#
+module "lambda-summariseSampleMetadata" {
+  source = "../lambda"
+
+  function_name = "summariseSampleMetadata"
+  description = "Summarises metadata of all samples in a dataset."
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.8"
+  memory_size = 2048
+  timeout = 120
+  policy = {
+    json = data.aws_iam_policy_document.lambda-summariseSampleMetadata.json
+  }
+  source_path = "${path.module}/lambda/summariseSampleMetadata"
+  tags = var.common-tags
+
+  environment = {
+    variables = {
+      ARTIFACT_BUCKET = aws_s3_bucket.dataset_artifacts.bucket
+      SAMPLE_FIELDS = join("&",
+        [
+          "SampleCollectionDate",
+          "Location",
+          "State",
+          "Location_SampleCollectionDate",
+          "State_SampleCollectionDate",
+          "ID",
+        ]
+      )
+      SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
+    }
+  }
+}
+
+#
+# getAnnotations Lambda Function
+#
+module "lambda-getAnnotations" {
+  source = "../lambda"
+
+  function_name = "getAnnotations"
+  description = "Collects desired annotation fields of all variants in a dataset."
+  handler = "lambda_function.lambda_handler"
+  runtime = "python3.8"
+  memory_size = 2048
+  timeout = 27
+  policy = {
+    json = data.aws_iam_policy_document.lambda-getAnnotations.json
+  }
+  source_path = "${path.module}/lambda/getAnnotations"
+  tags = var.common-tags
+
+  environment = {
+    variables = local.cache_env_vars
+  }
 }

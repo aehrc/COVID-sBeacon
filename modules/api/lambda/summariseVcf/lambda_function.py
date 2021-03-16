@@ -13,6 +13,7 @@ COUNTS = [
     'sampleCount',
 ]
 
+#Updated the slice to 5
 MAX_SLICE_SIZE_MBP = 20
 
 SUMMARISE_SLICE_SNS_TOPIC_ARN = os.environ['SUMMARISE_SLICE_SNS_TOPIC_ARN']

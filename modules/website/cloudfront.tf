@@ -17,6 +17,11 @@ resource aws_cloudfront_distribution platform_distribution {
       value = var.beacon_api_url
     }
 
+    custom_header {
+      name = "LARGE_RESPONSE_DOMAIN"
+      value = var.response_bucket_domain
+    }
+
     s3_origin_config {
       origin_access_identity = aws_cloudfront_origin_access_identity.oai.cloudfront_access_identity_path
     }
@@ -57,6 +62,11 @@ resource aws_cloudfront_distribution platform_distribution {
     geo_restriction {
       restriction_type = "none"
     }
+  }
+  custom_error_response {
+    error_code = 404
+    response_code = 200
+    response_page_path = "/index.html"
   }
 
   viewer_certificate {

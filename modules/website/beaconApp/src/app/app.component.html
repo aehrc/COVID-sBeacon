@@ -1,0 +1,27 @@
+<!-- Toolbar -->
+<div id="header-wrapper">
+	<div id="header" class="headerContainer">
+		<div id="logo">
+			<h1><a href="#">Covid19 Beacon</a></h1>
+		</div>
+		<div id="menu"> <!--#unlock these comments to add menu items.-->
+			<ul>
+				<li><a [routerLink]="['']" accesskey="1" title="">Home</a></li>
+				<li *ngIf="!login" ><a [routerLink]="['query']"  accesskey="2" title="">Query sBeacon</a></li>
+				<li *ngIf="isAuthenticated" ><a [routerLink]="['main']"  accesskey="2" title="">Query sBeacon</a></li>
+				<li><a [routerLink]="['search']"  accesskey="2" title="">Similarity search</a></li>
+				<li><a href="https://bioinformatics.csiro.au/covid-19-sbeacon/" target="_blank" accesskey="3" title="">Methods</a></li>
+        <li *ngIf="login">
+          <a  *ngIf="!isAuthenticated" routerLink="/login"> Login </a>
+          <a  *ngIf="isAuthenticated" (click)="logout()"> Logout </a>
+        </li>
+			</ul>
+
+		</div>
+	</div>
+</div>
+<router-outlet></router-outlet>
+<div id="footer" >
+	<p class="byline">The COVID-19 Beacon is a serverless beacon implementaion by Transformational Bioinformatics group at CSIRO</p>
+
+</div>

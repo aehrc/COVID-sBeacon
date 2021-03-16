@@ -15,12 +15,19 @@ module beacon_api {
   organisation-name = var.organisation-name
 }
 
+module update_data {
+  source = "./modules/update"
+  bucket-name = var.bucket-name
+  beacon_api_url = module.beacon_api.api_url
+}
+
 module beacon_website {
   source = "./modules/website"
   beacon_api_url = module.beacon_api.api_url
   domain_name = var.domain_name
   max_web_requests_per_ip_in_five_minutes = var.max_website_requests_per_ip_in_five_minutes
   production = var.production
+  response_bucket_domain = module.beacon_api.response_bucket_url
 
   providers = {
     aws = aws

@@ -1,0 +1,10 @@
+http://app-beacon.s3-website-ap-southeast-2.amazonaws.com/implicit/callback
+
+
+
+https://stackoverflow.com/questions/44335430/hosting-angular-spa-on-aws-s3-with-authentication-redirects
+
+
+https://medium.com/@joecrobak/production-deploy-of-a-single-page-app-using-s3-and-cloudfront-d4aa2d170aa3
+
+<!-- <button class="btn btn-primary" *ngIf="isAuthenticated" (click)="logout()"> Logout </button> -->
