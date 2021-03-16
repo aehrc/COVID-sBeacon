@@ -25,8 +25,9 @@ class DynamodbClient:
             'ProjectionExpression': projection_expression,
         }
         print(f"Calling dynamodb.get_item with kwargs: {json.dumps(kwargs)}")
+        t = Timer()
         response = self.client.get_item(**kwargs)
-        print(f"Received response {json.dumps(response)}")
+        print(f"Received response after {t.str}: {json.dumps(response)}")
         return response.get('Item')
 
     def put_item(self, table, item):
@@ -35,16 +36,18 @@ class DynamodbClient:
             'Item': item,
         }
         print(f"Calling dynamodb.put_item with kwargs: {json.dumps(kwargs)}")
+        t = Timer()
         response = self.client.put_item(**kwargs)
-        print(f"Received response {json.dumps(response, default=str)}")
+        print(f"Received response after {t.str}: {json.dumps(response, default=str)}")
 
     def query(self, **kwargs):
         more_results = True
         items = []
         while more_results:
             print(f"Calling dynamodb.query with kwargs: {json.dumps(kwargs)}")
+            t = Timer()
             response = self.client.query(**kwargs)
-            print(f"Received response {json.dumps(response, default=str)}")
+            print(f"Received response after {t.str}: {json.dumps(response, default=str)}")
             items += response.get('Items', [])
             last_evaluated = response.get('LastEvaluatedKey', {})
             if last_evaluated:
@@ -69,6 +72,7 @@ class LambdaClient:
         payload = json.dumps(kwargs)
         while True:
             print(f"Invoking {name} with payload: {payload}")
+            t = Timer()
             try:
                 response = self.client.invoke(
                     FunctionName=name,
@@ -76,7 +80,7 @@ class LambdaClient:
                 )
             except botocore.exceptions.ClientError as error:
                 response = error.response
-                print(f"Received error {json.dumps(response, default=str)}")
+                print(f"Received error after {t.str}: {json.dumps(response, default=str)}")
                 if response['Error']['Code'] == 'TooManyRequestsException':
                     print(f"Invocation was throttled, waiting {THROTTLE_DELAY}"
                           " second(s) before calling again.")
@@ -85,7 +89,7 @@ class LambdaClient:
                 else:
                     raise error
             else:
-                print(f"Received response {json.dumps(response, default=str)}")
+                print(f"Received response after {t.str}: {json.dumps(response, default=str)}")
                 return response['Payload']
 
 
@@ -109,8 +113,9 @@ class S3Client:
             'ExpiresIn': expires,
         }
         print(f"Calling s3.generate_presigned_url with kwargs: {json.dumps(kwargs)}")
+        t = Timer()
         response = self.client.generate_presigned_url(**kwargs)
-        print(f"Received response: {json.dumps(response, default=str)}")
+        print(f"Received response after {t.str}: {json.dumps(response, default=str)}")
         return response
 
     def get_object(self, bucket, key):
@@ -119,8 +124,9 @@ class S3Client:
             'Key': key,
         }
         print(f"Calling s3.get_object with kwargs: {json.dumps(kwargs)}")
+        t = Timer()
         response = self.client.get_object(**kwargs)
-        print(f"Received response: {json.dumps(response, default=str)}")
+        print(f"Received response after {t.str}: {json.dumps(response, default=str)}")
         return response['Body']
 
     def get_object_from_path(self, s3_location):
@@ -142,8 +148,9 @@ class S3Client:
         )
         print(f"Calling s3.put_item with kwargs: {json.dumps(kwargs)}")
         kwargs['Body'] = body
+        t = Timer()
         s3_response = self.client.put_object(**kwargs)
-        print(f"Received response {json.dumps(s3_response, default=str)}")
+        print(f"Received response after {t.str}: {json.dumps(s3_response, default=str)}")
 
     @staticmethod
     def truncate_body(body, head=100, tail=100):
@@ -153,3 +160,15 @@ class S3Client:
                     + body[-tail:].decode())
         else:
             return body.decode()
+
+
+class Timer:
+    def __init__(self):
+        self.start_time = time.time()
+
+    def passed(self):
+        return int((time.time() - self.start_time) * 1000)
+
+    @property
+    def str(self):
+        return f'{self.passed()}ms'

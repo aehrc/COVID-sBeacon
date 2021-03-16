@@ -91,6 +91,7 @@ class CachedInvoke:
     def process(self, response_queue):
         print(f"Processing {self.function_name} (call_id={self.call_id})"
               f" with kwargs: {json.dumps(self.invoke_kwargs)}")
+        start_time = time.time()
         self._set_location_from_dynamodb()
         self._get_result()
         if not self.complete:
@@ -103,7 +104,8 @@ class CachedInvoke:
                 invocations += 1
                 self._get_result()
         print(f"Finished Processing {self.function_name}"
-              f" (call_id={self.call_id}).")
+              f" (call_id={self.call_id})"
+              f" after {int(1000*(time.time()-start_time))}ms.")
         response_queue.put(self)
 
 
