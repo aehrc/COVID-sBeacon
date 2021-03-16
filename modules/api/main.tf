@@ -273,7 +273,8 @@ module "lambda-performQuery" {
   environment = {
     variables = merge(
     {
-      SPLIT_SIZE = 1500
+      MAX_SPLIT_SIZE = 1500
+      RECURSION_FACTOR = 64
     },
     local.cache_env_vars,
     )
