@@ -248,6 +248,8 @@ def get_fuzzy_combinations(all_splits, query_combination,
         print(f"Testing reducing number of queries by {parts_removed}")
         old_subcombinations_tested = subcombinations_tested
         for subcombination in combinations(part_list, num_parts - parts_removed):
+            if subcombinations_checked >= MAX_SUBCOMBINATIONS_TO_CHECK:
+                break
             subcombinations_checked += 1
             part_set = set(subcombination)
             if any(
