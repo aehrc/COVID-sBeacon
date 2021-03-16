@@ -6,5 +6,5 @@ resource aws_lambda_permission S3updateData {
   action = "lambda:InvokeFunction"
   function_name = module.lambda-updateData.function_name
   principal = "s3.amazonaws.com"
-  source_arn = var.bucket-name
+  source_arn = local.bucket_arn
 }

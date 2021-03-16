@@ -26,7 +26,7 @@ data aws_iam_policy_document lambda-updateData {
     "s3:ListBucket"
     ]
     resources = [
-      "arn:aws:s3:::covid19-vcfs-dev"
+      local.bucket_arn
     ]
   }
 }
