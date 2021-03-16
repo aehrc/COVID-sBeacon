@@ -3,4 +3,5 @@ beacon-name = "CSIRO COVID-19 Serverless Beacon"
 domain_name = "covid19beacon.csiro.au"
 organisation-id = "CSIRO"
 organisation-name = "CSIRO"
+bucket-name = "pathsbeacon-vcfs-prod"
 production = true
