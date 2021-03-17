@@ -26,6 +26,7 @@ import {MatIconModule} from '@angular/material/icon';
 import { DownloadService } from './components/main/main.service';
 import { SearchComponent } from './components/search/search.component';
 
+
 @NgModule({
   declarations: [
     AppComponent,
@@ -53,7 +54,7 @@ import { SearchComponent } from './components/search/search.component';
     JwPaginationModule,
     OktaAuthModule.initAuth({
       issuer: 'https://dev-8520796.okta.com/oauth2/default',
-      redirectUri: window.location.origin +'/implicit/callback',
+      redirectUri: `${window.location.origin}/implicit/callback`,
       clientId: '0oaatqbqOVXL5PZzp5d5'
     })
   ],
