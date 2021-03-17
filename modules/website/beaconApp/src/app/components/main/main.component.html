@@ -115,13 +115,13 @@
 					<ng-container matColumnDef="expand">
 						<th mat-header-cell  *matHeaderCellDef >  </th>
 						<td mat-cell   *matCellDef="let element">
-				      <div *ngIf="!expanded" >
+
 				        <button  *ngIf="element.position!==1" [class.example-expanded-row]="expandedElement === element"
 				      (click)="expandedElement = expandedElement === element ? null : element;">
 				      	<span *ngIf="expandedElement !==element" >+</span>
 								<span *ngIf="expandedElement ===element" >-</span>
 				        </button>
-				        </div>
+				       
         		</td>
 					</ng-container>
 

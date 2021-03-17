@@ -19,7 +19,8 @@ import { MatTableModule } from '@angular/material/table';
 import {MatSortModule} from '@angular/material/sort';
 import { LoginComponent } from './components/login/login.component';
 import { OktaAuthModule } from '@okta/okta-angular';
-import { JwPaginationComponent } from 'jw-angular-pagination';
+import { JwPaginationModule } from 'jw-angular-pagination';
+//import { JwPaginationComponent } from 'jw-angular-pagination';
 import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {MatIconModule} from '@angular/material/icon';
 import { DownloadService } from './components/main/main.service';
@@ -31,7 +32,7 @@ import { SearchComponent } from './components/search/search.component';
     MainComponent,
     AboutComponent,
     LoginComponent,
-    JwPaginationComponent,
+//    JwPaginationComponent,
     SearchComponent
   ],
   imports: [
@@ -49,6 +50,7 @@ import { SearchComponent } from './components/search/search.component';
     MatSortModule,
     NgbModule,
     MatIconModule,
+    JwPaginationModule,
     OktaAuthModule.initAuth({
       issuer: 'https://dev-8520796.okta.com/oauth2/default',
       redirectUri: window.location.origin +'/implicit/callback',
