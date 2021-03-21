@@ -104,7 +104,7 @@
 
 	<mat-card class="example-card" *ngIf="hits.length">
     <mat-card-content *ngIf="!warning">
-			<mat-card-title>
+			<mat-card-title *ngIf="sMin == null">
 					<button mat-raised-button color="accent" (click)="this.similaritySearch()" ><span>Similarity search</span></button>
 					<span id="alertMessage"> {{alertMessage}}</span>
 			</mat-card-title>
@@ -121,7 +121,7 @@
 				      	<span *ngIf="expandedElement !==element" >+</span>
 								<span *ngIf="expandedElement ===element" >-</span>
 				        </button>
-				       
+
         		</td>
 					</ng-container>
 
