@@ -25,6 +25,8 @@ import {NgbModule} from '@ng-bootstrap/ng-bootstrap';
 import {MatIconModule} from '@angular/material/icon';
 import { DownloadService } from './components/main/main.service';
 import { SearchComponent } from './components/search/search.component';
+import { environment } from './../environments/environment';
+
 
 
 @NgModule({
@@ -33,7 +35,7 @@ import { SearchComponent } from './components/search/search.component';
     MainComponent,
     AboutComponent,
     LoginComponent,
-//    JwPaginationComponent,
+//  JwPaginationComponent,
     SearchComponent
   ],
   imports: [
@@ -54,7 +56,7 @@ import { SearchComponent } from './components/search/search.component';
     JwPaginationModule,
     OktaAuthModule.initAuth({
       issuer: 'https://dev-8520796.okta.com/oauth2/default',
-      redirectUri: `${window.location.origin}/implicit/callback`,
+      redirectUri: `${environment.cloudfront_url}/implicit/callback`,
       clientId: '0oaatqbqOVXL5PZzp5d5'
     })
   ],
@@ -69,7 +71,9 @@ import { SearchComponent } from './components/search/search.component';
           return appConfigService.loadAppConfig();
         };
       }
-    },DownloadService
+    },
+    DownloadService
+
   ],
   bootstrap: [AppComponent]
 })
