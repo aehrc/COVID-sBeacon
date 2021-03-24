@@ -151,6 +151,8 @@ def process_line(open_records, line, num_samples, last_position):
     assert len(record[3]) == 1, "Script expects only single-nucleotide reference"
     new_position = int(record[1])
     assert new_position > last_position, "Script expects sorted VCF and only one record per position"
+    # Change unknown bases to missing
+    remove_alt(record, 'N', '.')
     # Change inline deletions to ref and collect sample indexes
     deletion_samples = remove_alt(record, '*', '0')
     update_records(open_records, last_position, deletion_samples)
