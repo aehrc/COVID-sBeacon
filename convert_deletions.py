@@ -146,33 +146,8 @@ def process_line(open_records, line, num_samples, last_position):
     assert len(record[3]) == 1, "Script expects only single-nucleotide reference"
     new_position = int(record[1])
     assert new_position > last_position, "Script expects sorted VCF and only one record per position"
-    alts = record[4]
-    if '*' in alts:
-        split_alts = alts.split(',')
-        deletion_index = split_alts.index('*') + 1
-        # Get samples with deletion (note index offset)
-        deletion_index_string = str(deletion_index)
-        deletion_samples = {
-            i
-            for i, genotype in enumerate(record[9:])
-            if genotype == deletion_index_string
-        }
-        # Set deletions to ref and shift up later alts
-        new_genotypes = {
-            str(g): '0' if g == deletion_index else str(g - 1)
-            for g in range(deletion_index, len(split_alts) + 1)
-        }
-        record[9:] = [
-            new_genotypes.get(g, g)
-            for g in record[9:]
-        ]
-        # Remove '*' from ALTS column
-        record[4] = ','.join(
-            split_alts[:deletion_index - 1]
-            + split_alts[deletion_index:]
-        )
-    else:
-        deletion_samples = set()
+    # Change inline deletions to ref and collect sample indexes
+    deletion_samples = remove_alt(record, '*', '0')
     update_records(open_records, last_position, deletion_samples)
     if deletion_samples and new_position != 1:
         if open_records and open_records[-1].pos == new_position - 1:
@@ -190,6 +165,37 @@ def process_line(open_records, line, num_samples, last_position):
         open_records.append(VcfRecordDetails(record))
         # i.e. skip records that only show an upstream deletion.
     return new_position
+
+
+def remove_alt(record, alt_to_remove, gt_replacement):
+    alts = record[4]
+    if alt_to_remove in alts:
+        split_alts = alts.split(',')
+        alt_index = split_alts.index(alt_to_remove) + 1
+        # Get samples with alt
+        alt_index_string = str(alt_index)
+        alt_samples = {
+            i
+            for i, genotype in enumerate(record[9:])
+            if genotype == alt_index_string
+        }
+        # Set alt to replacement and shift up later alts
+        new_genotypes = {
+            str(g): gt_replacement if g == alt_index else str(g - 1)
+            for g in range(alt_index, len(split_alts) + 1)
+        }
+        record[9:] = [
+            new_genotypes.get(g, g)
+            for g in record[9:]
+        ]
+        # Remove alt from ALTS column
+        record[4] = ','.join(
+            split_alts[:alt_index - 1]
+            + split_alts[alt_index:]
+        )
+    else:
+        alt_samples = set()
+    return alt_samples
 
 
 def update_records(open_records, last_position, deletion_samples):
