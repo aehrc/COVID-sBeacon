@@ -1,19 +1,90 @@
+#!/usr/bin/env python3
 from collections import deque
 import sys
 
 
-# Used for handling deletions differently that start at pos 1
-POS_1_PREFIX = 'pos_1_'
-
-
-class RecordDetails:
-    def __init__(self, record):
-        self.record = record
-        self.p1_open_deletions = set()
-        self.p1_deletion_alts = []
-        self.open_deletions = set()
+class VcfRecordDetails:
+    def __init__(self, record, samples=None, pos_1=False):
         self.deletion_alts = []
+        self.open_deletions = set()
+        self.p1_deletion_alts = []
+        self.p1_open_deletions = set()
+        if samples is not None:
+            self.has_deletions = True
+            if pos_1:
+                self.p1_open_deletions = samples
+            else:
+                self.open_deletions = samples
+        else:
+            self.has_deletions = False
         self.pos = int(record[1])
+        # Remove unnecessary fields
+        record[2] = record[5] = record[6] = record[7] = '.'
+        self.record = record
+        alts = record[4]
+        self.num_native_alts = alts.count(',') + 1 if alts else 0
+
+    def is_complete(self):
+        return not (self.open_deletions or self.p1_open_deletions)
+
+    def update(self, last_pos, deletion_samples):
+        if self.pos == 1:
+            # Run through deletions that start at position 1 first
+            self._update(last_pos, deletion_samples, True)
+        self._update(last_pos, deletion_samples)
+
+    def write(self, sequence):
+        seq_start = self.pos-1
+        record = self.record
+        assert sequence[seq_start:].startswith(record[3])
+        if self.has_deletions:
+            ref_len = max(self.p1_deletion_alts + self.deletion_alts) + 1
+            seq_end = seq_start + ref_len
+            record[3] = sequence[seq_start:seq_end]
+            seq_start_char = sequence[seq_start]
+            alts = [
+                alt + sequence[seq_start+len(alt):seq_end]
+                for alt in record[4].split(',')
+                if alt
+            ] + [
+                sequence[seq_start+del_size:seq_end]
+                for del_size in self.p1_deletion_alts
+            ] + [
+                seq_start_char + sequence[seq_start+del_size+1:seq_end]
+                for del_size in self.deletion_alts
+            ]
+            record[4] = ','.join(alts)
+        print('\t'.join(record), file=sys.stdout)
+
+    def _update(self, last_pos, deletion_samples, pos_1=False):
+        if pos_1:
+            deletion_alts = self.p1_deletion_alts
+            open_deletions = self.p1_open_deletions
+        else:
+            deletion_alts = self.deletion_alts
+            open_deletions = self.open_deletions
+        dropped_deletions = open_deletions - deletion_samples
+        # Remove deletions from set to check
+        deletion_samples -= open_deletions
+        if dropped_deletions:
+            open_deletions -= dropped_deletions
+            num_alts = (
+                    self.num_native_alts
+                    + len(self.deletion_alts)
+                    + len(self.p1_deletion_alts)
+            )
+            alt_gt = str(num_alts+1)
+            record = self.record
+            record[9:] = [
+                alt_gt if i in dropped_deletions else g
+                for i, g in enumerate(record[9:])
+            ]
+            # record deletion size for this alt
+            deletion_alts.append(
+                (last_pos - self.pos)
+                if not pos_1
+                else (last_pos - self.pos + 1)
+            )
 
 
 def convert(fasta_file_path):
@@ -27,83 +98,20 @@ def convert(fasta_file_path):
             print(record_string, file=sys.stdout, end='')
             if record_string.startswith('#CHROM'):
                 num_samples = record_string.count('\t') - 8
-            continue
-        # CHROM POS ID REF ALT QUAL FILTER INFO FORMAT SAMPLE1 SAMPLE2 ...
-        record = record_string.split(sep='\t')
-        assert record[8] == 'GT', "Script expects only the GT format field"
-        # Ensure records are in order and only one record per position
-        new_position = int(record[1])
-        assert new_position > last_position, "Script expects sorted VCF and only one record per position"
-        last_position = new_position
-        alts = record[4]
-        if '*' in alts:
-            split_alts = alts.split(',')
-            deletion_index = split_alts.index('*') + 1
-            # Get samples with deletion (note index offset)
-            deletion_index_string = str(deletion_index)
-            deletion_samples = {
-                i
-                for i, genotype in enumerate(record[9:])
-                if genotype == deletion_index_string
-            }
-            if not open_records:
-                if new_position != 1:
-                    # Make an intermediate record to hold the new deletions
-                    new_record = create_new_record(sequence, new_position-1,
-                                                   deletion_samples, num_samples)
-                    open_records.append(new_record)
-
-
-            last_open_record - open_records[-1]
-            if new_position == 1:
-                # put deletion in this record
-                open_records[-1]['open_deletions'] = deletion_samples
-            else:
-                deletion_record = open_records[-2]
-            # Set deletions to ref and shift up later alts
-            new_genotypes = {
-                str(g): '0' if g == deletion_index else str(g-1)
-                for g in range(deletion_index, len(split_alts)+1)
-            }
-            record[9:] = [
-                new_genotypes.get(g, g)
-                for g in record[9:]
-            ]
-            # Remove '*' from ALTS column
-            record[4] = ','.join(
-                split_alts[:deletion_index-1]
-                + split_alts[deletion_index:]
-            )
         else:
-            deletion_samples = set()
-        open_records.append({
-            'record': record,
-            'open_deletions': set() if new_position > 1 else deletion_samples,
-            'deletion_alts': [],
-        })
-
-        # Update earlier records
-        for open_record in open_records:
-            open_record_deletions = open_record['open_deletions']
-            completed_deletions = open_record_deletions - deletion_samples
-            if not completed_deletions:
-                continue
-            record = open_record['record']
-            deletion_size = int(record[1])
+            last_position = process_line(open_records, record_string, num_samples, last_position)
+            write_records(open_records, sequence)
+    update_records(open_records, last_position, set())
+    write_records(open_records, sequence)
 
 
-        print(*record, sep='\t', file=sys.stdout, end='')
-
-
-def create_new_record(sequence, pos, deletion_samples, num_samples):
-    ref = sequence[pos-1:pos+1]
-    alt = sequence[pos-1]
+def create_new_record(pos, deletion_samples, num_samples):
     record_info = [
         '1',  # CHROM
         str(pos),  # POS
         '.',  # ID
-        ref,  # REF
-        alt,  # ALT
+        '',  # REF - to be filled just before printing
+        '',  # ALT - to be filled just before printing
         '.',  # QUAL
         '.',  # FILTER
         '.',  # INFO
@@ -112,39 +120,7 @@ def create_new_record(sequence, pos, deletion_samples, num_samples):
         '1' if i in deletion_samples else '0'
         for i in range(num_samples)
     ]
-    return {
-        'record': record_info,
-        'open_deletions': deletion_samples,
-        'deletion_alts': [],
-    }
-
-
-def update_record(record_details, pos, deletion_samples, pos_1=False):
-    p1 = POS_1_PREFIX if pos_1 else ''
-    record = record_details['record']
-    record_open_deletions = record_details[f'{p1}open_deletions']
-    dropped_deletions = record_open_deletions - deletion_samples
-    # Remove deletions from set to check
-    deletion_samples -= record_open_deletions
-    if dropped_deletions:
-        record_open_deletions -= dropped_deletions
-        num_alts = (
-                record[4].count(',') + 1
-                + len(record_details[f'{POS_1_PREFIX}deletion_alts'])
-                + len(record_details['deletion_alts'])
-        )
-        alt_gt = str(num_alts+1)
-        record[9:] = [
-            alt_gt if i in dropped_deletions else g
-            for i, g in enumerate(record[9:])
-        ]
-        # record deletion size for this alt
-        record_pos = int(record[1])
-        record_details[f'{p1}deletion_alts'].append(
-            (pos - record_pos - 1)
-            if not pos_1
-            else (pos - record_pos)
-        )
+    return VcfRecordDetails(record_info, samples=deletion_samples)
 
 
 def get_fasta_sequence(fasta_file_iterable):
@@ -162,9 +138,79 @@ def get_fasta_sequence(fasta_file_iterable):
     }
 
 
+def process_line(open_records, line, num_samples, last_position):
+    # CHROM POS ID REF ALT QUAL FILTER INFO FORMAT SAMPLE1 SAMPLE2 ...
+    record = line.rstrip().split(sep='\t')
+    assert record[8] == 'GT', "Script expects only the GT format field"
+    # Ensure records are in order and only one record per position
+    assert len(record[3]) == 1, "Script expects only single-nucleotide reference"
+    new_position = int(record[1])
+    assert new_position > last_position, "Script expects sorted VCF and only one record per position"
+    alts = record[4]
+    if '*' in alts:
+        split_alts = alts.split(',')
+        deletion_index = split_alts.index('*') + 1
+        # Get samples with deletion (note index offset)
+        deletion_index_string = str(deletion_index)
+        deletion_samples = {
+            i
+            for i, genotype in enumerate(record[9:])
+            if genotype == deletion_index_string
+        }
+        # Set deletions to ref and shift up later alts
+        new_genotypes = {
+            str(g): '0' if g == deletion_index else str(g - 1)
+            for g in range(deletion_index, len(split_alts) + 1)
+        }
+        record[9:] = [
+            new_genotypes.get(g, g)
+            for g in record[9:]
+        ]
+        # Remove '*' from ALTS column
+        record[4] = ','.join(
+            split_alts[:deletion_index - 1]
+            + split_alts[deletion_index:]
+        )
+    else:
+        deletion_samples = set()
+    update_records(open_records, last_position, deletion_samples)
+    if deletion_samples and new_position != 1:
+        if open_records and open_records[-1].pos == new_position - 1:
+            open_records[-1].open_deletions = deletion_samples
+        else:
+            # Make an intermediate record to hold the new deletions
+            new_record = create_new_record(new_position - 1, deletion_samples,
+                                           num_samples)
+            open_records.append(new_record)
+
+    if new_position == 1:
+        open_records.append(VcfRecordDetails(record, samples=deletion_samples,
+                                             pos_1=True))
+    elif record[4]:
+        open_records.append(VcfRecordDetails(record))
+        # i.e. skip records that only show an upstream deletion.
+    return new_position
+
+
+def update_records(open_records, last_position, deletion_samples):
+    for open_record in open_records:
+        open_record.update(last_position, deletion_samples)
+
+
+def write_records(open_records, sequence):
+    while True:
+        if not open_records:
+            break
+        first_record = open_records[0]
+        if first_record.is_complete():
+            first_record.write(sequence)
+            open_records.popleft()
+        else:
+            break
+
+
 if __name__ == '__main__':
     (
         fasta_file,
     ) = sys.argv[1:2]
-    start_accession_id = sys.argv[5] if len(sys.argv) > 5 else None
     convert(fasta_file)
