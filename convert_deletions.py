@@ -56,6 +56,9 @@ class VcfRecordDetails:
                 for del_size in self.deletion_alts
             ]
             record[4] = ','.join(alts)
+        elif self.num_native_alts == 0:
+            # Skip records that only show an upstream deletion and no alts.
+            return
         print('\t'.join(record), file=sys.stdout)
 
     def _update(self, last_pos, deletion_samples, pos_1=False):
@@ -163,9 +166,8 @@ def process_line(open_records, line, num_samples, last_position):
     if new_position == 1:
         open_records.append(VcfRecordDetails(record, samples=deletion_samples,
                                              pos_1=True))
-    elif record[4]:
+    else:
         open_records.append(VcfRecordDetails(record))
-        # i.e. skip records that only show an upstream deletion.
     return new_position
 
 
