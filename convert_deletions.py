@@ -9,20 +9,22 @@ class VcfRecordDetails:
         self.open_deletions = set()
         self.p1_deletion_alts = []
         self.p1_open_deletions = set()
-        if samples is not None:
-            self.has_deletions = True
-            if pos_1:
-                self.p1_open_deletions = samples
-            else:
-                self.open_deletions = samples
-        else:
-            self.has_deletions = False
+        self.has_deletions = False
+        self.add_deletions(samples, pos_1)
         self.pos = int(record[1])
         # Remove unnecessary fields
         record[2] = record[5] = record[6] = record[7] = '.'
         self.record = record
         alts = record[4]
         self.num_native_alts = alts.count(',') + 1 if alts else 0
+
+    def add_deletions(self, samples, pos_1=False):
+        if samples:
+            self.has_deletions = True
+            if pos_1:
+                self.p1_open_deletions = samples
+            else:
+                self.open_deletions = samples
 
     def is_complete(self):
         return not (self.open_deletions or self.p1_open_deletions)
@@ -151,7 +153,7 @@ def process_line(open_records, line, num_samples, last_position):
     update_records(open_records, last_position, deletion_samples)
     if deletion_samples and new_position != 1:
         if open_records and open_records[-1].pos == new_position - 1:
-            open_records[-1].open_deletions = deletion_samples
+            open_records[-1].add_deletions(deletion_samples)
         else:
             # Make an intermediate record to hold the new deletions
             new_record = create_new_record(new_position - 1, deletion_samples,
