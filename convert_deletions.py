@@ -2,6 +2,20 @@ from collections import deque
 import sys
 
 
+# Used for handling deletions differently that start at pos 1
+POS_1_PREFIX = 'pos_1_'
+
+
+class RecordDetails:
+    def __init__(self, record):
+        self.record = record
+        self.p1_open_deletions = set()
+        self.p1_deletion_alts = []
+        self.open_deletions = set()
+        self.deletion_alts = []
+        self.pos = int(record[1])
+
+
 def convert(fasta_file_path):
     with open(fasta_file_path, 'r') as fasta_file_obj:
         sequence = get_fasta_sequence(fasta_file_obj)['1']
@@ -101,8 +115,36 @@ def create_new_record(sequence, pos, deletion_samples, num_samples):
     return {
         'record': record_info,
         'open_deletions': deletion_samples,
-        'deletion_alts':
+        'deletion_alts': [],
     }
+
+
+def update_record(record_details, pos, deletion_samples, pos_1=False):
+    p1 = POS_1_PREFIX if pos_1 else ''
+    record = record_details['record']
+    record_open_deletions = record_details[f'{p1}open_deletions']
+    dropped_deletions = record_open_deletions - deletion_samples
+    # Remove deletions from set to check
+    deletion_samples -= record_open_deletions
+    if dropped_deletions:
+        record_open_deletions -= dropped_deletions
+        num_alts = (
+                record[4].count(',') + 1
+                + len(record_details[f'{POS_1_PREFIX}deletion_alts'])
+                + len(record_details['deletion_alts'])
+        )
+        alt_gt = str(num_alts+1)
+        record[9:] = [
+            alt_gt if i in dropped_deletions else g
+            for i, g in enumerate(record[9:])
+        ]
+        # record deletion size for this alt
+        record_pos = int(record[1])
+        record_details[f'{p1}deletion_alts'].append(
+            (pos - record_pos - 1)
+            if not pos_1
+            else (pos - record_pos)
+        )
 
 
 def get_fasta_sequence(fasta_file_iterable):
