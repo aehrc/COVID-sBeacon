@@ -3,3 +3,4 @@
 __pycache__/
 modules/website/beaconApp/src/environments/environment.ts
 modules/website/beaconApp/src/environments/environment.prod.ts
+modules/website/beaconApp/src/assets/config.json
