@@ -29,7 +29,7 @@ import { Router } from '@angular/router';
 
 export class MainComponent implements AfterViewInit {
   inputText: string = "";
-  hits = new MatTableDataSource<Dataset>();
+  hits : any  = [];
   @ViewChild(MatSort, { static: false }) sort: MatSort;
   //@ViewChild(MatPaginator, { static: false }) paginator: MatPaginator;
 
@@ -393,7 +393,8 @@ export class MainComponent implements AfterViewInit {
             }else{
               console.log(response);
               this.warning = "No Hits to display";
-              this.hits = new MatTableDataSource<Dataset>();
+              this.hits   = [];
+              //this.hits = new MatTableDataSource<Dataset>();
               this.loading = false;
               //const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
               this.visualIndex = 0;
@@ -409,7 +410,8 @@ export class MainComponent implements AfterViewInit {
             }else{
               this.warning = error.error.error.errorMessage;
             }
-            this.hits = new MatTableDataSource<Dataset>([]);
+            this.hits  = [];
+            //this.hits = new MatTableDataSource<Dataset>([]);
             this.loading = false;
           }
         );
@@ -436,7 +438,8 @@ export class MainComponent implements AfterViewInit {
         }else{
           console.log(response);
           this.warning = "No Hits to display";
-          this.hits = new MatTableDataSource<Dataset>([]);
+          this.hits   = [];
+          //this.hits = new MatTableDataSource<Dataset>([]);
           this.loading = false;
           //const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
           this.visualIndex = 0;
@@ -446,7 +449,8 @@ export class MainComponent implements AfterViewInit {
       },
       error => {
         console.log(error);
-        this.hits = new MatTableDataSource<Dataset>();
+        this.hits   = [];
+        //this.hits = new MatTableDataSource<Dataset>();
         if(error.statusText == "Unknown Error"){
           this.warning = "Query request timed out. Please contact administrator to run your query."
         }else{

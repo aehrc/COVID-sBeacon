@@ -12,8 +12,9 @@ class DynamodbClient:
     def __init__(self):
         dynamodb_config = botocore.config.Config(
             max_pool_connections=200,
+            read_timeout=1,  # If it takes more than a second, something's wrong
             retries={
-                'total_max_attempts': 1,
+                'total_max_attempts': 3,
             }
         )
         self.client = boto3.client('dynamodb', config=dynamodb_config)

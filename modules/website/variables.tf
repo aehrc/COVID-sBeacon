@@ -13,12 +13,11 @@ variable max_web_requests_per_ip_in_five_minutes {
 
 variable production {
   type = bool
-  default = false
 }
 
 variable login {
   type = bool
-  default = false
+  default = true
 }
 
 variable response_bucket_domain {

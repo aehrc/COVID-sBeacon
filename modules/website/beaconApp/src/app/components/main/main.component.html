@@ -104,7 +104,7 @@
 
 	<mat-card class="example-card" *ngIf="hits.length">
     <mat-card-content *ngIf="!warning">
-			<mat-card-title>
+			<mat-card-title *ngIf="sMin == null">
 					<button mat-raised-button color="accent" (click)="this.similaritySearch()" ><span>Similarity search</span></button>
 					<span id="alertMessage"> {{alertMessage}}</span>
 			</mat-card-title>
@@ -115,13 +115,13 @@
 					<ng-container matColumnDef="expand">
 						<th mat-header-cell  *matHeaderCellDef >  </th>
 						<td mat-cell   *matCellDef="let element">
-				      <div *ngIf="!expanded" >
+
 				        <button  *ngIf="element.position!==1" [class.example-expanded-row]="expandedElement === element"
 				      (click)="expandedElement = expandedElement === element ? null : element;">
 				      	<span *ngIf="expandedElement !==element" >+</span>
 								<span *ngIf="expandedElement ===element" >-</span>
 				        </button>
-				        </div>
+
         		</td>
 					</ng-container>
 

@@ -78,10 +78,11 @@ IUPAC_AMBIGUITY_CODES = {
 }
 
 IUPAC_MATCHES = {
-    code1: {
+    code1: '[' + ''.join(
         code2 for code2, bases2 in IUPAC_AMBIGUITY_CODES.items()
         if bases1 & bases2
-    } for code1, bases1 in IUPAC_AMBIGUITY_CODES.items()
+    ) + ']'
+    for code1, bases1 in IUPAC_AMBIGUITY_CODES.items()
 }
 
 MAX_SPLIT_SIZE = int(os.environ['MAX_SPLIT_SIZE'])
@@ -160,16 +161,15 @@ def truncate_ref_alt(ref, alt):
 
 
 def get_possible_codes(code, iupac=True):
-    if not iupac:
-        return {code}
-    possible_codes = {''}
-    if code is not None:
-        for base in code:
-            next_possible_codes = set()
-            for possible_code in possible_codes:
-                for iupac_code in IUPAC_MATCHES[base]:
-                    next_possible_codes.add(possible_code + iupac_code)
-            possible_codes = next_possible_codes
+    if iupac:
+        possible_codes = re.compile(
+            ''.join(
+                IUPAC_MATCHES[base]
+                for base in code
+            )
+        )
+    else:
+        possible_codes = re.compile(code)
     return possible_codes
 
 
@@ -227,8 +227,10 @@ def perform_query(reference_bases, region, start_min, end_min, end_max, alternat
     variant_samples = defaultdict(set)
     call_count = 0
     iupac = IUPAC == 'True'
-    reference_matches = get_possible_codes(reference_bases, iupac)
-    alternate_matches = get_possible_codes(alternate_bases, iupac)
+    truncated_ref, truncated_alt = truncate_ref_alt(reference_bases,
+                                                    alternate_bases)
+    reference_matches = get_possible_codes(truncated_ref, iupac)
+    alternate_matches = get_possible_codes(truncated_alt, iupac)
 
     for line in query_process.stdout:
         try:
@@ -250,7 +252,7 @@ def perform_query(reference_bases, region, start_min, end_min, end_max, alternat
         hit_indexes = {
             i for i, (ref, _) in enumerate(ref_alts)
             if (end_min <= pos + len(ref) - 1 <= end_max
-                and approx or ref.upper() in reference_matches
+                and approx or reference_matches.fullmatch(ref.upper())
                 )
         }
         if not hit_indexes:
@@ -313,7 +315,7 @@ def perform_query(reference_bases, region, start_min, end_min, end_max, alternat
         else:
             hit_indexes &= {
                 i for i, (_, alt) in enumerate(ref_alts)
-                if alt.upper() in alternate_matches
+                if alternate_matches.fullmatch(alt.upper())
             }
         if not hit_indexes:
             continue
