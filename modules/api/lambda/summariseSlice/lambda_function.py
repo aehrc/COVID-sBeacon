@@ -30,13 +30,17 @@ all_count_pattern = re.compile('[0-9]+')
 get_all_calls = all_count_pattern.findall
 
 
+class MissingInfoException(Exception):
+    pass
+
+
 def calculate_slices(location, chrom, start, end, num_slices):
     start_pos_exc = start - 1  # Won't include the first position, so step back
     total_size = end - start_pos_exc
     min_size = total_size // num_slices
     remainder = total_size % num_slices
     slices = []
-    for slice_number in range(num_slices):
+    for _ in range(num_slices):
         slice_size = min_size
         if remainder > 0:
             slice_size += 1
@@ -84,25 +88,32 @@ def get_calls_and_variants(location, chrom, start, end, time_assigned, initial_t
     counts_process = get_counts_process(location, chrom, start, end,
                                         gvcf=gvcf)
     counts_handle = counts_process.stdout
-    call_count, variant_count, slices = sum_counts(counts_handle, start, end,
-                                                   time_assigned, initial_time, gvcf=gvcf)
-    counts_handle.close()
-    error_code = counts_process.wait(timeout=1)
-    if error_code != 0 and not slices:  # complains when pipe is closed
-        if not gvcf:
-            # Process errored out, could be because INFO tags aren't defined.
-            # This happens in the case of gVCFs, so try again using only GT.
-            print("Got error when querying, trying gVCF mode...")
-            call_count, variant_count, slices = get_calls_and_variants(
-                location, chrom, start, end, time_assigned, initial_time, gvcf=True)
-        else:
-            assert error_code == 0, ("query returned error code"
-                                     " {}".format(error_code))
+    try:
+        call_count, variant_count, slices = sum_counts(counts_handle, start, end,
+                                                       time_assigned, initial_time, gvcf=gvcf)
+    except MissingInfoException:
+        counts_handle.close()
+        print("Missing INFO tags, trying gVCF mode...")
+        call_count, variant_count, slices = get_calls_and_variants(
+            location, chrom, start, end, time_assigned, initial_time, gvcf=True)
+    else:
+        counts_handle.close()
+        error_code = counts_process.wait(timeout=1)
+        if error_code != 0 and not slices:  # complains when pipe is closed
+            if not gvcf:
+                # Process errored out, could be because INFO tags aren't defined.
+                # This happens in the case of gVCFs, so try again using only GT.
+                print("Got error when querying, trying gVCF mode...")
+                call_count, variant_count, slices = get_calls_and_variants(
+                    location, chrom, start, end, time_assigned, initial_time, gvcf=True)
+            else:
+                assert error_code == 0, ("query returned error code"
+                                         " {}".format(error_code))
     return call_count, variant_count, slices
 
 
 def get_counts_process(location, chrom, start, end, gvcf=False):
-    print(chrom,start,)
+    print(chrom, start)
     args = [
         'bcftools', 'query',
         '--regions', '{chrom}:{start}-{end}'.format(
@@ -237,8 +248,6 @@ def sum_counts(counts_handle, start, end, time_assigned, initial_time, gvcf=Fals
         records += 1
 
         if gvcf:
-            time_passed = (time.time() - start_time) * 1000
-
             genotype_str = record_parts[1]
 
             # As AN is often not present, simply manually count all the calls
@@ -251,15 +260,21 @@ def sum_counts(counts_handle, start, end, time_assigned, initial_time, gvcf=Fals
             call_num_str, alt_allele_num_str = (record_parts[1],
                                                 record_parts[2].rstrip('\r\n'))
             # Add the AN value to the call count
-            call_count += int(call_num_str)
+            try:
+                call_count += int(call_num_str)
+            except ValueError:
+                raise MissingInfoException('INFO/AN')
             # Add the total number of alt alleles with nonzero counts to variant
             # count
-            variant_count += sum(1 for alt in alt_allele_num_str.split(',')
-                                 if int(alt))
+            try:
+                variant_count += sum(1 for alt in alt_allele_num_str.split(',')
+                                     if int(alt))
+            except ValueError:
+                raise MissingInfoException('INFO/AC')
     return call_count, variant_count, None
 
 
-def summarise_slice(location, region, slice_size_mbp, time_assigned,initial_time):
+def summarise_slice(location, region, slice_size_mbp, time_assigned, initial_time):
     chrom, start_str = region.split(':')
     start = round(1000000 * float(start_str) + 1)
     end = start + round(1000000 * slice_size_mbp - 1)
@@ -272,7 +287,7 @@ def summarise_slice(location, region, slice_size_mbp, time_assigned,initial_time
             impacted_datasets = get_affected_datasets(location)
             summarise_datasets(impacted_datasets)
     else:
-        print("Assigned time of {time} is not sufficent. Splitting into"
+        print("Assigned time of {time} is not sufficient. Splitting into"
               " {slices} slices.".format(time=time_assigned, slices=slices))
         slice_data = calculate_slices(location, chrom, start, end, slices)
         no_error = update_vcf(location, region, 0, 0,
