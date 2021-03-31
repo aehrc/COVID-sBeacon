@@ -269,6 +269,14 @@ export class MainComponent implements AfterViewInit {
       this.iupac_input = "True"
       this.query();
     }
+    if(searches == 'UKV'){
+      this.sMin = this.sMax = this.eMin = this.eMax  = null;
+      this.isVisible = true;
+      this.inputText = "A23063T&C23271A&C23604A&C23709T&T24506G&G24914C&C3267T&C5388A&T6954C&C27972T&G28048T&A28111G&G28280C&A28281T&T28282A&C28977T&ATACATG21764A&TTTA21990T&GTCTGGTTTT11287G";
+      this.iupac = false;
+      this.iupac_input = "False"
+      this.query();
+    }
   }
 
   query() {
