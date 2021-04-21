@@ -278,11 +278,11 @@ export class MainComponent {
 
           if(this.varType != null ){
             this.alt = null;
-            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "variantType": this.varType.toUpperCase(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
+            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"ALL", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "variantType": this.varType.toUpperCase(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
           }
           if(this.alt != null ){
             this.varType = null;
-            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "alternateBases": this.alt.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
+            this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"ALL", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "alternateBases": this.alt.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
           }
       }else if( this.inputText != null){
 
@@ -316,7 +316,7 @@ export class MainComponent {
           return;
         }
 
-        this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": this.refName, "start": this.start, "referenceBases": this.refBases, "alternateBases": this.altBases,  "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
+        this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"ALL", "referenceName": this.refName, "start": this.start, "referenceBases": this.refBases, "alternateBases": this.altBases,  "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
       }
 
       this.url = this.rootUrl+ "/query";
@@ -335,7 +335,7 @@ export class MainComponent {
           this.http.get(newUrl)
           .subscribe((response: Beacon) => {
             console.log(response);
-            if( response.hasOwnProperty('exists')  && response.exists == true){
+            if( response.hasOwnProperty('exists') ){
               this.warning = null;
               this.hits = response.datasetAlleleResponses;
 
@@ -376,7 +376,7 @@ export class MainComponent {
         );
 
 
-        }else if( response.hasOwnProperty('exists')  && response.exists == true){
+        }else if( response.hasOwnProperty('exists') ){
           this.warning = null;
           console.log(response.datasetAlleleResponses);
           this.hits = response.datasetAlleleResponses;

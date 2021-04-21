@@ -140,7 +140,7 @@ export class SearchComponent implements OnInit {
       return;
     }
 
-    this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": this.refName, "start": this.start, "referenceBases": this.refBases, "alternateBases": this.altBases,"sampleFields":["SampleCollectionDate"]};
+    this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"ALL", "referenceName": this.refName, "start": this.start, "referenceBases": this.refBases, "alternateBases": this.altBases,"sampleFields":["SampleCollectionDate"]};
 
 
     this.url = this.rootUrl+ "/query";
