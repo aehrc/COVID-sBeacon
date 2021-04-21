@@ -1,5 +1,13 @@
-provider aws {
-    alias = "useast1"
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 3.31.0"
+      configuration_aliases = [
+        aws.useast1
+      ]
+    }
+  }
 }
 
 module lambda_cloudfrontEdgeSecurity {

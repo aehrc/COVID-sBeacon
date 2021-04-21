@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 3.31.0"
+    }
+  }
+}
+
 locals {
   bucket_arn = "arn:aws:s3:::${var.bucket-name}"
 }
