@@ -1,11 +1,9 @@
-import { AfterViewInit, Component, OnInit, ViewChild } from '@angular/core';
+import { Component, OnInit, ViewChild } from '@angular/core';
 import { animate, state, style, transition, trigger } from '@angular/animations';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MatTableDataSource } from '@angular/material';
 import {MatSort, Sort} from '@angular/material/sort';
 import { ActivatedRoute } from '@angular/router';
-//import { JwPaginationComponent } from 'jw-angular-pagination';
-//import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { Beacon, Dataset } from './main.interfaces';
 import { AppConfigService } from '../../app.config.service';
 import * as d3 from 'd3';
@@ -27,11 +25,10 @@ import { Router } from '@angular/router';
   ],
 })
 
-export class MainComponent implements AfterViewInit {
+export class MainComponent {
   inputText: string = "";
   hits : any  = [];
   @ViewChild(MatSort, { static: false }) sort: MatSort;
-  //@ViewChild(MatPaginator, { static: false }) paginator: MatPaginator;
 
   constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService, private router: Router, private route: ActivatedRoute) {
     this.route.params.subscribe( params => this.inputText = params.input);
@@ -41,10 +38,6 @@ export class MainComponent implements AfterViewInit {
   }
   ngOnInit() {
     this.hits.sort = this.sort;
-    //this.hits.paginator = this.paginator;
-  }
-  ngAfterViewInit() {
-    //this.hits.sort = this.sort;
   }
 
   loading: boolean = false;
@@ -84,9 +77,6 @@ export class MainComponent implements AfterViewInit {
   accessionDetails=[];
   updateDateTime;
   ids: string[] =["SampleCollectionDate","Location"];
-  //queryData = new HttpParams()
-  //.set('assemblyId','hCoV-19')
-  //.set('includeDatasetResponses','ALL');
   queryData = {};
   vis: number = 0;
   pageOfItems: Array<any>;
@@ -148,8 +138,6 @@ export class MainComponent implements AfterViewInit {
         continue;
       }
     }
-    //let index = localHits.findIndex(x => x.datasetId === element.datasetId);
-
   }
 
   stateSortData(sort: Sort) {
@@ -202,7 +190,6 @@ export class MainComponent implements AfterViewInit {
     this.vis =1;
   }
   visual(){
-    //this.graphDataGenerator(this.hits, this.visualIndex);
     this.generateMap(this.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76]);
     this.generateHistogram(this.dateData);
     this.vis =1;
@@ -286,25 +273,16 @@ export class MainComponent implements AfterViewInit {
       this.refName = [];
       this.loading = true;
 
-      //this.queryData = new HttpParams()
-      //.set('assemblyId','hCoV-19')
-      //.set('includeDatasetResponses','ALL');
       if( this.sMin  || this.sMax  || this.eMin || this.eMax ){
         this.inputText= null;
-        //this.ref = this.ref.split("").map(function(x){ return x.toUpperCase(); })
 
           if(this.varType != null ){
             this.alt = null;
             this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "variantType": this.varType.toUpperCase(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
-              //this.queryData = this.queryData.append('referenceName','1').append("referenceBases",this.ref.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append('variantType',this.varType.toUpperCase()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
-            //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"variantType":this.varType.toUpperCase(),"sampleFields":["SampleCollectionDate","Location"]};
           }
           if(this.alt != null ){
-            //this.alt = this.alt.split("").map(function(x){ return x.toUpperCase(); })
             this.varType = null;
             this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": "1", "referenceBases": this.ref.toUpperCase(), "alternateBases": this.alt.toUpperCase(), "startMin":(this.sMin-1).toString(), "startMax": (this.sMax-1).toString(), "endMin": (this.eMin-1).toString(), "endMax": (this.eMax-1).toString(), "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
-            //this.queryData = this.queryData.append('referenceName','1').append('referenceBases',this.ref.join(', ')).append('alternateBases',this.alt.join(', ')).append('startMin',(this.sMin-1).toString()).append('startMax',(this.sMax-1).toString()).append('endMin',(this.eMin-1).toString()).append('endMax',(this.eMax-1).toString()).append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
-            //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "startMin":this.sMin-1,"startMax":this.sMax-1,"endMin":this.eMin-1,"endMax":this.eMax-1,"sampleFields":["SampleCollectionDate","Location"]};
           }
       }else if( this.inputText != null){
 
@@ -312,41 +290,22 @@ export class MainComponent implements AfterViewInit {
           let text = this.inputText.replace(/\&/g, ':');
           this.splittedText = text.split(':');
           console.log(this.splittedText);
-          //console.log(this.inputText.split(':').length);
           if(this.splittedText.length == 1){
             var regex = /([a-z]+)(\d+)([a-z]+)/gi;
             var match = regex.exec(this.inputText);
-            //console.log(match);
-            //this.sPos = [(parseInt(match[2])-1).toString()];
-            //this.ref = [(match[1].trim()).toUpperCase()];
-            //this.alt = [(match[3].trim()).toUpperCase()];
-            //this.referenceName.push("1");
             this.start.push((parseInt(match[2])-1).toString());
             this.refBases.push((match[1].trim()).toUpperCase());
             this.altBases.push((match[3].trim()).toUpperCase());
             this.refName.push("1");
-            //this.queryData = this.queryData.append('start',(parseInt(match[2])-1).toString());
-            //this.queryData = this.queryData.append('referenceBases',(match[1].trim()).toUpperCase());
-            //this.queryData = this.queryData.append('alternateBases',(match[3].trim()).toUpperCase());
-            //this.queryData = this.queryData.append('referenceName',"1");
           }else{
 
             for(var i = 0; i < this.splittedText.length; i++){
               var regex = /([a-z]+)(\d+)([a-z]+)/gi;
               var match = regex.exec(this.splittedText[i]);
-              //console.log(match);
-              //this.sPos.push((parseInt(match[2])-1).toString());
-              //this.ref.push((match[1].trim()).toUpperCase());
-              //this.alt.push((match[3].trim()).toUpperCase());
-              //this.referenceName.push("1");
               this.start.push((parseInt(match[2])-1).toString());
               this.refBases.push((match[1].trim()).toUpperCase());
               this.altBases.push((match[3].trim()).toUpperCase());
               this.refName.push("1");
-              //this.queryData = this.queryData.append('start',(parseInt(match[2])-1).toString());
-              //this.queryData = this.queryData.append('referenceBases',(match[1].trim()).toUpperCase());
-              //this.queryData = this.queryData.append('alternateBases',(match[3].trim()).toUpperCase());
-              //this.queryData = this.queryData.append('referenceName',"1");
             }
           }
 
@@ -357,10 +316,7 @@ export class MainComponent implements AfterViewInit {
           return;
         }
 
-        //console.log(this.alt);
         this.queryData = {"assemblyId": "hCoV-19","includeDatasetResponses":"HIT", "referenceName": this.refName, "start": this.start, "referenceBases": this.refBases, "alternateBases": this.altBases,  "IUPAC": this.iupac_input,"sampleFields":["SampleCollectionDate","Location", "State", "Location_SampleCollectionDate", "State_SampleCollectionDate", "ID" ]};
-        //this.queryData = this.queryData.append("sampleFields", "SampleCollectionDate").append("sampleFields", "Location").append("sampleFields", "State").append("sampleFields", "Location_SampleCollectionDate").append("sampleFields", "State_SampleCollectionDate").append("sampleFields", "ID").append("IUPAC", this.iupac_input);
-        //this.queryData = {"assemblyId": "hCoV-19","referenceName": "1","includeDatasetResponses":"HIT","referenceBases":this.ref.toUpperCase(),"alternateBases":this.alt.toUpperCase(), "start":this.sPos-1,"variantType":this.varType,"sampleFields":["SampleCollectionDate","Location"]};
       }
 
       this.url = this.rootUrl+ "/query";
@@ -371,7 +327,6 @@ export class MainComponent implements AfterViewInit {
   getData(url, qData){
     this.http.post(url, qData)
       .subscribe((response: Beacon) => {
-        //console.log(response);
 
         if(response.hasOwnProperty('s3Response')){
           console.log(response);
@@ -384,7 +339,6 @@ export class MainComponent implements AfterViewInit {
               this.warning = null;
               this.hits = response.datasetAlleleResponses;
 
-              //console.log(this.hits);
               this.loading = false;
               const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
               this.visualIndex = maxDatasetId.info.name;
@@ -402,9 +356,7 @@ export class MainComponent implements AfterViewInit {
               console.log(response);
               this.warning = "No Hits to display";
               this.hits   = [];
-              //this.hits = new MatTableDataSource<Dataset>();
               this.loading = false;
-              //const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
               this.visualIndex = 0;
               this.accessionDetails = [];
             }
@@ -419,7 +371,6 @@ export class MainComponent implements AfterViewInit {
               this.warning = error.error.error.errorMessage;
             }
             this.hits  = [];
-            //this.hits = new MatTableDataSource<Dataset>([]);
             this.loading = false;
           }
         );
@@ -447,9 +398,7 @@ export class MainComponent implements AfterViewInit {
           console.log(response);
           this.warning = "No Hits to display";
           this.hits   = [];
-          //this.hits = new MatTableDataSource<Dataset>([]);
           this.loading = false;
-          //const maxDatasetId: any = response.datasetAlleleResponses.sort((a, b) => b.callCount - a.callCount)[0];
           this.visualIndex = 0;
           this.accessionDetails =[];
         }
@@ -458,7 +407,6 @@ export class MainComponent implements AfterViewInit {
       error => {
         console.log(error);
         this.hits   = [];
-        //this.hits = new MatTableDataSource<Dataset>();
         if(error.statusText == "Unknown Error"){
           this.warning = "Query request timed out. Please contact administrator to run your query."
         }else{
@@ -470,14 +418,10 @@ export class MainComponent implements AfterViewInit {
 
   };
   graphDataGenerator(hits, visIndex,location=null,state=null){
-    //console.log(visIndex);
     let index = hits.findIndex(x => x.info.name === visIndex);
-    //let gisaidIndex = hits.findIndex(x => x.info.name === "GISAID data");
-    //console.log(gisaidIndex);
     if(hits[index].info.sampleCounts.hasOwnProperty("ID")){
       this.accessionDetails = hits[index].info.sampleCounts.ID;
       this.updateDateTime = hits[index].info.updateDateTime;
-      //console.log(this.accessionDetails);
     }
     let locationDetails = hits[index].info.sampleCounts.Location;
     let locationDateCounts = hits[index].info.sampleCounts.Location_SampleCollectionDate;
@@ -495,22 +439,12 @@ export class MainComponent implements AfterViewInit {
       for (let key in dateCounts) {
             this.dateData.push({date: String(key), value: ((dateCounts[String(key)][0]/dateCounts[String(key)][1])*100).toFixed(2), breakup : String((dateCounts[String(key)][0]+"/"+dateCounts[String(key)][1])), location : "all"});
       }
-      //console.log(this.dateData);
       this.generateMap(this.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       this.generateHistogram(this.dateData);
     }else if(state != null){
-      //console.log(state);
       //Update Histogram when a region row is clicked
 
       var stateDateValues = stateDateCounts[state];
-      //console.log(stateDateValues);
-      //for(var i = 0; i < stateDateValues.length; i++) {
-      //for(let key in stateDateValues ){
-        //let key = Object.keys(stateDateValues[i]);
-      //  var val = (typeof hashDate[String(key)] === "undefined") ? String(0+"/"+stateDateValues[String(key)]) : String((hashDate[String(key)]+"/"+stateDateValues[String(key)]));
-      //  hashDate[String(key)]=val;
-      //}
-      //console.log(hashDate);
       this.dateData =[];
       for (let key in stateDateValues) {
             this.dateData.push({"date": String(key), "value": ((stateDateValues[String(key)][0]/stateDateValues[String(key)][1])*100).toFixed(2), "breakup" : String((stateDateValues[String(key)][0]+"/"+stateDateValues[String(key)][1])), "location":state});
@@ -519,18 +453,10 @@ export class MainComponent implements AfterViewInit {
       this.generateHistogram(this.dateData);
 
     }else{
-      //console.log(location);
       //Update Histogram when location on map is clicked
 
       var locDateValues = locationDateCounts[location];
       console.log(locDateValues);
-      //for(var i = 0; i < locDateValues.length; i++) {
-      //for(let key in locDateValues){
-        //let key = Object.keys(locDateValues[i]);
-      //  var val = (typeof hashDate[String(key)] === "undefined") ? String(0+"/"+locDateValues[String(key)]) : String((hashDate[String(key)]+"/"+locDateValues[String(key)]));
-      //  hashDate[String(key)]=val;
-      //}
-      //console.log(hashDate);
       this.dateData =[];
       for (let key in locDateValues) {
             this.dateData.push({"date": String(key), "value": ((locDateValues[String(key)][0]/locDateValues[String(key)][1])*100).toFixed(2), "breakup" : String((locDateValues[String(key)][0]+"/"+locDateValues[String(key)][1])) , "location":location});
@@ -538,7 +464,6 @@ export class MainComponent implements AfterViewInit {
       this.generateMap(this.sampleData,"choropleth",[' 0', ' 1% - 5%', ' 6% - 10%', '11% - 25%', '26% - 50%', '51% - 75%', '> 76%'],[1, 6, 11, 26, 51, 76])
       this.generateHistogram(this.dateData);
     }
-    //console.log(this.sampleData);
     var non = this.sampleData.find( o => o.code === "None");
     console.log(non);
     if( typeof non !== 'undefined'){
@@ -549,15 +474,10 @@ export class MainComponent implements AfterViewInit {
         this.alertMessage = ''
       }
     }
-
-
-    //console.log(this.dateData);
-    //console.log(this.dateData);
   }
 
   generateMap(sampleData, divID, labels, domain) {
 
-    //console.log(d3.select('#'+divID));
     d3.select(".legendThreshold").remove();
     d3.select('#'+divID).selectAll("svg").remove();
     let width = 600;
@@ -572,11 +492,9 @@ export class MainComponent implements AfterViewInit {
             .call(d3.zoom().on("zoom", function () {
                 svg.attr("transform", d3.event.transform)
              }));
-    //console.log(svg);
     // Map and projection
     let map = svg.append("g")
         .attr("class", "countries");
-    //console.log(map);
 
     let projection = d3.geoMercator()
         .scale(width / 2.7 / Math.PI)
@@ -612,26 +530,15 @@ export class MainComponent implements AfterViewInit {
     let self = this;
 
 
-    //Promise.all(promises).then(ready)
     d3.json("assets/geojson/world.geojson")
     .then(function(topo) {
-      //console.log(self.hits);
-      //console.log(self.visualIndex);
-        //console.log(topo.features)
         sampleData.forEach(function(d){data.set(d.code, +d.value);})
-        //console.log(data);
-        //console.log(d3.max(topo.features, function(d){return data.get(d.id);}));
         let range_low = 0,
             range_high=  d3.max(topo.features, function(d:any){return data.get(d.id);});
-            //console.log(range_low);
-            //console.log(range_high);
         let color = d3.scaleLinear<string>()
         .range([lowColor, highColor])
         .domain([range_low,Number(range_high)])
         .interpolate(d3.interpolateLab);
-        //console.log(color);
-        //let self = this;
-        //console.log(self.hits);
 
         // Draw the map  topoJson.feature(topo, countries).features
         map.selectAll("path")
@@ -711,15 +618,11 @@ export class MainComponent implements AfterViewInit {
     });
   }
   generateHistogram(sampleData){
-    //console.log(sampleData.sort(function(a,b){return a.date > b.date;}));
     d3.selectAll('#histogram').selectAll("svg").remove();
     sampleData = sampleData.sort((a,b) => a.date.localeCompare(b.date));
-    //console.log(sampleData)
-    //console.log(d3.max(sampleData, d => d.value))
     let width = 600;
     let height = 400;
     let margin  = {top: 20, right: 20, bottom: 30, left: 50};
-    //var aspect = width / height;
 
     let svg = d3.selectAll('#histogram')
     .append("svg")
@@ -733,12 +636,11 @@ export class MainComponent implements AfterViewInit {
     .attr("transform", "translate(50,0)");
 
     x.domain(sampleData.map(d => d.date));
-    y.domain([0, 100]);//d3.max(sampleData, d => d.value)
+    y.domain([0, 100]);
     let tip = d3Tip()
     .attr('class', 'd3-tip')
     .offset([-12, 0])
     .html(function(d) {
-      //console.log(d);
       return  d.breakup+" ("+d.value+"%)";
     })
     svg.call(tip);

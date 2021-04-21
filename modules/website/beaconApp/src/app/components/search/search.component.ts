@@ -112,7 +112,6 @@ export class SearchComponent implements OnInit {
       let text = this.profileText.replace(/\&/g, ':');
       this.splittedText = text.split(':');
       console.log(this.splittedText);
-      //console.log(this.profileText.split(':').length);
       if(this.splittedText.length == 1){
         var regex = /([a-z]+)(\d+)([a-z]+)/gi;
         var match = regex.exec(this.profileText);
@@ -152,7 +151,6 @@ export class SearchComponent implements OnInit {
   getData(url, qData){
     this.http.post(url, qData)
       .subscribe((response: Beacon) => {
-        //console.log(response);
         if(response.hasOwnProperty('s3Response')){
           console.log(response);
           var newUrl = response.s3Response.presignedUrl;
@@ -168,8 +166,6 @@ export class SearchComponent implements OnInit {
               });
               this.subcombination = this.filteredArray[0].info.subcombinations;
               this.fixSubcombination(this.subcombination, this.profileText);
-              //this.subcombination = this.filteredArray.info.subcombination;
-              //console.log(this.hits);
               this.loading = false;
             }else{
               console.log(response);
