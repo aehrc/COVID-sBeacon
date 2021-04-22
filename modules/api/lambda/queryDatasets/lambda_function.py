@@ -270,11 +270,10 @@ def query_datasets(parameters, context):
         if not result or 'exists' not in result:
             # function errored out, ignore
             continue
-        if not exists:
-            if result['exists']:
-                exists = True
-                if include_datasets == 'NONE':
-                    break
+        if not exists and result['exists']:
+            exists = True
+            if include_datasets == 'NONE':
+                break
         if result.pop('include'):
             dataset_responses.append(result)
     dataset_responses.sort(key=lambda r: r['datasetId'])
