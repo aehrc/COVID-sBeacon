@@ -153,7 +153,7 @@ def combine_queries(split_samples, query_combination, all_sample_set):
             operators.append(samples[-1].union)
         elif c == '!':
             last_operator = operators.pop()
-            operators.append(lambda x: last_operator(all_sample_set-x))
+            operators.append(lambda x, lo=last_operator: lo(all_sample_set-x))
         elif c == '(':
             samples.append(None)
             operators.append(lambda x: x)
