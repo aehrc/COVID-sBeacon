@@ -29,7 +29,11 @@ data external hash {
 resource null_resource upload {
 
   triggers = {
+    beacon_api_url = var.beacon_api_url
+    bucket = aws_s3_bucket.website_bucket.id
     command_hash = filesha256("${path.module}/upload.sh")
+    domain_name = aws_cloudfront_distribution.platform_distribution.domain_name
+    login = var.login
     src_hash = lookup(data.external.hash.result, "hash")
   }
   provisioner local-exec {
