@@ -35,7 +35,7 @@ s3 = S3Client()
 
 
 def call_collate_queries(datasets, query_details_list, query_combination,
-                         page_details, sample_fields, include_datasets, IUPAC,
+                         page_details, sample_fields, include_datasets, iupac,
                          similar, responses):
     for dataset in datasets:
         responses.put(
@@ -49,7 +49,7 @@ def call_collate_queries(datasets, query_details_list, query_combination,
                 'sample_fields': sample_fields,
                 'include_datasets': include_datasets,
                 'similar': similar,
-                'IUPAC': IUPAC,
+                'iupac': iupac == "True",
             }
         )
 
@@ -258,10 +258,10 @@ def query_datasets(parameters, context):
         'desc': bool(parameters.get('variantsDescending')),
     }
     include_datasets = parameters.get('includeDatasetResponses', 'NONE')
-    IUPAC = parameters.get('IUPAC', 'True')
+    iupac = parameters.get('iupac', 'True')
     similar = bool(parameters.get('similar'))
     call_collate_queries(datasets, query_details_list, parameters.get('queryCombination'),
-                         page_details, parameters.get('sampleFields'), include_datasets, IUPAC,
+                         page_details, parameters.get('sampleFields'), include_datasets, iupac,
                          similar, responses)
     dataset_responses = []
     exists = False

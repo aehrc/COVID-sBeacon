@@ -75,14 +75,14 @@ def call_get_annotations(responses, annotation_location):
     )
 
 
-def call_perform_query(responses, vcf_locations, query_details_list, IUPAC):
+def call_perform_query(responses, vcf_locations, query_details_list, iupac):
     for i, details in enumerate(query_details_list):
         kwargs = {
             'vcf_locations': [
                 [vcf_i, vcf, chroms[i]]
                 for vcf_i, (vcf, chroms) in enumerate(vcf_locations.items())
             ],
-            'IUPAC': IUPAC,
+            'iupac': iupac,
             **details,
         }
         responses.put(
@@ -93,7 +93,7 @@ def call_perform_query(responses, vcf_locations, query_details_list, IUPAC):
 
 
 def collate_query(dataset, query_details_list, query_combination, sample_fields,
-                  page_details, include_datasets, IUPAC, similar):
+                  page_details, include_datasets, iupac, similar):
     vcf_locations = dataset['vcf_locations']
     dataset_sample_count = dataset['sample_count']
     responses = Caches(
@@ -101,7 +101,7 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
         lambda_client=aws_lambda,
         s3_client=s3,
     )
-    call_perform_query(responses, vcf_locations, query_details_list, IUPAC)
+    call_perform_query(responses, vcf_locations, query_details_list, iupac)
     call_get_annotations(responses, dataset['annotation_location'])
 
     dataset_id = dataset['dataset_id']
@@ -410,7 +410,7 @@ def lambda_handler(event, context):
     page_details = event['page_details']
     sample_fields = event['sample_fields']
     include_datasets = event['include_datasets']
-    IUPAC = event['IUPAC']
+    iupac = event['iupac']
     similar = event['similar']
     raw_response = collate_query(
         dataset=dataset,
@@ -419,7 +419,7 @@ def lambda_handler(event, context):
         page_details=page_details,
         sample_fields=sample_fields,
         include_datasets=include_datasets,
-        IUPAC=IUPAC,
+        iupac=iupac,
         similar=similar,
     )
     response = cache_response(event, raw_response, dynamodb, s3)

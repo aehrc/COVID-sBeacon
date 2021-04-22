@@ -212,7 +212,7 @@ def name_variant(pos, ref, alt):
 
 
 def perform_query(reference_bases, region, start_min, end_min, end_max, alternate_bases,
-                  variant_type, vcf_i, vcf_location, IUPAC):
+                  variant_type, vcf_i, vcf_location, iupac):
     args = [
         'bcftools', 'query',
         '--regions', region,
@@ -226,7 +226,6 @@ def perform_query(reference_bases, region, start_min, end_min, end_max, alternat
     hit_samples = set()
     variant_samples = defaultdict(set)
     call_count = 0
-    iupac = IUPAC == 'True'
     truncated_ref, truncated_alt = truncate_ref_alt(reference_bases,
                                                     alternate_bases)
     reference_matches = get_possible_codes(truncated_ref, iupac)
@@ -387,7 +386,7 @@ def lambda_handler(event, context):
         'end_max': event['end_max'],
         'alternate_bases': event['alternate_bases'],
         'variant_type': event['variant_type'],
-        'IUPAC': event['IUPAC'],
+        'iupac': event['iupac'],
     }
     if len(vcf_locations) == 1 and region_end - region_start + 1 <= MAX_SPLIT_SIZE:
         vcf_i, vcf_location, contig = vcf_locations[0]
