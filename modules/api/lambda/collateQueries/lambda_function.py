@@ -299,11 +299,8 @@ def get_results(responses):
     all_splits = {}
     all_annotations = {}
     for response in responses.collect_responses():
-        result = response.result
+        result = response.result_or_raise()
         function_name = response.function_name
-        if result is None:
-            print(f"No result from call to {function_name}")
-            raise Exception(repr(response.error))
         if function_name == GET_ANNOTATIONS:
             all_annotations = result
         else:

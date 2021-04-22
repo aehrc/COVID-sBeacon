@@ -108,6 +108,14 @@ class CachedInvoke:
               f" after {int(1000*(time.time()-start_time))}ms.")
         response_queue.put(self)
 
+    def result_or_raise(self):
+        result = self.result
+        if result is None:
+            print(f"No result from call to {self.function_name} (call_id={self.call_id})")
+            raise NoResultException(repr(self.error))
+        else:
+            return result
+
 
 class Caches:
     def __init__(self, dynamodb_client, lambda_client, s3_client):
@@ -170,3 +178,7 @@ def cache_response(kwargs, response, dynamodb_client, s3_client):
     return {
         RESPONSE_KEY: s3_key
     }
+
+
+class NoResultException(Exception):
+    pass
