@@ -36,7 +36,7 @@ s3 = S3Client()
 
 def call_collate_queries(datasets, query_details_list, query_combination,
                          page_details, sample_fields, include_datasets, IUPAC,
-                         responses):
+                         similar, responses):
     for dataset in datasets:
         responses.put(
             call_id=dataset['dataset_id'],
@@ -48,9 +48,9 @@ def call_collate_queries(datasets, query_details_list, query_combination,
                 'page_details': page_details,
                 'sample_fields': sample_fields,
                 'include_datasets': include_datasets,
+                'similar': similar,
                 'IUPAC': IUPAC,
             }
-
         )
 
 
@@ -259,9 +259,10 @@ def query_datasets(parameters, context):
     }
     include_datasets = parameters.get('includeDatasetResponses', 'NONE')
     IUPAC = parameters.get('IUPAC', 'True')
+    similar = bool(parameters.get('similar'))
     call_collate_queries(datasets, query_details_list, parameters.get('queryCombination'),
                          page_details, parameters.get('sampleFields'), include_datasets, IUPAC,
-                         responses)
+                         similar, responses)
     dataset_responses = []
     exists = False
     for response in responses.collect_responses():
@@ -442,6 +443,13 @@ def validate_request(parameters):
     elif page_size < 0:
         return "pageSize cannot be negative"
 
+    similar = parameters.get('similar')
+    if similar is None:
+        missing_parameters.add('similar')
+    else:
+        if similar not in (0, 1):
+            return "similar must be 0 or 1"
+
     variants_sortby = parameters.get('variantsSortby')
     if variants_sortby is None:
         missing_parameters.add('variantsSortby')
@@ -544,7 +552,7 @@ def lambda_handler(event, context):
         parameters['queries'] = get_queries(multi_values)
         parameters['datasetIds'] = multi_values.get('datasetIds')
         parameters['sampleFields'] = multi_values.get('sampleFields')
-        for int_field in ('page', 'pageSize', 'variantsDescending'):
+        for int_field in ('page', 'pageSize', 'variantsDescending', 'similar'):
             if int_field in parameters:
                 parameters[int_field] = int_or_self(parameters[int_field])
     return query_datasets(parameters, context)

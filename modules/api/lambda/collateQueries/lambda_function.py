@@ -93,7 +93,7 @@ def call_perform_query(responses, vcf_locations, query_details_list, IUPAC):
 
 
 def collate_query(dataset, query_details_list, query_combination, sample_fields,
-                  page_details, include_datasets, IUPAC):
+                  page_details, include_datasets, IUPAC, similar):
     vcf_locations = dataset['vcf_locations']
     dataset_sample_count = dataset['sample_count']
     responses = Caches(
@@ -114,8 +114,9 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
     variants_info = annotate_variants(variant_counts, all_annotations,
                                       dataset_sample_count)
     pages, variants_subset = process_page(variants_info, page_details)
-    samples, subcombinations = get_fuzzy_combinations(
+    samples, subcombinations = handle_sample_combinations(
         all_splits, query_combination, all_sample_metadata['samples'].keys(),
+        similar
     )
     sample_count = len(samples)
     exists = bool(samples)
@@ -141,7 +142,6 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
                 'updateDateTime': dataset['updateDateTime'],
                 'pages': pages,
                 'sampleCounts': sample_metadata_counts,
-                'subcombinations': subcombinations,
                 'variants': variants_subset,
             },
             'note': None,
@@ -149,6 +149,8 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
             'variantCount': len(variant_counts),
 
         }
+        if similar:
+            response_dict['info']['subcombinations'] = subcombinations
     else:
         response_dict = {
             'include': False,
@@ -277,7 +279,7 @@ def get_frequency(samples, total_samples):
 
 
 def handle_sample_combinations(all_splits, query_combination,
-                               all_sample_metadata_samples):
+                               all_sample_metadata_samples, similar):
     print("Starting sample set operations")
     split_samples = [
         set(all_splits[i]['hit_samples'])
@@ -299,7 +301,7 @@ def handle_sample_combinations(all_splits, query_combination,
     combination_samples = set.intersection(*all_part_samples.values())
     num_samples = len(combination_samples)
     print(f"Finished main sample set analysis, found {num_samples} samples in common.")
-    subcombinations = fuzzy_match(all_part_samples, num_samples)
+    subcombinations = fuzzy_match(all_part_samples, num_samples) if similar else None
     return (
         list(combination_samples),
         subcombinations
@@ -409,6 +411,7 @@ def lambda_handler(event, context):
     sample_fields = event['sample_fields']
     include_datasets = event['include_datasets']
     IUPAC = event['IUPAC']
+    similar = event['similar']
     raw_response = collate_query(
         dataset=dataset,
         query_details_list=query_details_list,
@@ -417,6 +420,7 @@ def lambda_handler(event, context):
         sample_fields=sample_fields,
         include_datasets=include_datasets,
         IUPAC=IUPAC,
+        similar=similar,
     )
     response = cache_response(event, raw_response, dynamodb, s3)
     print('Returning response: {}'.format(json.dumps(response)))
