@@ -26,6 +26,28 @@ aws_lambda = LambdaClient()
 s3 = S3Client()
 
 
+def get_minimum_set(part_samples):
+    min_parts = {
+        part: samples
+        for part, samples in part_samples.items()
+        if not any(
+            (other_samples < samples) or (other_samples == samples and other_part < part)
+            for other_part, other_samples in part_samples.items()
+        )
+    }
+    num_samples_from_min_parts = (
+        len(set.intersection(*min_parts.values()))
+        if min_parts
+        else 0
+    )
+    subcombinations = {}
+    if num_samples_from_min_parts:
+        subcombinations[tuple(min_parts.keys())] = num_samples_from_min_parts
+    print(f"Finished minimum sample set analysis, removed {len(part_samples) - len(min_parts)}"
+          f" extraneous parts and found {num_samples_from_min_parts} samples in common.")
+    return subcombinations
+
+
 def annotate_variants(variant_counts, all_annotations, dataset_sample_count):
     annotations = []
     variant_pattern = re.compile('([^0-9]+)([0-9]+)(.+)')
@@ -165,47 +187,7 @@ def combine_queries(split_samples, query_combination, all_sample_set):
     return samples.pop()
 
 
-def get_all_sample_metadata(dataset_id):
-    streaming_body = s3.get_object(ARTIFACT_BUCKET,
-                                   f'{dataset_id}/{SAMPLE_METADATA_SUFFIX}')
-    all_metadata = json.load(streaming_body)
-    # TODO: Allow sample_fields filtering by refactoring the input payload
-    return all_metadata
-
-
-def get_frequency(samples, total_samples):
-    raw_frequency = samples / total_samples
-    decimal_places = math.ceil(math.log10(total_samples)) - 2
-    rounded = round(100 * raw_frequency, decimal_places)
-    if decimal_places <= 0:
-        rounded = int(rounded)
-    return rounded
-
-
-def get_fuzzy_combinations(all_splits, query_combination,
-                           all_sample_metadata_samples):
-    print("Starting sample set operations")
-    split_samples = [
-        set(all_splits[i]['hit_samples'])
-        for i in range(len(all_splits))
-    ]
-    all_sample_set = set(all_sample_metadata_samples)
-    if query_combination is None:
-        query_combination = '&'.join(str(n) for n in range(len(all_splits)))
-    all_part_samples = {
-        part: combine_queries(split_samples, part, all_sample_set)
-        for part in get_combination_parts(query_combination)
-    }
-    # we sort the sets because running set.intersection can be thousands of
-    # times faster on sorted sets.
-    all_part_samples = {
-        part: samples
-        for part, samples in sorted(all_part_samples.items(), key=lambda x: len(x[1]))
-    }
-    combination_samples = set.intersection(*all_part_samples.values())
-    num_samples = len(combination_samples)
-    print(f"Finished main sample set analysis, found {num_samples} samples in common.")
-    subcombinations = {}
+def fuzzy_match(all_part_samples, num_samples):
     # Remove empty parts
     part_samples = {
         part: samples
@@ -214,23 +196,7 @@ def get_fuzzy_combinations(all_splits, query_combination,
     }
     print(f"Removed {len(all_part_samples) - len(part_samples)} empty queries")
 
-    min_parts = {
-        part: samples
-        for part, samples in part_samples.items()
-        if not any(
-            (other_samples < samples) or (other_samples == samples and other_part < part)
-            for other_part, other_samples in part_samples.items()
-        )
-    }
-    num_samples_from_min_parts = (
-        len(set.intersection(*min_parts.values()))
-        if min_parts
-        else 0
-    )
-    if num_samples_from_min_parts:
-        subcombinations[tuple(min_parts.keys())] = num_samples_from_min_parts
-    print(f"Finished minimum sample set analysis, removed {len(part_samples) - len(min_parts)}"
-          f" extraneous parts and found {num_samples_from_min_parts} samples in common.")
+    subcombinations = get_minimum_set(part_samples)
 
     subcombinations_checked = 0
     subcombinations_tested = 0
@@ -240,11 +206,12 @@ def get_fuzzy_combinations(all_splits, query_combination,
     parts_removed = 1
     num_parts = len(part_list)
     print(f"Checking subcombinations with {num_parts} different parts")
-    while (subcombinations_checked < MAX_SUBCOMBINATIONS_TO_CHECK
-           and subcombinations_returned < MAX_SUBCOMBINATIONS_TO_RETURN
-           and parts_removed < num_parts
-           and parts_removed <= MAX_SUBCOMBINATIONS_DEPTH
-           ):
+    while (
+        subcombinations_checked < MAX_SUBCOMBINATIONS_TO_CHECK
+        and subcombinations_returned < MAX_SUBCOMBINATIONS_TO_RETURN
+        and parts_removed < num_parts
+        and parts_removed <= MAX_SUBCOMBINATIONS_DEPTH
+    ):
         print(f"Testing reducing number of queries by {parts_removed}")
         old_subcombinations_tested = subcombinations_tested
         for subcombination in combinations(part_list, num_parts - parts_removed):
@@ -279,19 +246,63 @@ def get_fuzzy_combinations(all_splits, query_combination,
     print(f"Checked {subcombinations_checked} subcombinations,"
           f" ran sample set operations on {subcombinations_tested} subcombinations,"
           f" found {subcombinations_returned} improved combinations")
+    return [
+        {
+            'query_combination': '&'.join(subcombination),
+            'removed_combination': '&'.join(
+                part for part in all_part_samples.keys()
+                if part not in subcombination
+            ),
+            'sample_count': sample_count,
+        }
+        for subcombination, sample_count in subcombinations.items()
+    ]
+
+
+def get_all_sample_metadata(dataset_id):
+    streaming_body = s3.get_object(ARTIFACT_BUCKET,
+                                   f'{dataset_id}/{SAMPLE_METADATA_SUFFIX}')
+    all_metadata = json.load(streaming_body)
+    # TODO: Allow sample_fields filtering by refactoring the input payload
+    return all_metadata
+
+
+def get_frequency(samples, total_samples):
+    raw_frequency = samples / total_samples
+    decimal_places = math.ceil(math.log10(total_samples)) - 2
+    rounded = round(100 * raw_frequency, decimal_places)
+    if decimal_places <= 0:
+        rounded = int(rounded)
+    return rounded
+
+
+def handle_sample_combinations(all_splits, query_combination,
+                               all_sample_metadata_samples):
+    print("Starting sample set operations")
+    split_samples = [
+        set(all_splits[i]['hit_samples'])
+        for i in range(len(all_splits))
+    ]
+    all_sample_set = set(all_sample_metadata_samples)
+    if query_combination is None:
+        query_combination = '&'.join(str(n) for n in range(len(all_splits)))
+    all_part_samples = {
+        part: combine_queries(split_samples, part, all_sample_set)
+        for part in get_combination_parts(query_combination)
+    }
+    # we sort the sets because running set.intersection can be thousands of
+    # times faster on sorted sets.
+    all_part_samples = {
+        part: samples
+        for part, samples in sorted(all_part_samples.items(), key=lambda x: len(x[1]))
+    }
+    combination_samples = set.intersection(*all_part_samples.values())
+    num_samples = len(combination_samples)
+    print(f"Finished main sample set analysis, found {num_samples} samples in common.")
+    subcombinations = fuzzy_match(all_part_samples, num_samples)
     return (
         list(combination_samples),
-        [
-            {
-                'query_combination': '&'.join(subcombination),
-                'removed_combination': '&'.join(
-                    part for part in all_part_samples.keys()
-                    if part not in subcombination
-                ),
-                'sample_count': sample_count,
-            }
-            for subcombination, sample_count in subcombinations.items()
-        ]
+        subcombinations
     )
 
 
