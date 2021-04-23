@@ -147,7 +147,6 @@ export class SearchComponent implements OnInit {
       "start": this.start,
       "referenceBases": this.refBases,
       "alternateBases": this.altBases,
-      "sampleFields":["SampleCollectionDate"],
       "similar": 1,
     };
 

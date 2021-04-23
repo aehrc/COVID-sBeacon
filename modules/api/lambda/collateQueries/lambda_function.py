@@ -106,7 +106,12 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
 
     dataset_id = dataset['dataset_id']
     # Call this while we're waiting on splitQuery
-    all_sample_metadata = get_all_sample_metadata(dataset_id)
+    if sample_fields:
+        all_sample_metadata = get_all_sample_metadata(dataset_id)
+        all_sample_set = set(all_sample_metadata['samples'].keys())
+    else:
+        all_sample_metadata = None
+        all_sample_set = None
 
     all_splits, all_annotations = get_results(responses)
 
@@ -115,12 +120,11 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
                                       dataset_sample_count)
     pages, variants_subset = process_page(variants_info, page_details)
     samples, subcombinations = handle_sample_combinations(
-        all_splits, query_combination, all_sample_metadata['samples'].keys(),
-        similar
+        all_splits, query_combination, all_sample_set,
+        similar, dataset_sample_count
     )
     sample_count = len(samples)
     exists = bool(samples)
-    sample_metadata_counts = get_sample_metadata_counts(samples, all_sample_metadata)
     if (include_datasets == 'ALL' or (include_datasets == 'HIT' and exists)
             or (include_datasets == 'MISS' and not exists)):
         response_dict = {
@@ -141,7 +145,6 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
                 'name': dataset['name'],
                 'updateDateTime': dataset['updateDateTime'],
                 'pages': pages,
-                'sampleCounts': sample_metadata_counts,
                 'variants': variants_subset,
             },
             'note': None,
@@ -149,6 +152,9 @@ def collate_query(dataset, query_details_list, query_combination, sample_fields,
             'variantCount': len(variant_counts),
 
         }
+        if sample_fields:
+            response_dict['info']['sampleCounts'] = get_sample_metadata_counts(samples, all_sample_metadata,
+                                                                               sample_fields)
         if similar:
             response_dict['info']['subcombinations'] = subcombinations
     else:
@@ -279,15 +285,20 @@ def get_frequency(samples, total_samples):
 
 
 def handle_sample_combinations(all_splits, query_combination,
-                               all_sample_metadata_samples, similar):
+                               all_sample_set, similar,
+                               dataset_sample_count):
     print("Starting sample set operations")
     split_samples = [
         set(all_splits[i]['hit_samples'])
         for i in range(len(all_splits))
     ]
-    all_sample_set = set(all_sample_metadata_samples)
     if query_combination is None:
         query_combination = '&'.join(str(n) for n in range(len(all_splits)))
+    if '!' in query_combination and all_sample_set is None:
+        # We're going to need a dummy set for counting purposes only
+        all_known_samples = set.union(*split_samples)
+        all_sample_set = all_known_samples | set(range(dataset_sample_count
+                                                       - len(all_known_samples)))
     all_part_samples = {
         part: combine_queries(split_samples, part, all_sample_set)
         for part in get_combination_parts(query_combination)
@@ -322,7 +333,7 @@ def get_results(responses):
     return all_splits, all_annotations
 
 
-def get_sample_metadata_counts(samples, all_sample_metadata):
+def get_sample_metadata_counts(samples, all_sample_metadata, sample_fields):
     print("Counting samples for each field")
     details = all_sample_metadata['samples']
     sample_metadata = [
@@ -331,10 +342,11 @@ def get_sample_metadata_counts(samples, all_sample_metadata):
     ]
     field_indexes = all_sample_metadata['field_indexes']
     counts = all_sample_metadata['counts']
-    ids = 'ID' in counts
-    if ids:
-        del counts['ID']
+    to_delete = []
     for field_name, sample_field_counts in counts.items():
+        if field_name not in sample_fields:
+            to_delete.append(field_name)
+            continue
         indexes = field_indexes[field_name]
         field_counts = Counter(
             tuple(
@@ -348,7 +360,9 @@ def get_sample_metadata_counts(samples, all_sample_metadata):
             for this_field in field_vals[:-1]:
                 last_dict = last_dict[this_field]
             last_dict[field_vals[-1]][0] = field_count
-    if ids:
+    for count_to_delete in to_delete:
+        del counts[count_to_delete]
+    if 'ID' in sample_fields:
         id_index = field_indexes['ID'][0]
         counts['ID'] = [
             sample[id_index]
