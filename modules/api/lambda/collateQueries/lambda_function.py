@@ -221,17 +221,17 @@ def fuzzy_match(all_part_samples, num_samples):
         and parts_removed <= MAX_SUBCOMBINATIONS_DEPTH
     ):
         print(f"Testing reducing number of queries by {parts_removed}")
-        old_subcombinations_tested = subcombinations_tested
+        subcombinations_to_check = []
         for subcombination in combinations(part_list, num_parts - parts_removed):
             if subcombinations_checked >= MAX_SUBCOMBINATIONS_TO_CHECK:
                 break
             subcombinations_checked += 1
             part_set = set(subcombination)
-            if any(
+            if not any(
                     part_set <= other_part_set
                     for other_part_set in parts_completed
             ):
-                continue
+                subcombinations_to_check.append(part_set)
             # TODO: Calculate which sets to check instead of brute-forcing it
             # There should be a better way of ensuring we only check sets of
             # parts that are not subsets of existing completed part sets. The
@@ -239,16 +239,20 @@ def fuzzy_match(all_part_samples, num_samples):
             # substantial search depth. It takes around 7 seconds for a
             # combination with 21 parts, the vast majority of which is spent in
             # the above code.
-            subcombination_num_samples = len(set.intersection(*(
-                part_samples[part]
-                for part in subcombination
-            )))
-            subcombinations_tested += 1
-            if subcombination_num_samples > num_samples:
-                subcombinations_returned += 1
-                subcombinations[subcombination] = subcombination_num_samples
-                parts_completed.append(part_set)
-        if subcombinations_tested == old_subcombinations_tested:
+        if subcombinations_to_check:
+            for subcombination in subcombinations_to_check:
+                sorted_subcombination = sorted(list(subcombination),
+                                               key=lambda x: len(part_samples[x]))
+                subcombination_num_samples = len(set.intersection(*(
+                    part_samples[part]
+                    for part in sorted_subcombination
+                )))
+                subcombinations_tested += 1
+                if subcombination_num_samples > num_samples:
+                    subcombinations_returned += 1
+                    subcombinations[tuple(sorted_subcombination)] = subcombination_num_samples
+                    parts_completed.append(subcombination)
+        else:
             print("No more valid combinations to check.")
         parts_removed += 1
     print(f"Checked {subcombinations_checked} subcombinations,"
