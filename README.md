@@ -1,3 +1,73 @@
-## COVID sBeacon
+# COVID sBeacon
 
 A serverless architecture for presenting SARS-CoV-2 genomes and population statistics for rapid querying.
+
+## Requirements
+Python
+NodeJS
+npm
+Terraform (with AWS credentials)
+
+## Setting up
+### Backend
+Set the backend.tf file to your desired Terraform backend type. The current configuration is an example that uses S3 to store the state and dynamodb to store the state lock, but other options are available (see [https://www.terraform.io/docs/language/settings/backends/index.html](https://www.terraform.io/docs/language/settings/backends/index.html) for more information).
+
+### Variables
+Ensure terraform.tvars has the correct settings. `beacon-id`, `beacon-name`, `organisation-id` and `organisation-name` are only used in the return values for some API calls to the beacon, and are not particularly important if you are not planning to link to a larger beacon network. `domain_name` is only important if you are using a custom domain, for which you have a certificate that is loaded into AWS Certificate Manager. If and only if that is the case, `production` should be set to `true`. `bucket-name` is used for automated updates to a dataset (configured separately) and should typically be set to the s3 bucket that will contain the VCF gzip files.
+
+### Building the infrastructure
+Ensure suitable credentials are available to terraform ( see [https://registry.terraform.io/providers/hashicorp/aws/latest/docs](https://registry.terraform.io/providers/hashicorp/aws/latest/docs) for more information), then run
+```bash
+terraform init
+terraform apply
+```
+and confirm if the changes are expected.
+
+### Adding a dataset
+A dataset needs bgzipped and indexed (csi or tbi) VCF files, and each VCF file should have a sample metadata csv, with samples in the same order as the VCF. These VCFs should not contain many more than 10000 samples each, to enable rapid querying, so a dataset may contain hundreds of individual VCFs. The csv should contain at least the columns `AccessionID` (e.g. EPI_ISL_123456), `RelatedID` (comma separated list of other accession numbers used for the same sample), `SampleCollectionDate` (e.g. 2021-03-25), `Location` (e.g. Australia / New South Wales), and `OriginatingLab` (freeform). These files should all have the same name, with only the suffix changing from .vcf.gz to .vcf.gz.csi/tbi to .csv. In addition there should be an annotation tsv, with at least the columns `Variant` (e.g. A23403G, or ATACATG21764A) and `SIFT_score` (e.g. 0.33). This can be referenced by multiple datasets. In both csvs and tsvs, fields can be left empty if the value is not known.
+The output of `terraform apply` will include a field `api_url`, which has a `/submit` endpoint (which would then be something like `https://8bgp0g24m2.execute-api.ap-southeast-2.amazonaws.com/prod/submit`). An authenticated POST request should be made to this endpoint with the body in the following format:
+```json
+{
+    "id": "dataset_name",
+    "name": "Dataset Friendly Name",
+    "vcfLocations": [
+        "s3://bucket/prefix/file1.vcf.gz",
+        "s3://bucket/prefix/file2.vcf.gz"
+    ],
+    "annotationLocation": "s3://bucket2/prefix2/variant_annotation_file.tsv",
+    "assemblyId":"hCoV-19",
+    "description" : "A friendly description of the dataset."
+}
+```
+Often the simplest way of providing this is through the test functionality of AWS API Gateway, which then handles all the authentication.
+
+### Updating a dataset
+Updating a dataset is required when the component VCFs or metadata files are changed. This is done through a PATCH request to the `/submit` endpoint, with the same format as the POST request, including the `id` field and any fields that need to be updated. The `vcfLocations` field is a single entity, so when it is used it must list all the files in the dataset. For example, to add another file to the above dataset, the PATCH request would have the body:
+```json
+{
+    "id": "dataset_name",
+    "vcfLocations": [
+        "s3://bucket/prefix/file1.vcf.gz",
+        "s3://bucket/prefix/file2.vcf.gz",
+        "s3://bucket3/prefix3/file3.vcf.gz"
+    ],
+}
+```
+If the files have changed, but their locations and number remain the  same, simply list them again to force any associated artifacts to be rebuilt.
+
+## Usage
+Go to the website listed as `website_url` in the terraform output, and you should be able to search for individual mutations, as well as strain profiles. The similarity search function allows for finding more common profiles that contain a subset of the requested mutations, useful if the specific set of mutations being search for doesn't have many hits.
+
+## Troubleshooting
+**Creating/updating a dataset says files are not accessible**
+Ensure the files are named correctly (`s3://bucket_name/vcf/with/optional/prefix.vcf.gz`, with associated .csi or .tbi and .csv files), and that they are correctly formated, bgzipped and indexed (using for example `bcftools index`). Check that the account in which the architecture is built has access to the files.
+
+**Creating/Updating a dataset times out, or returns some other ambiguous error after 28 seconds**
+This likely means the submitDataset function has timed out, and is caused when there are many files in a dataset, such that checking them all for validity takes longer than API Gateway's maximum timeout of 30 seconds. The work-around is to increase the timeout for submitDataset to allow for all files to be checked, or to skip the checking, if you trust the files to be present and correct. The former can be updated using `modules/api/main.tf` to increase the timeout, or the checking can be skipped by including a field `skipCheck` (the value is not important) in the body of the request. If the timeout is increased, the call to `/submit` will still timeout because of API Gateway, but the submitDataset lambda function invocation can be inspected in CloudWatch to ensure it completed successfully and returned a `200` response.
+
+**Searching takes a long time, and I have to search multiple times to get a hit**
+This is because the data takes longer than API Gateway's maximum timeout (30s) to produce, especially queries that return a large number of samples. The result is cached when it finishes, so future queries that start after the first one completes in the background (typically the third attempt) will return this cached result. Currently the only fix for this for the user is to wait a few seconds after the query times out before trying again, to hopefully hit the cached result on the second try.
+In the backend this can often be fixed by increasing the number of concurrent lambda functions that are able to run. This can first be done by increasing the account maximum concurrency, then by finding ways to increase the burst capacity in the region or even increasing provisioned capacity for the offending functions (although this approach can be expensive). Another approach can be increasing the memory allocated to the slowest lambda function, although this has diminishing returns past 1536MB.
+
+**Searching times out, and trying again even a few minutes later still leads to a timeout.**
+Check that the dynamodDB table VcfSummaries has the updated values for the VCFs. If it doesn't, the problem lies in the submission pipeline. If the call to `/submit` was successful, this might indicate that the data files may be to large or numerous for part of the pipeline. Check cloudwatch or lambda for the functions starting with "summarise" (except summariseSampleMetadata, which is triggered later) to see if any hit their timeout or memory limits. Increasing the timeout or memory allocation to the stressed functions can be configured in `modules/api/main.tf` and pushed using `terraform apply`. If the VCFs are updated in dynamoDB, check if any of the other functions (including summariseSampleMetadata) have similarly hit their limits, and adjust if necessary. Note that increasing the timeout of functions will still lead to a timeout on the website for the initial search, but should allow future searches, conducted after the backend function has completed, to succeed.
