@@ -101,7 +101,7 @@ The admin of the website should sign-up to OKTA [here](https://developer.okta.co
 #### Step 2 - Hook OKTA authenticaiton variables to webpage
 After logging to your admin console, use the side navigation bar to expand Applications drop-down and click on `Applications`. Click on `Create App Integration` on this page. In there we want to create OpenID connect service, select `OIDC - OpenID Connect`, select `Single-Page Application` as application type and click next.
 
-On `New Single-Page App Integration` menu give your application a name, select `Authorization code and implicit` on grant type.  and add the cloudfront url followed by `/implicit/callback` to `Sign-in redirect URIs` field for example https://abcd.cloudfront.net//implicit/callback. Add cloudfront url to `Sign-out redirect URIs` and `Trusted Origins Base URIs`. Explore the Assignments settings based on requirements and click save.
+On `New Single-Page App Integration` menu give your application a name, select `Authorization code and implicit` on grant type.  and add the cloudfront url followed by `/implicit/callback` to `Sign-in redirect URIs` field for example https://abcd.cloudfront.net/implicit/callback. Add cloudfront url to `Sign-out redirect URIs` and `Trusted Origins Base URIs`. Explore the Assignments settings based on requirements and click save.
 
 After the above steps, Admin needs to update the OKTA authentication variables to `modules/website/beaconApp/src/app/app.module.ts`. Update line 60 with the new client ID just generated and visible on the applications page under general tab. Update Line 58 to new issuer url which can be found Under `Security` dropdown on the left navigation bar under API.
 
