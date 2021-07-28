@@ -86,6 +86,28 @@ the dataset. For example, to add another file to the above dataset, the PATCH re
 If the files have changed, but their locations and number remain the  same, simply list them again to force any
 associated artifacts to be rebuilt.
 
+### Frontend
+Building an authenticated or non-authenticated webpage is controlled via variables. When building an authenticated webpage additional OKTA specific variables must be created from OKTA admin console and then updated in the app.module.ts. This is a one time change allowing user management for this webpage via OKTA admin console. Default OKTA settings goes to default developer admin console which cannot be used for user management.
+
+### Variables
+Webpage needs access to beacon_api_url variable to make queries to backend and cloudfront url variable to re-route users to home after OKTA authentication. The production variable and login variable are by default set to true. If user wants to set-up a webpage without authentication setting the default value can be set to false in variables.tf within website module.
+
+### Setting up authentication
+Setting up authentication on this webpage is a simple three step process. Detailed documentation to interact with console and add new users can be found here - [Documentaion](https://developer.okta.com/docs/guides/quickstart/cli/create-org/)
+
+#### Step 1 - OKTA sign-up
+The admin of the website should sign-up to OKTA [here](https://developer.okta.com/signup/). These login details will be needed later to onboard new users to this webpage. User will activate the email after signin-up. Activation will take the user to the new okta url - If user signed-up with new email then they will need to set-up a paasword using "forget password". If user signed up using existing email then use the credentials to login to your admin OKTA console.
+
+#### Step 2 - Hook OKTA authenticaiton variables to webpage
+After logging to your admin console, use the side navigation bar to expand Applications drop-down and click on `Applications`. Click on `Create App Integration` on this page. In there we want to create OpenID connect service, select `OIDC - OpenID Connect`, select `Single-Page Application` as application type and click next.
+
+On `New Single-Page App Integration` menu give your application a name, select `Authorization code and implicit` on grant type.  and add the cloudfront url followed by `/implicit/callback` to `Sign-in redirect URIs` field for example https://abcd.cloudfront.net/implicit/callback. Add cloudfront url to `Sign-out redirect URIs` and `Trusted Origins Base URIs`. Explore the Assignments settings based on requirements and click save.
+
+After the above steps, Admin needs to update the OKTA authentication variables to `modules/website/beaconApp/src/app/app.module.ts`. Update line 60 with the new client ID just generated and visible on the applications page under general tab. Update Line 58 to new issuer url which can be found Under `Security` dropdown on the left navigation bar under API.
+
+#### Step 3 - New users onboarding
+With first two steps authenticated webpage is now ready to use but will only be accessible to admin via admin credentials. Perform a quick test with admin credentials. Once the authentication is working its now time to onboard new users. In the console navigate to `Directory` drop down in side navigation bar and click people. On the people page click `Add person` or `more actions` and select `import users from CSV` to import multiple users. On the Add person dialog box fill in the necessary details and select `Send user activation email now` and click save. This will trigger the end user an email to sign-up to your application and if the Assignments settings in step 2 was set to `all users` then they will have immediate access to your cloudfront webpage after signing-up. More detailed documentaion is available [here](https://help.okta.com/en/prod/Content/Topics/Apps/Apps_App_Integration_Wizard_OIDC.htm)
+
 ## Usage
 Go to the website listed as `website_url` in the terraform output, and you should be able to search for individual
 mutations, as well as strain profiles. The similarity search function allows for finding more common profiles that
