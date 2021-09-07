@@ -49,6 +49,9 @@
 #iupac_input{
   margin-left: 8px ;
 }
+#phylogeny{
+  margin-left: 10px ;
+}
 
 .mat-column-accessions{
   max-width:10%;

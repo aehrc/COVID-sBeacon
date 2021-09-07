@@ -92,6 +92,7 @@
         </mat-card-content>
   </mat-card>
 
+
 	<div  *ngIf="loading">
 				 <div class="row justify-content-center spinner-container">
 					 <div id="spinner"></div>
@@ -106,7 +107,8 @@
 	<mat-card class="example-card" *ngIf="hits.length">
     <mat-card-content *ngIf="!warning">
 			<mat-card-title *ngIf="sMin == null">
-					<button mat-raised-button color="accent" (click)="this.similaritySearch()" ><span>Similarity search</span></button>
+					<button mat-raised-button color="accent" (click)="this.similaritySearch()" title="Similarity search for selected mutations " ><span>Similarity search</span></button>
+					<button mat-raised-button color="accent" id="phylogeny" (click)="this.navigate()" title="Nextstrain Phylogenetic tree for selected mutations"><span>Nextstrain Phylogenetic tree</span></button>
 					<span id="alertMessage"> {{alertMessage}}</span>
 			</mat-card-title>
 

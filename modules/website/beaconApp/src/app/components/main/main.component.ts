@@ -12,6 +12,7 @@ import * as topoJson from 'topojson-client';
 import { DownloadService } from './main.service';
 import { Router } from '@angular/router';
 
+
 @Component({
   selector: 'app-main',
   templateUrl: './main.component.html',
@@ -58,6 +59,7 @@ export class MainComponent {
   refBases = [];
   altBases = [];
   refName = [];
+  phylogenyPos = [];
   varType:string = null;
   isVisible:boolean = true;
   stateVisilble:boolean = false;
@@ -81,6 +83,9 @@ export class MainComponent {
   vis: number = 0;
   pageOfItems: Array<any>;
   statePageOfItems: Array<any>;
+  externalLink = "";
+
+
 
   onChange(){
     if(!this.iupac){
@@ -102,6 +107,14 @@ export class MainComponent {
   }
   similaritySearch(){
     this.router.navigate(['search', this.inputText]);
+  }
+  navigate(){
+    console.log(this.start);
+    console.log(this.phylogenyPos.join(","));
+    this.externalLink = "https://nextstrain.org/ncov/gisaid/global?gt=nuc."+ this.phylogenyPos.join(",") +"&m=div";
+    console.log(this.externalLink);
+
+    window.open(this.externalLink ,"_blank")
   }
   share(){
     var location = window.location;
@@ -271,6 +284,7 @@ export class MainComponent {
       this.refBases = [];
       this.altBases = [];
       this.refName = [];
+      this.phylogenyPos = [];
       this.loading = true;
 
       if( this.sMin  || this.sMax  || this.eMin || this.eMax ){
@@ -297,6 +311,7 @@ export class MainComponent {
             this.refBases.push((match[1].trim()).toUpperCase());
             this.altBases.push((match[3].trim()).toUpperCase());
             this.refName.push("1");
+            this.phylogenyPos.push((parseInt(match[2])).toString() + (match[3].trim()).toUpperCase());
           }else{
 
             for(var i = 0; i < this.splittedText.length; i++){
@@ -306,6 +321,7 @@ export class MainComponent {
               this.refBases.push((match[1].trim()).toUpperCase());
               this.altBases.push((match[3].trim()).toUpperCase());
               this.refName.push("1");
+              this.phylogenyPos.push((parseInt(match[2])).toString() + (match[3].trim()).toUpperCase());
             }
           }
 
