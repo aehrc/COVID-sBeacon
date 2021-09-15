@@ -52,6 +52,9 @@ def lambda_handler(event, context):
         "id": "gisaid",
         "vcfLocations": locations,
     }
+    if len(locations) > 100:
+        # This might take too long to check, skip it
+        payload['skipCheck'] = 1
     api = BEACON_URL.split('/')[2]
 
     url = BEACON_URL + "/submit"
