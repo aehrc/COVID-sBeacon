@@ -148,6 +148,7 @@ export class SearchComponent implements OnInit {
       "referenceBases": this.refBases,
       "alternateBases": this.altBases,
       "similar": 1,
+      "iupac": "False",
     };
 
 
