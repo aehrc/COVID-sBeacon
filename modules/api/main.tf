@@ -240,8 +240,8 @@ module "lambda-collateQueries" {
   description = "Calls splitQuery for each component query, and assigns metadata."
   handler = "lambda_function.lambda_handler"
   runtime = "python3.8"
-  memory_size = 2048
-  timeout = 122
+  memory_size = 10240
+  timeout = 240
   policy = {
     json = data.aws_iam_policy_document.lambda-collateQueries.json
   }
@@ -300,8 +300,8 @@ module "lambda-summariseSampleMetadata" {
   description = "Summarises metadata of all samples in a dataset."
   handler = "lambda_function.lambda_handler"
   runtime = "python3.8"
-  memory_size = 2048
-  timeout = 120
+  memory_size = 10240
+  timeout = 240
   policy = {
     json = data.aws_iam_policy_document.lambda-summariseSampleMetadata.json
   }
