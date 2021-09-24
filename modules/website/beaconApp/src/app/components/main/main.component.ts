@@ -29,7 +29,7 @@ import { Router } from '@angular/router';
 export class MainComponent {
   inputText: string = "";
   hits : any  = [];
-  @ViewChild(MatSort, { static: false }) sort: MatSort;
+  @ViewChild(MatSort) sort: MatSort;
 
   constructor(private http: HttpClient, private appConfigService: AppConfigService, private downloadService:DownloadService, private router: Router, private route: ActivatedRoute) {
     this.route.params.subscribe( params => this.inputText = params.input);
@@ -547,7 +547,7 @@ export class MainComponent {
 
 
     d3.json("assets/geojson/world.geojson")
-    .then(function(topo) {
+    .then(function(topo:any) {
         sampleData.forEach(function(d){data.set(d.code, +d.value);})
         let range_low = 0,
             range_high=  d3.max(topo.features, function(d:any){return data.get(d.id);});
