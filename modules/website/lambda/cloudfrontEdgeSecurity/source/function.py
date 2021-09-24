@@ -13,7 +13,7 @@ STATIC_SECURITY_HEADERS = {
         "img-src 'self'",
         "object-src 'self'",
         "script-src 'self' 'unsafe-eval' ",
-        "style-src 'self' 'unsafe-inline'",
+        "style-src 'self' ",
         "style-src-elem 'self' 'unsafe-inline'",
     ]),
     'Expect-CT': 'Expect-CT: max-age=604800, enforce',
