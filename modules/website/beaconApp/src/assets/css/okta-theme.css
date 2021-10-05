@@ -1,3 +1,9 @@
+@font-face {
+  font-family: 'montserrat';
+  src:  url('fonts/montserrat-regular-webfont.ttf') format('ttf'),
+        url('fonts/montserrat-regular-webfont.woff') format('woff');
+}
+
 #okta-sign-in.auth-container.main-container {
   /* -- Fonts and Text Colors -- */
   font-family: "montserrat", Arial, Helvetica, sans-serif;
@@ -54,6 +60,8 @@
   border-color: #ddd #ddd #d8d8d8;
   box-shadow: 0 2px 0 rgba(175, 175, 175, 0.12);
 }
+
+
 
 @media only screen and (min-device-width: 320px) and (max-device-width: 480px) and (-webkit-min-device-pixel-ratio: 2) {
   #okta-sign-in.auth-container.main-container {
