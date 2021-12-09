@@ -336,6 +336,48 @@ data aws_iam_policy_document lambda-performQuery {
 }
 
 #
+# strepifunQuery Lambda Function
+#
+data aws_iam_policy_document lambda-strepifunQuery {
+  statement {
+    actions = [
+      "lambda:InvokeFunction",
+    ]
+    resources = [
+      module.lambda-strepifunQuery.function_arn,
+    ]
+  }
+
+  statement {
+    actions = [
+      "s3:PutObject",
+      "s3:GetObject",
+    ]
+    resources = [
+      "${aws_s3_bucket.cache.arn}/*",
+    ]
+  }
+
+  statement {
+    actions = [
+      "dynamodb:PutItem",
+      "dynamodb:GetItem",
+    ]
+    resources = [
+      aws_dynamodb_table.cache.arn,
+    ]
+  }
+
+  statement {
+    actions = [
+      "s3:GetObject",
+      "s3:ListBucket",
+    ]
+    resources = ["*"]
+  }
+}
+
+#
 # summariseSampleMetadata Lambda Function
 #
 data aws_iam_policy_document lambda-summariseSampleMetadata {
