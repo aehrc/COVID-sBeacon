@@ -126,6 +126,14 @@ def get_counts_process(location, chrom, start, end, gvcf=False):
     return query_process
 
 
+def get_datasets_to_update(location, dataset_ids):
+    to_update_ids = []
+    for dataset_id in dataset_ids:
+        if update_file_in_dataset(location, dataset_id):
+            to_update_ids.append(dataset_id)
+    return to_update_ids
+
+
 def get_slices_to_complete(time_assigned, start_time, start, end, current_pos, initial_time_passed):
     """
     Calculate the number of slices that will be required to complete the task
@@ -154,6 +162,42 @@ def publish_slice_updates(slice_data):
         print('Publishing to SNS: {}'.format(json.dumps(kwargs)))
         response = sns.publish(**kwargs)
         print('Received Response: {}'.format(json.dumps(response)))
+
+
+def update_file_in_dataset(vcf_location, dataset_id):
+    kwargs = {
+        'TableName': DATASETS_TABLE_NAME,
+        'Key': {
+            'id': {
+                'S': dataset_id,
+            },
+        },
+        'UpdateExpression': 'DELETE toUpdateFiles :vcfLocationSet',
+        'ExpressionAttributeValues': {
+            ':vcfLocation': {
+                'S': vcf_location,
+            },
+            ':vcfLocationSet': {
+                'SS': [
+                    vcf_location,
+                ],
+            },
+        },
+        'ConditionExpression': 'contains(toUpdateFiles, :vcfLocation)',
+        'ReturnValues': 'UPDATED_NEW',
+    }
+
+    print('Updating table: {}'.format(json.dumps(kwargs)))
+    try:
+        response = dynamodb.update_item(**kwargs)
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+            print("VCF region has already been recorded, aborting.")
+            return False
+        else:
+            raise e
+    print(f"Received response: {json.dumps(response, default=str)}")
+    return 'toUpdateFiles' not in response.get('Attributes', {})
 
 
 def update_vcf(location, region, variant_count, call_count, to_add=None):
@@ -285,7 +329,8 @@ def summarise_slice(location, region, slice_size_mbp, time_assigned, initial_tim
         if update_complete:
             print('Final slice summarised.')
             impacted_datasets = get_affected_datasets(location)
-            summarise_datasets(impacted_datasets)
+            datasets_to_update = get_datasets_to_update(location, impacted_datasets)
+            summarise_datasets(datasets_to_update)
     else:
         print("Assigned time of {time} is not sufficient. Splitting into"
               " {slices} slices.".format(time=time_assigned, slices=slices))
