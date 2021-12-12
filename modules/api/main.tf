@@ -301,7 +301,7 @@ module "lambda-summariseSampleMetadata" {
   handler = "lambda_function.lambda_handler"
   runtime = "python3.8"
   memory_size = 10240
-  timeout = 240
+  timeout = 600
   policy = {
     json = data.aws_iam_policy_document.lambda-summariseSampleMetadata.json
   }
