@@ -6,6 +6,7 @@ import subprocess
 import time
 
 import boto3
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 ASSEMBLY_GSI = os.environ['ASSEMBLY_GSI']
@@ -23,7 +24,15 @@ MAX_SECONDS_BETWEEN_SAMPLES = 10
 
 os.environ['PATH'] += ':' + os.environ['LAMBDA_TASK_ROOT']
 
-dynamodb = boto3.client('dynamodb')
+dynamodb = boto3.client(
+    'dynamodb',
+    config=Config(
+        retries={
+            'total_max_attempts': 1,
+        }
+    )
+)
+
 sns = boto3.client('sns')
 
 all_count_pattern = re.compile('[0-9]+')
@@ -32,6 +41,10 @@ get_all_calls = all_count_pattern.findall
 
 class MissingInfoException(Exception):
     pass
+
+
+def should_retry(client_error: ClientError) -> bool:
+    return client_error.response['ResponseMetadata'].get('MaxAttemptsReached', False)
 
 
 def calculate_slices(location, chrom, start, end, num_slices):
@@ -71,7 +84,16 @@ def get_affected_datasets(location):
     still_to_scan = True
     while still_to_scan:
         print("Scanning table: {}".format(json.dumps(kwargs)))
-        response = dynamodb.scan(**kwargs)
+        try:
+            response = dynamodb.scan(**kwargs)
+        except ClientError as error:
+            print("Received error: {}".format(json.dumps(error.response, default=str)))
+            if should_retry(error):
+                print("Retrying after 1 second...")
+                time.sleep(1)
+                continue
+            else:
+                raise error
         print("Received response: {}".format(json.dumps(response)))
         dataset_ids += [item['id']['S'] for item in response.get('Items', [])]
         last_evaluated_key = response.get('LastEvaluatedKey')
@@ -186,18 +208,23 @@ def update_file_in_dataset(vcf_location, dataset_id):
         'ConditionExpression': 'contains(toUpdateFiles, :vcfLocation)',
         'ReturnValues': 'UPDATED_NEW',
     }
-
-    print('Updating table: {}'.format(json.dumps(kwargs)))
-    try:
-        response = dynamodb.update_item(**kwargs)
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-            print("VCF region has already been recorded, aborting.")
-            return False
-        else:
-            raise e
-    print(f"Received response: {json.dumps(response, default=str)}")
-    return 'toUpdateFiles' not in response.get('Attributes', {})
+    while True:
+        print('Updating table: {}'.format(json.dumps(kwargs)))
+        try:
+            response = dynamodb.update_item(**kwargs)
+        except ClientError as e:
+            print("Received error: {}".format(json.dumps(e.response, default=str)))
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                print("VCF region has already been recorded, aborting.")
+                return False
+            elif should_retry(e):
+                print("Retrying after 1 second...")
+                time.sleep(1)
+                continue
+            else:
+                raise e
+        print(f"Received response: {json.dumps(response, default=str)}")
+        return 'toUpdateFiles' not in response.get('Attributes', {})
 
 
 def update_vcf(location, region, variant_count, call_count, to_add=None):
@@ -230,20 +257,25 @@ def update_vcf(location, region, variant_count, call_count, to_add=None):
         kwargs['UpdateExpression'] += ' DELETE toUpdate :regionSet'
         kwargs['ExpressionAttributeValues'][':regionSet'] = {'SS': [region]}
         kwargs['ReturnValues'] = 'UPDATED_NEW'
-
-    print('Updating table: {}'.format(json.dumps(kwargs)))
-    try:
-        response = dynamodb.update_item(**kwargs)
-    except ClientError as e:
-        if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
-            print("VCF region has already been recorded, aborting.")
+    while True:
+        print('Updating table: {}'.format(json.dumps(kwargs)))
+        try:
+            response = dynamodb.update_item(**kwargs)
+        except ClientError as e:
+            print("Received error: {}".format(json.dumps(e.response, default=str)))
+            if e.response['Error']['Code'] == 'ConditionalCheckFailedException':
+                print("VCF region has already been recorded, aborting.")
+                return False
+            elif should_retry(e):
+                print("Retrying after 1 second...")
+                time.sleep(1)
+                continue
+            else:
+                raise e
+        if not to_add and response['Attributes'].get('toUpdate'):
             return False
         else:
-            raise e
-    if not to_add and response['Attributes'].get('toUpdate'):
-        return False
-    else:
-        return True
+            return True
 
 
 def summarise_datasets(datasets):
