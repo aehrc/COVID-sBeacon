@@ -254,7 +254,6 @@ module "lambda-collateQueries" {
         ARTIFACT_BUCKET = aws_s3_bucket.dataset_artifacts.bucket
         GET_ANNOTATIONS_LAMBDA = module.lambda-getAnnotations.function_name
         PERFORM_QUERY_LAMBDA = module.lambda-performQuery.function_name
-        STREPIFUN_QUERY_LAMBDA = module.lambda-strepifunQuery.function_name
         SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
       },
       local.cache_env_vars,
@@ -291,34 +290,6 @@ module "lambda-performQuery" {
   }
 }
 
-#
-# strepifunQuery Lambda Function
-#
-module "lambda-strepifunQuery" {
-  source = "../lambda"
-
-  function_name = "strepifunQuery"
-  description = "Queries a slice of a vcf for a specified variant."
-  handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
-  memory_size = 2048
-  timeout = 121
-  policy = {
-    json = data.aws_iam_policy_document.lambda-strepifunQuery.json
-  }
-  source_path = "${path.module}/lambda/strepifunQuery"
-  tags = var.common-tags
-
-  environment = {
-    variables = merge(
-    {
-      MAX_SPLIT_SIZE = 1500
-      RECURSION_FACTOR = 64
-    },
-    local.cache_env_vars,
-    )
-  }
-}
 
 #
 # summariseSampleMetadata Lambda Function

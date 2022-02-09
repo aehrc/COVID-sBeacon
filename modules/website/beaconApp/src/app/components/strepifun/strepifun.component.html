@@ -4,21 +4,39 @@
 <mat-card class="example-card">
   <mat-card-content>
     <div layout="row">
-      <label id="popular">Popular Search:</label>
-      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('D614G')"> D614G </a></label>
-      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('UKV')"> B.1.1.7 </a></label>
+      <label id="popular">Available StrEpiFun Search:</label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Alpha')"> Alpha </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Beta')"> Beta </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Delta')"> Delta </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Eta')"> Eta </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Gamma')"> Gamma </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Iota')"> Iota </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Kappa')"> Kappa </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Lambda')"> Lambda </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Mu')"> Mu </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Omicron')"> Omicron </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('Zeta')"> Zeta </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('B.1.617.3')"> B.1.617.3 </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('L18F')"> L18F </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('K417N')"> K417N </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('N501Y')"> N501Y </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('E484K')"> E484K </a></label>
+      <label id="popular">&nbsp;&nbsp; <a  ng-href='#' (click)="search('P681R')"> P681R </a></label>
+    </div>
+    <div layout="row">
+      <input id="iupac_input" type="checkbox" [name]="full" [checked]="full" (change)="onChange()" > Search for entire dataset (slow)
     </div>
   </mat-card-content>
+  
+
   <mat-card-content>
     <div layout="row">
 
-        <mat-form-field class="full-width-field" appearance="legacy" >
-          <!--<label>Query Position REF>ALT</label>-->
-          <div data-tip="(REF)(Start coordinate position)(ALT)-separate multiple variants with ':' or '&'.">
-            <textarea matInput  rows="2" cols="60" type="text" placeholder="A23403G:C8782T" name="inputText" [(ngModel)]="inputText"  ></textarea>
-            <!--<input matInput id="search" placeholder="8782 C>T" ng-model="inputText" ng-required="'true'" ng-keyup="$event.keyCode == 13 && query()"">-->
-          </div>
-        </mat-form-field>
+        <div class="example-button-row">
+          <!--<button mat-raised-button color="primary" class="button" [disabled]="!inputText " (click)="profileSearch()">Search</button>
+          <button mat-raised-button color="primary" class="button" (click)="this.queryVisible = !this.queryVisible">Query Builder</button>-->
+          <button mat-raised-button color="primary" class="button" (click)="this.refresh()">Reset</button>
+        </div>
 
     </div>
     </mat-card-content>
@@ -67,35 +85,6 @@
           <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
           <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
         </table>
-      </mat-tab>
-      <mat-tab label="Structural Annotation">
-        <div *ngIf="!hasInfo">
-          No structural information is available about the selected mutation at the current time.
-        </div>
-        <div *ngIf="hasInfo">
-          Spike feature flag legend: <br>
-          ----------------------------- <br>
-          GLYC       - Spike glycosylation <br>
-          SB         - Spike salt bridges <br>
-          S1S2       - S1S2 interface residues <br>
-          HS         - Spike annotated Hot Spots <br>
-          RBD        - Spike Receptor Binding Domain ACE2 interface <br>
-          FR         - Spike Furin cleavage site <br>
-          EP2        - Spike Epitope E2 from mapping <br>
-          EP5        - Spike Epitope E5 from mapping <br>
-          EP6        - Spike Epitope E6 from mapping <br>
-          EP8        - Spike Epitope E8 from mapping <br>
-          CR3022     - Spike Epitope for CR3022 mAb (from pdb structure 6LYA) <br>
-          RG10933    - Spike Epitope for REGN10933 mAb (from pdb structure 6XDG) <br>
-          RG10987    - Spike Epitope for REGN10987 mAb (from pdb structure 6XDG) <br>
-          LY-CoV016  - Spike Epitope for LY_CoV016 mAb (from pdb structure 7C01) <br>
-          S309       - Spike Epitope for S309 cross neutralizing Ab originally from SARS-CoV  (from pdb structure 6WPT) <br>
-          DSi        - Deep Scan-Intolerant -experiment derived (Starr et al.) <br>
-          DSt        - Deep Scan-Tolerant   -experiment derived (Starr et al.) <br>
-          Gran    - Grantham Structural mutation score: conservative (0-50), moderately conservative (51-100),  moderately radical (101-150), or radical (≥151).  <br>
-          <br>
-          The mutation {{ StructuralToShow.protein }} has a score of {{ StructuralToShow.score}}, a Grantham score of {{ StructuralToShow.grantham}} and the following spike features: {{ StructuralToShow.structural}}
-        </div>
       </mat-tab>
 
     </mat-tab-group>
