@@ -8,7 +8,7 @@ import {map, startWith} from 'rxjs/operators';
 import { AppConfigService } from '../../app.config.service';
 import { ActivatedRoute } from '@angular/router';
 import { Router } from '@angular/router';
-import { Beacon } from './strepifun.interfaces';
+
 
 export interface TableThing {
   country: string;
