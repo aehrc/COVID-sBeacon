@@ -220,7 +220,7 @@ updateHeatmap() {
 
   var colorscaleValue = [
     [0, '#3D9970'],
-    [10, '#001f3f']
+    [2, '#001f3f']
   ];
   let data = JSON.parse(this.dataToShow)
   let h = data.y.length
@@ -228,21 +228,30 @@ updateHeatmap() {
     this.display = false;
     this.noDataMessage = "A heatmap could not be generated as no countries have significant spread of this mutant at this time."
   } else {
-    /*let numCountries = data.y.length
+    let numCountries = data.y.length
     let newY = []
     let newZ = []
+
     for (let i = 0; i < numCountries; i++) {
+      let intermediate = []
+      //data.z[i].map(v => (!isNaN(v) >== 2) ? 2 : v )
+      //data.z[i] = data.z[i].map(function(u){
+      //    if(u >=2) u = 2
+      //    return u
+      //})
+
       if (this.CountriesToInclude.includes(data.y[i])) { // if country in list (R2)
-        newZ.push(data.z[i])
+        intermediate = data.z[i].map( item => !isNaN(item) && item > 2 ? 2:item)
+        newZ.push(intermediate)
         newY.push(data.y[i])
       } else if (Math.max.apply(Math, data.z[i].filter(v => ! isNaN(v))) >= this.R3Ratio) { // if R3 is ok
-        console.log("hello")
-        newZ.push(data.z[i])
+        intermediate = data.z[i].map( item => !isNaN(item) && item > 2 ? 2:item)
+        newZ.push(intermediate)
         newY.push(data.y[i])
       }
     }
     data.y = newY
-    data.z = newZ*/
+    data.z = newZ
     console.log(data)
     h = data.y.length
     if (h == 0) {
@@ -269,10 +278,17 @@ updateHeatmap() {
           ticksuffix: ' ',
           autosize: true,
           automargin: true,
+
         },
+        autorange: false,
+        //zauto: false,
+        zmin: 0,
+        zmax: 2,
         zsmooth:"fast",
         connectgaps:true
       };
+      //layout.zmin=0;
+      //layout.zmax=2;
       this.graph = { data: [data], layout: layout}
       this.display = true;
     }
