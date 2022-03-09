@@ -290,6 +290,7 @@ module "lambda-performQuery" {
   }
 }
 
+
 #
 # summariseSampleMetadata Lambda Function
 #

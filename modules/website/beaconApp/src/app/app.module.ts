@@ -12,6 +12,7 @@ import {MatFormFieldModule} from '@angular/material/form-field';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatInputModule } from '@angular/material/input';
+import { MatTabsModule } from  '@angular/material/tabs';
 import { FormsModule } from '@angular/forms';
 import { MatSelectModule } from '@angular/material';
 import { HttpClientModule } from '@angular/common/http';
@@ -26,7 +27,11 @@ import {MatIconModule} from '@angular/material/icon';
 import { DownloadService } from './components/main/main.service';
 import { SearchComponent } from './components/search/search.component';
 import { environment } from './../environments/environment';
+import { StrepifunComponent } from './components/strepifun/strepifun.component';
+import * as PlotlyJS from 'plotly.js-dist-min';
+import { PlotlyModule } from 'angular-plotly.js';
 
+PlotlyModule.plotlyjs = PlotlyJS;
 
 
 @NgModule({
@@ -36,7 +41,8 @@ import { environment } from './../environments/environment';
     AboutComponent,
     LoginComponent,
 //  JwPaginationComponent,
-    SearchComponent
+    SearchComponent,
+    StrepifunComponent
   ],
   imports: [
     BrowserModule,
@@ -46,6 +52,7 @@ import { environment } from './../environments/environment';
     MatCardModule,
     MatFormFieldModule,
     MatInputModule,
+    MatTabsModule,
     FormsModule,
     MatSelectModule,
     HttpClientModule,
@@ -54,6 +61,7 @@ import { environment } from './../environments/environment';
     NgbModule,
     MatIconModule,
     JwPaginationModule,
+    PlotlyModule,
     OktaAuthModule.initAuth({
       issuer: 'https://dev-8520796.okta.com/oauth2/default',
       redirectUri: `${environment.cloudfront_url}/implicit/callback`,

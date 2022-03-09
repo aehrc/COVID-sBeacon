@@ -10,6 +10,7 @@
 				<li *ngIf="!login" ><a [routerLink]="['query']"  accesskey="2" title="">Query sBeacon</a></li>
 				<li *ngIf="isAuthenticated" ><a [routerLink]="['main']"  accesskey="2" title="">Query sBeacon</a></li>
 				<li><a [routerLink]="['search']"  accesskey="2" title="">Similarity search</a></li>
+				<li><a [routerLink]="['strepifun']"  accesskey="2" title="">StrEpiFun</a></li>
 				<li><a href="https://bioinformatics.csiro.au/covid-19-sbeacon/" target="_blank" accesskey="3" title="">Methods</a></li>
         <li *ngIf="login">
           <a  *ngIf="!isAuthenticated" routerLink="/login"> Login </a>
