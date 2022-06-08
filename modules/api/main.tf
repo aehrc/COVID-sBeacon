@@ -319,7 +319,6 @@ module "lambda-summariseSampleMetadata" {
           "State",
           "Location_SampleCollectionDate",
           "State_SampleCollectionDate",
-          "ID",
         ]
       )
       SAMPLE_METADATA_SUFFIX = local.sample_metadata_suffix
