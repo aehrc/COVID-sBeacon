@@ -3,13 +3,11 @@ terraform {
     aws = {
       source  = "hashicorp/aws"
       version = ">= 3.31.0"
-
+      configuration_aliases = [
+        aws.useast1
+      ]
     }
   }
-}
-provider aws {
-  alias = "useast1"
-  region = "us-east-1"
 }
 
 module lambda_cloudfrontEdgeSecurity {
