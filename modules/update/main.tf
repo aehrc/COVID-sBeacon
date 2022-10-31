@@ -20,7 +20,7 @@ module "lambda-updateData" {
   function_name = "updateData"
   description = "Initiate a path command on s3 bucket file upload"
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 88
   policy = {

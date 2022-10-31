@@ -38,7 +38,7 @@ module lambda-submitDataset {
   function_name = "submitDataset"
   description = "Creates or updates a dataset and triggers summariseVcf."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 29
   policy = {
@@ -65,7 +65,7 @@ module "lambda-summariseDataset" {
   function_name = "summariseDataset"
   description = "Calculates summary counts for a dataset."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 120
   policy = {
@@ -93,7 +93,7 @@ module "lambda-summariseVcf" {
   function_name = "summariseVcf"
   description = "Calculates information in a vcf and saves it in datasets dynamoDB."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 60
   policy = {
@@ -119,7 +119,7 @@ module "lambda-summariseSlice" {
   function_name = "summariseSlice"
   description = "Counts calls and variants in region of a vcf."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 210
   policy = {
@@ -178,7 +178,7 @@ module "lambda-getInfo" {
   function_name = "getInfo"
   description = "Returns basic information about the beacon and the datasets."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 28
   policy = {
@@ -208,7 +208,7 @@ module "lambda-queryDatasets" {
   function_name = "queryDatasets"
   description = "Invokes splitQuery for each dataset and returns result."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 123
   policy = {
@@ -270,7 +270,7 @@ module "lambda-performQuery" {
   function_name = "performQuery"
   description = "Queries a slice of a vcf for a specified variant."
   handler = "lambda_function.lambda_handler"
-  runtime = "python3.6"
+  runtime = "python3.9"
   memory_size = 2048
   timeout = 121
   policy = {
