@@ -2,9 +2,12 @@
 
 resource aws_s3_bucket website_bucket {
   bucket_prefix = "covid19-beacon-website"
+}
 
-  versioning {
-    enabled = true
+resource aws_s3_bucket_versioning website {
+  bucket = aws_s3_bucket.website_bucket.id
+  versioning_configuration {
+    status = "Enabled"
   }
 }
 

@@ -73,6 +73,6 @@ resource aws_cloudfront_distribution platform_distribution {
     cloudfront_default_certificate = var.production == true ? false : true
     acm_certificate_arn = var.production == true ? data.aws_acm_certificate.cert[0].arn : ""
     minimum_protocol_version = var.production == true ? "TLSv1.2_2018" : "TLSv1"
-    ssl_support_method = var.production == true ? "sni-only" : ""
+    ssl_support_method = "sni-only"
   }
 }
