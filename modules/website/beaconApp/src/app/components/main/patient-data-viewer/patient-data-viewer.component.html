@@ -12,19 +12,21 @@
         <th mat-header-cell *matHeaderCellDef mat-sort-header matTooltip="Number of occurrences and total count"> Count
           / Total
         </th>
-        <td mat-cell *matCellDef="let row"> {{row.occurrences}} </td>
+        <td mat-cell *matCellDef="let row"> {{ row.occurrences }} / {{ row.total }}  </td>
       </ng-container>
 
       <ng-container matColumnDef="percentage">
         <th mat-header-cell *matHeaderCellDef mat-sort-header matTooltip="Percentage occurrences of the attribute">
           Frequency </th>
-        <td mat-cell *matCellDef="let row"> {{row.percentage}} </td>
+        <td mat-cell *matCellDef="let row"> {{ row.percentage | number:'1.2-2' }}% </td>
       </ng-container>
 
       <ng-container matColumnDef="logOddsError">
         <th mat-header-cell *matHeaderCellDef mat-sort-header matTooltip="Log Odds Ratio with 95% confidence interval">
           Log Odds Ratio (95% CI) </th>
-        <td mat-cell *matCellDef="let row"> {{row.logOddsError}} </td>
+        <td mat-cell *matCellDef="let row" [style.font-weight]="row.significant ? 'bold' : null">
+          {{ row.logOddsRatio | number:'1.2-2' }} &plusmn; {{ row.logOddsError | number:'1.2-2' }}
+        </td>
       </ng-container>
 
       <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
