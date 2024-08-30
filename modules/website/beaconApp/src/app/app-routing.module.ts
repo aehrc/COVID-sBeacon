@@ -15,12 +15,12 @@ const routes: Routes = [
   {
     path: "main",
     component: MainComponent,
-    canActivate: [OktaAuthGuard],
+    //canActivate: [OktaAuthGuard],
   },
   {
     path: "main/:input",
     component: MainComponent,
-    canActivate: [OktaAuthGuard],
+    //canActivate: [OktaAuthGuard],
   },
   {
     path: "search",
@@ -33,12 +33,12 @@ const routes: Routes = [
   {
     path: "query",
     component: MainComponent,
-    canActivate: [OktaAuthGuard],
+    //canActivate: [OktaAuthGuard],
   },
   {
     path: "query/:input",
     component: MainComponent,
-    canActivate: [OktaAuthGuard],
+    //canActivate: [OktaAuthGuard],
   },
   {
     path: "strepifun",
