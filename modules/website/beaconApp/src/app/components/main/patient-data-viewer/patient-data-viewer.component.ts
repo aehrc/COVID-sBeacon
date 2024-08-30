@@ -24,7 +24,7 @@ export class PatientDataViewerComponent implements OnChanges, AfterViewInit {
     "attribute",
     "occurrences",
     "percentage",
-    "logOddsError",
+    "logOddsRatio",
   ];
   protected dataSource: MatTableDataSource<any>;
   constructor() {

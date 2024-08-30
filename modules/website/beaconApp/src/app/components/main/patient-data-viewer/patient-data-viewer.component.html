@@ -21,7 +21,7 @@
         <td mat-cell *matCellDef="let row"> {{ row.percentage | number:'1.2-2' }}% </td>
       </ng-container>
 
-      <ng-container matColumnDef="logOddsError">
+      <ng-container matColumnDef="logOddsRatio">
         <th mat-header-cell *matHeaderCellDef mat-sort-header matTooltip="Log Odds Ratio with 95% confidence interval">
           Log Odds Ratio (95% CI) </th>
         <td mat-cell *matCellDef="let row" [style.font-weight]="row.significant ? 'bold' : null">
