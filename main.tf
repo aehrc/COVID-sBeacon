@@ -45,6 +45,7 @@ module beacon_website {
   response_bucket_domain = module.beacon_api.response_bucket_url
   okta_domain = var.okta_domain
   okta_client_id = var.okta_client_id
+  login = var.login
 
   providers = {
     aws = aws

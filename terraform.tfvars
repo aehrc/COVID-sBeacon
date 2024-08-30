@@ -23,5 +23,6 @@ assembly-contig-sizes = {
 }
 bucket-name = "covid19-vcfs-dev"
 production = false
+login = false
 okta_domain = "dev-8520796.okta.com"
 okta_client_id = "0oaatqbqOVXL5PZzp5d5"

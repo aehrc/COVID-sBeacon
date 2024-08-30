@@ -42,6 +42,12 @@ variable production {
   default = false
 }
 
+variable login {
+  type = bool
+  description = "Require login credentials to access the website."
+  default = true
+}
+
 variable bucket-name{
   type = string
 }
