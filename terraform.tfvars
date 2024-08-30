@@ -14,6 +14,12 @@ assembly-contig-sizes = {
     "NZ_AP023069.1" = 2200000
     "NZ_AP023070.1" = 4200
   }
+  "h5_ha" = {
+    "1" = 1742
+  }
+  "h7_ha" = {
+    "1" = 1638
+  }
 }
 bucket-name = "covid19-vcfs-dev"
 production = false
