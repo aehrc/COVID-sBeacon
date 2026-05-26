@@ -128,6 +128,7 @@ module "lambda-summariseSlice" {
   runtime = "python3.9"
   memory_size = 2048
   timeout = 210
+  recursive_loop = "Allow"
   policy = {
     json = data.aws_iam_policy_document.lambda-summariseSlice.json
   }
@@ -282,6 +283,7 @@ module "lambda-performQuery" {
   runtime = "python3.9"
   memory_size = 2048
   timeout = 121
+  recursive_loop = "Allow"
   policy = {
     json = data.aws_iam_policy_document.lambda-performQuery.json
   }

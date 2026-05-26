@@ -48,3 +48,10 @@ resource "aws_lambda_function" "lambda" {
     }
   }
 }
+
+resource "aws_lambda_function_recursion_config" "this" {
+  count = var.recursive_loop == "Allow" ? 1 : 0
+
+  function_name  = aws_lambda_function.lambda.function_name
+  recursive_loop = var.recursive_loop
+}

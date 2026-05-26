@@ -51,6 +51,12 @@ variable "policy" {
   default = null
 }
 
+variable "recursive_loop" {
+  description = "Lambda function recursion configuration. Valid values are Allow or Terminate."
+  type        = string
+  default     = null
+}
+
 locals {
   publish = var.lambda_at_edge ? true : var.publish
   timeout = var.lambda_at_edge ? min(var.timeout, 5) : var.timeout
