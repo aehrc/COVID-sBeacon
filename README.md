@@ -1,6 +1,7 @@
-# COVID sBeacon
+# PathsBeacon
 
-A serverless architecture for presenting SARS-CoV-2 genomes and population statistics for rapid querying.
+We have adapted the Beacon protocol  to build PathSBeacon, which is specialized on the exchange of infectious disease data and can be use to share viral mutation frequencies from distributed data sources. The adapted protocol ensures that data ownership is preserved, while enabling valuable insights to be generated from separate data sources. By creating a secure and accessible data-sharing platform, researchers and healthcare professionals can gain valuable insights from separate data sources, which can help identify trends and patterns that may be difficult to detect through individual data sets. PathSBeacon made a substantial contribution in the battle against the COVID-19 pandemic by enabling the exchange of critical information and insights to help combat the virus.
+
 
 ## Requirements
 Python
